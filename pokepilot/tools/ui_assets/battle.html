@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝可梦对战助手</title>
+    <style>
+        html {
+            zoom: 125%;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 1400px;
+            height: 90vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .control-buttons {
+            display: none;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+                       border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-start {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .btn-stop {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: #da190b;
+            transform: scale(1.05);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #999;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: #4caf50;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .battle-arena {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            padding: 32px;
+            background: #f8f9fa;
+        }
+
+        .pokemon-side {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .pokemon-side.my {
+            text-align: left;
+        }
+
+        .pokemon-side.opp {
+            text-align: right;
+        }
+
+        .pokemon-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            text-transform: capitalize;
+        }
+
+        .hp-bar {
+            height: 24px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50 0%, #45a049 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .hp-fill.low {
+            background: linear-gradient(90deg, #ff9800 0%, #f57c00 100%);
+        }
+
+        .hp-fill.critical {
+            background: linear-gradient(90deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .pokemon-status {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .status-badge {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+                   }
+
+        .recommendations {
+            padding: 32px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .recommendations h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .recommendation-item {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+
+        .recommendation-item.switch {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+
+        .recommendation-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+                   }
+
+        .recommendation-content {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .battlefield-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .team-status {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .team-item {
+            flex: 1;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .team-label {
+                       color: #333;
+            margin-bottom: 4px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            margin-right: 4px;
+        }
+
+        .status-dot.offline {
+            background: #999;
+        }
+
+        /* Tooltip 样式 */
+        .tooltip-item {
+            position: relative;
+            cursor: help;
+            border-bottom: 1px dotted #667eea;
+            display: inline-block;
+        }
+
+        .tooltip-content {
+            visibility: hidden;
+            width: 280px;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 10px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 11px;
+            line-height: 1.5;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+
+        .tooltip-item:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .battle-arena {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .pokemon-name {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="display: flex; flex-direction: column; height: 100vh;">
+        <!-- 顶部头部 -->
+        <div class="header">
+            <h1>⚔️ 宝可梦对战助手</h1>
+            <p id="battle-status">
+                <span class="status-indicator" id="status-dot"></span>
+                <span id="status-text">等待启动</span>
+            </p>
+        </div>
+
+        <!-- 主体：左侧菜单 + 内容区 -->
+        <div style="display: flex; flex: 1; overflow: hidden;">
+            <!-- 左侧菜单 -->
+            <div id="sidebar" style="width: 200px; background: #f5f5f5; border-right: 1px solid #ddd; overflow-y: auto; padding: 12px; flex-shrink: 0;">
+                <div style="font-weight: bold; margin-bottom: 12px; font-size: 14px;">我方队伍</div>
+                <button class="btn btn-start" onclick="captureTeamScreen('moves')" style="width: 100%; margin-bottom: 6px; font-size: 12px;">📷 截取 Moves</button>
+                <button class="btn btn-start" onclick="captureTeamScreen('stats')" style="width: 100%; margin-bottom: 6px; font-size: 12px;">📷 截取 Stats</button>
+                <button class="btn btn-start" onclick="generateMyTeam()" style="width: 100%; margin-bottom: 6px; font-size: 12px;">⚙️ 生成队伍</button>
+                <button class="btn btn-start" onclick="toggleSlotMenu()" style="width: 100%; margin-bottom: 6px; font-size: 12px;">💾 队伍缓存</button>
+                <div id="slot-menu" style="display:none; margin-bottom: 12px; background: #2a2a2a; border: 1px solid #555; border-radius: 4px; padding: 8px; font-size: 11px;"></div>
+
+                <div style="font-weight: bold; margin-bottom: 12px; font-size: 14px;">对方队伍</div>
+                <button id="btn-detect-opp" class="btn btn-start" onclick="detectOpponents()" style="width: 100%; margin-bottom: 6px; font-size: 12px;">🔍 识别队伍</button>
+                <button class="btn btn-start" onclick="detectOpponents(true)" style="width: 100%; margin-bottom: 12px; font-size: 12px;">🐛 Debug 识别</button>
+
+                <button class="btn btn-stop" onclick="clearAllData()" style="width: 100%; font-size: 12px;">🗑️ Clear</button>
+            </div>
+
+            <!-- 内容区：Tab 页 -->
+            <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <!-- Tab 标签 -->
+                <div style="display: flex; border-bottom: 2px solid #ddd; background: #f9f9f9;">
+                    <button id="tab1-btn" onclick="switchTab('team')" style="flex: 1; padding: 12px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid #667eea; color: #667eea;">
+                        👥 队伍管理
+                    </button>
+                    <button id="tab2-btn" onclick="switchTab('battle')" style="flex: 1; padding: 12px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; color: #999;">
+                        ⚔️ 实时战斗
+                    </button>
+                </div>
+
+                <!-- Tab 内容 -->
+                <div style="flex: 1; overflow-y: auto; padding: 16px;">
+                    <!-- Tab 1: 队伍管理 -->
+                    <div id="tab-team" style="display: block; display: flex; flex-direction: column; height: 100%;">
+                        <!-- 队伍管理的子 Tab 标签 -->
+                        <div style="display: flex; border-bottom: 1px solid #ddd; background: #fafafa; flex-shrink: 0;">
+                            <button id="subtab-my-btn" onclick="switchTeamTab('my')" style="flex: 1; padding: 10px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 2px solid #667eea; color: #667eea; font-size: 14px;">
+                                👥 我方队伍
+                            </button>
+                            <button id="subtab-opp-btn" onclick="switchTeamTab('opp')" style="flex: 1; padding: 10px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; color: #999; font-size: 14px;">
+                                🔍 对方队伍
+                            </button>
+                        </div>
+
+                        <!-- 队伍管理的子 Tab 内容 -->
+                        <div style="flex: 1; overflow-y: auto;">
+                            <!-- 我方队伍 -->
+                            <div id="subtab-my" style="display: block;">
+                                <div id="my-team-display" style="display: none;">
+                                    <h2 style="margin-bottom: 16px;">我方队伍</h2>
+                                    <div id="my-team-list" style="display: flex; flex-direction: column; gap: 12px;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 对方队伍 -->
+                            <div id="subtab-opp" style="display: none;">
+                                <div id="opp-team-display" style="display: none;">
+                                    <h2 style="margin-bottom: 16px;">对方队伍（已识别）</h2>
+                                    <div id="opp-team-list" style="display: flex; flex-direction: column; gap: 12px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: 实时战斗 -->
+                    <div id="tab-battle" style="display: none;">
+                        <div class="battle-arena" style="margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: auto;">
+                            <!-- 我方 -->
+                            <div class="pokemon-side my">
+                                <div class="pokemon-name" id="my-pokemon">-- 等待识别 --</div>
+                                <div class="hp-bar">
+                                    <div class="hp-fill" id="my-hp-bar" style="width: 100%;">
+                                        <span id="my-hp-text">100%</span>
+                                    </div>
+                                </div>
+                                <div class="pokemon-status">
+                                    <span class="status-badge" id="my-status">正常</span>
+                                </div>
+                            </div>
+
+                            <!-- 对手 -->
+                            <div class="pokemon-side opp">
+                                <div class="pokemon-name" id="opp-pokemon">-- 等待识别 --</div>
+                                <div class="hp-bar">
+                                    <div class="hp-fill" id="opp-hp-bar" style="width: 100%;">
+                                        <span id="opp-hp-text">100%</span>
+                                    </div>
+                                </div>
+                                <div class="pokemon-status">
+                                    <span class="status-badge" id="opp-status">正常</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="recommendations" style="margin-top: 20px;">
+                            <div class="battlefield-info">
+                <div class="info-item">
+                    <div class="info-label">回合</div>
+                    <div class="info-value" id="turn">0</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">天气</div>
+                    <div class="info-value" id="weather">无</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">我方状态</div>
+                    <div class="info-value" id="my-remaining">0/6</div>
+                </div>
+            </div>
+
+            <h2>💡 实时推荐</h2>
+            <div id="recommendations-list">
+                <div class="recommendation-item">
+                    <div class="recommendation-label">提示</div>
+                    <div class="recommendation-content">等待识别对手宝可梦...</div>
+                </div>
+            </div>
+
+            <div class="team-status">
+                <div class="team-item">
+                    <div class="team-label">
+                        <span class="status-dot"></span>我方队伍
+                    </div>
+                    <div id="my-team-info">6 / 6</div>
+                </div>
+                <div class="team-item">
+                    <div class="team-label">
+                        <span class="status-dot"></span>对手队伍
+                    </div>
+                    <div id="opp-team-info">6 / 6</div>
+                </div>
+                            </div>
+                        </div>
+                    </div>  <!-- tab-battle end -->
+                </div>  <!-- tab content end -->
+            </div>  <!-- content area end -->
+        </div>  <!-- main body end (sidebar + content) -->
+    </div>  <!-- container end -->
+
+    <script>
+        const API_BASE = "http://localhost:8765";
+        let updateInterval = null;
+        let isMonitoring = false;
+
+        // ─────────────────────────────────────────────────────────────────
+        // 属性 ID 映射（1-18）
+        // ─────────────────────────────────────────────────────────────────
+        const TYPE_ID_MAP = {
+            "normal": 1, "fighting": 2, "flying": 3, "poison": 4, "ground": 5,
+            "rock": 6, "bug": 7, "ghost": 8, "steel": 9, "fire": 10,
+            "water": 11, "grass": 12, "electric": 13, "psychic": 14,
+            "ice": 15, "dragon": 16, "dark": 17, "fairy": 18
+        };
+
+
+
+        // ─────────────────────────────────────────────────────────────────
+        // 新增：Tab 切换、队伍管理按钮
+        // ─────────────────────────────────────────────────────────────────
+
+        function switchTab(tab) {
+            const tab1Btn = document.getElementById("tab1-btn");
+            const tab2Btn = document.getElementById("tab2-btn");
+            const tabTeam = document.getElementById("tab-team");
+            const tabBattle = document.getElementById("tab-battle");
+
+            if (tab === 'team') {
+                tab1Btn.style.borderBottomColor = "#667eea";
+                tab1Btn.style.color = "#667eea";
+                tab2Btn.style.borderBottomColor = "transparent";
+                tab2Btn.style.color = "#999";
+                tabTeam.style.display = "flex";
+                tabBattle.style.display = "none";
+            } else {
+                tab1Btn.style.borderBottomColor = "transparent";
+                tab1Btn.style.color = "#999";
+                tab2Btn.style.borderBottomColor = "#667eea";
+                tab2Btn.style.color = "#667eea";
+                tabTeam.style.display = "none";
+                tabBattle.style.display = "block";
+            }
+        }
+
+        function switchTeamTab(teamType) {
+            const myBtn = document.getElementById("subtab-my-btn");
+            const oppBtn = document.getElementById("subtab-opp-btn");
+            const myTab = document.getElementById("subtab-my");
+            const oppTab = document.getElementById("subtab-opp");
+
+            if (teamType === 'my') {
+                myBtn.style.borderBottomColor = "#667eea";
+                myBtn.style.color = "#667eea";
+                oppBtn.style.borderBottomColor = "transparent";
+                oppBtn.style.color = "#999";
+                myTab.style.display = "block";
+                oppTab.style.display = "none";
+            } else {
+                myBtn.style.borderBottomColor = "transparent";
+                myBtn.style.color = "#999";
+                oppBtn.style.borderBottomColor = "#667eea";
+                oppBtn.style.color = "#667eea";
+                myTab.style.display = "none";
+                oppTab.style.display = "block";
+            }
+        }
+
+        async function captureTeamScreen(stage) {
+            console.log(`Capturing team screen: ${stage}`);
+            try {
+                const response = await fetch(`${API_BASE}/capture-team-screen?stage=${stage}`, {
+                    method: "POST"
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert(`✓ 已截取 ${stage === 'moves' ? 'Moves 页' : 'Stats 页'}`);
+                } else {
+                    alert(`✗ 截取失败: ${data.error}`);
+                }
+            } catch (err) {
+                alert(`✗ 错误: ${err.message}`);
+            }
+        }
+
+        async function generateMyTeam() {
+            console.log("Generating my team...");
+            try {
+                const response = await fetch(`${API_BASE}/generate-my-team`, {
+                    method: "POST"
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert("✓ 队伍已生成，正在加载...");
+                    // 加载临时队伍
+                    await loadMyTeam("temp");
+                } else {
+                    alert(`✗ 生成失败: ${data.error}`);
+                }
+            } catch (err) {
+                alert(`✗ 错误: ${err.message}`);
+            }
+        }
+
+
+        async function clearAllData() {
+            if (!confirm("确定要清除所有数据吗？")) return;
+            try {
+                // 清除 UI 显示
+                const myTeamDisplay = document.getElementById("my-team-display");
+                const oppTeamDisplay = document.getElementById("opp-team-display");
+                if (myTeamDisplay) myTeamDisplay.style.display = "none";
+                if (oppTeamDisplay) oppTeamDisplay.style.display = "none";
+                alert("✓ 已清除数据显示");
+            } catch (err) {
+                alert(`✗ 错误: ${err.message}`);
+            }
+        }
+
+
+        async function loadMyTeam(slot = "temp") {
+            console.log(`Loading my team from slot '${slot}'...`);
+            await loadTeamData({
+                mode: "my",
+                fetcher: () => fetch(`${API_BASE}/my-team?slot=${encodeURIComponent(slot)}`),
+                loadingText: "加载中..."
+            });
+        }
+
+        // ========== 槽位系统函数 ==========
+
+        async function toggleSlotMenu() {
+            const menu = document.getElementById("slot-menu");
+            if (!menu) return;
+
+            if (menu.style.display === "none") {
+                menu.style.display = "block";
+                await loadSlots();
+            } else {
+                menu.style.display = "none";
+            }
+        }
+
+        async function loadSlots() {
+            const menu = document.getElementById("slot-menu");
+            if (!menu) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/my-team/slots`);
+                const data = await response.json();
+
+                let html = "";
+
+                // 显示所有保存的槽位
+                if (data.slots && data.slots.length > 0) {
+                    data.slots.forEach(slot => {
+                        html += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 4px; border-bottom: 1px solid #444; margin-bottom: 4px;">
+                                <span style="flex: 1; color: #ddd;">${slot.name}</span>
+                                <div style="display: flex; gap: 4px;">
+                                    <button onclick="loadSlot('${slot.slot}')" style="padding: 2px 6px; font-size: 10px; background: #4CAF50; color: white; border: none; border-radius: 2px; cursor: pointer;">读取</button>
+                                    <button onclick="saveToSlot('${slot.slot}', '${slot.name}')" style="padding: 2px 6px; font-size: 10px; background: #2196F3; color: white; border: none; border-radius: 2px; cursor: pointer;">覆盖</button>
+                                    <button onclick="deleteSlot('${slot.slot}')" style="padding: 2px 6px; font-size: 10px; background: #f44336; color: white; border: none; border-radius: 2px; cursor: pointer;">删除</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // 添加新槽位按钮
+                html += `
+                    <div style="padding: 6px 4px; margin-top: 4px;">
+                        <button onclick="addNewSlot()" style="width: 100%; padding: 6px; font-size: 11px; background: #9C27B0; color: white; border: none; border-radius: 2px; cursor: pointer;">[+] 新建槽位</button>
+                    </div>
+                `;
+
+                menu.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to load slots:", err);
+                const menu = document.getElementById("slot-menu");
+                if (menu) {
+                    menu.innerHTML = `<div style="color: #f44336; padding: 6px;">加载失败: ${err.message}</div>`;
+                }
+            }
+        }
+
+        async function loadSlot(slot) {
+            console.log(`Loading slot: ${slot}`);
+            await loadMyTeam(slot);
+            // 加载后不隐藏菜单，让用户可以继续操作
+        }
+
+        async function saveToSlot(slot, name) {
+            console.log(`Saving to slot: ${slot}`);
+            try {
+                const response = await fetch(`${API_BASE}/my-team/save?slot=${encodeURIComponent(slot)}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: name })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert(`✓ 已覆盖槽位 '${name}'`);
+                    await loadSlots(); // 刷新列表
+                } else {
+                    alert(`✗ 覆盖失败: ${data.error}`);
+                }
+            } catch (err) {
+                alert(`✗ 错误: ${err.message}`);
+            }
+        }
+
+        async function deleteSlot(slot) {
+            if (!confirm(`确定要删除槽位吗？`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/my-team?slot=${encodeURIComponent(slot)}`, {
+                    method: "DELETE"
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert("✓ 已删除槽位");
+                    await loadSlots(); // 刷新列表
+                } else {
+                    alert(`✗ 删除失败: ${data.error}`);
+                }
+            } catch (err) {
+                alert(`✗ 错误: ${err.message}`);
+            }
+        }
+
+        async function addNewSlot() {
+            const name = prompt("请输入槽位名字（例如：双蜻蜓队）:");
+            if (!name) return;
+
+            // 找到最大的槽位号，然后 +1
+            const response = await fetch(`${API_BASE}/my-team/slots`);
+            const data = await response.json();
+            let nextSlot = 1;
+            if (data.slots && data.slots.length > 0) {
+                const numbers = data.slots
+                    .map(s => parseInt(s.slot))
+                    .filter(n => !isNaN(n))
+                    .sort((a, b) => a - b);
+                if (numbers.length > 0) {
+                    nextSlot = numbers[numbers.length - 1] + 1;
+                }
+            }
+
+            // 调用 saveToSlot
+            await saveToSlot(String(nextSlot), name);
+        }
+
+        async function detectOpponents(forceDebug = false) {
+            const debugModeEl = document.getElementById("debug-mode");
+            const debugMode = forceDebug || (debugModeEl ? debugModeEl.checked : false);
+            const debugText = debugMode ? "[DEBUG]" : "";
+            console.log(`${debugText} Detecting opponents...`);
+
+            const btnDetect = document.getElementById("btn-detect-opp");
+            const btnStart = document.getElementById("btn-start");
+            if (btnDetect) btnDetect.disabled = true;
+            if (btnStart) btnStart.disabled = true;
+
+            try {
+                const url = debugMode ? `${API_BASE}/detect-opponents?debug=1` : `${API_BASE}/detect-opponents`;
+                const msg = debugMode ? "🐛 使用现有截图识别..." : "🎥 正在截屏识别...";
+
+                await loadTeamData({
+                    mode: "opp",
+                    fetcher: () => fetch(url, { method: "POST" }),
+                    loadingText: msg
+                });
+            } finally {
+                if (btnDetect) btnDetect.disabled = false;
+                if (btnStart) btnStart.disabled = false;
+            }
+        }
+
+        async function startMonitoring() {
+            console.log("Starting battle monitoring...");
+            try {
+                const response = await fetch(`${API_BASE}/start`, { method: "POST" });
+                if (response.ok) {
+                    isMonitoring = true;
+                    const btnStart = document.getElementById("btn-start");
+                    const btnStop = document.getElementById("btn-stop");
+                    const btnDetect = document.getElementById("btn-detect-opp");
+                    const statusDot = document.getElementById("status-dot");
+                    const statusText = document.getElementById("status-text");
+
+                    if (btnStart) btnStart.disabled = true;
+                    if (btnStop) btnStop.disabled = false;
+                    if (btnDetect) btnDetect.disabled = true;
+                    if (statusDot) statusDot.classList.add("active");
+                    if (statusText) statusText.textContent = "正在对战中...";
+
+                    console.log("✓ Battle started");
+                } else {
+                    alert("Failed to start battle");
+                }
+            } catch (error) {
+                console.error("Start error:", error);
+                alert("Error: " + error);
+            }
+        }
+
+        async function stopMonitoring() {
+            console.log("Stopping battle...");
+            try {
+                const response = await fetch(`${API_BASE}/stop`, { method: "POST" });
+                if (response.ok) {
+                    isMonitoring = false;
+                    const btnStart = document.getElementById("btn-start");
+                    const btnStop = document.getElementById("btn-stop");
+                    const btnDetect = document.getElementById("btn-detect-opp");
+                    const statusDot = document.getElementById("status-dot");
+                    const statusText = document.getElementById("status-text");
+
+                    if (btnStart) btnStart.disabled = false;
+                    if (btnStop) btnStop.disabled = true;
+                    if (btnDetect) btnDetect.disabled = false;
+                    if (statusDot) statusDot.classList.remove("active");
+                    if (statusText) statusText.textContent = "已停止";
+
+                    console.log("✓ Battle stopped");
+                }
+            } catch (error) {
+                console.error("Stop error:", error);
+                alert("Error: " + error);
+            }
+        }
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                if (!response.ok) throw new Error("API 错误");
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error("获取状态失败:", error);
+                document.getElementById("battle-status").textContent = "❌ 连接失败";
+            }
+        }
+
+        function updateUI(data) {
+            // 更新连接状态
+            document.getElementById("battle-status").textContent = "✅ 实时对战进行中";
+
+            // 我方宝可梦
+            if (data.my_pokemon) {
+                document.getElementById("my-pokemon").textContent = data.my_pokemon.name || "未知";
+                const myHpPercent = data.my_pokemon.hp_percent || 100;
+                const myHpBar = document.getElementById("my-hp-bar");
+                myHpBar.style.width = myHpPercent + "%";
+                myHpBar.textContent = myHpPercent.toFixed(0) + "%";
+
+                if (myHpPercent <= 25) {
+                    myHpBar.classList.add("critical");
+                    myHpBar.classList.remove("low");
+                } else if (myHpPercent <= 50) {
+                    myHpBar.classList.add("low");
+                    myHpBar.classList.remove("critical");
+                } else {
+                    myHpBar.classList.remove("critical", "low");
+                }
+
+                document.getElementById("my-status").textContent = data.my_pokemon.status || "正常";
+            }
+
+            // 对手宝可梦
+            if (data.opp_pokemon) {
+                document.getElementById("opp-pokemon").textContent = data.opp_pokemon.name || "未知";
+                const oppHpPercent = data.opp_pokemon.hp_percent || 100;
+                const oppHpBar = document.getElementById("opp-hp-bar");
+                oppHpBar.style.width = oppHpPercent + "%";
+                oppHpBar.textContent = oppHpPercent.toFixed(0) + "%";
+
+                if (oppHpPercent <= 25) {
+                    oppHpBar.classList.add("critical");
+                    oppHpBar.classList.remove("low");
+                } else if (oppHpPercent <= 50) {
+                    oppHpBar.classList.add("low");
+                    oppHpBar.classList.remove("critical");
+                } else {
+                    oppHpBar.classList.remove("critical", "low");
+                }
+
+                document.getElementById("opp-status").textContent = data.opp_pokemon.status || "正常";
+            }
+
+            // 战场信息
+            document.getElementById("turn").textContent = data.battlefield.turn || 0;
+            document.getElementById("weather").textContent = translateWeather(data.battlefield.weather || "none");
+
+            // 队伍信息
+            document.getElementById("my-team-info").textContent = `${data.my_team.remaining} / ${data.my_team.total}`;
+            document.getElementById("opp-team-info").textContent = `${data.opp_team.remaining} / ${data.opp_team.total}`;
+            document.getElementById("my-remaining").textContent = `${data.my_team.remaining}/${data.my_team.total}`;
+
+            // 获取推荐
+            fetchRecommendations();
+        }
+
+        async function fetchRecommendations() {
+            try {
+                const response = await fetch(`${API_BASE}/recommendations`);
+                if (!response.ok) throw new Error("推荐 API 错误");
+                const data = await response.json();
+                updateRecommendations(data);
+            } catch (error) {
+                console.error("获取推荐失败:", error);
+            }
+        }
+
+        function updateRecommendations(data) {
+            const container = document.getElementById("recommendations-list");
+            container.innerHTML = "";
+
+            if (data.opp_moves) {
+                const item = document.createElement("div");
+                item.className = "recommendation-item";
+                item.innerHTML = `
+                    <div class="recommendation-label">对手常用招式</div>
+                    <div class="recommendation-content">${data.opp_moves}</div>
+                `;
+                container.appendChild(item);
+            }
+
+            if (data.switch) {
+                const item = document.createElement("div");
+                item.className = "recommendation-item switch";
+                item.innerHTML = `
+                    <div class="recommendation-label">换精灵建议</div>
+                    <div class="recommendation-content">${data.switch}</div>
+                `;
+                container.appendChild(item);
+            }
+
+            if (!data.opp_moves && !data.switch) {
+                const item = document.createElement("div");
+                item.className = "recommendation-item";
+                item.innerHTML = `
+                    <div class="recommendation-label">提示</div>
+                    <div class="recommendation-content">等待识别对手宝可梦...</div>
+                `;
+                container.appendChild(item);
+            }
+        }
+
+        function translateWeather(weather) {
+            const map = {
+                "sunny": "晴天",
+                "rain": "下雨",
+                "sandstorm": "沙暴",
+                "hail": "冰雹",
+                "none": "无"
+            };
+            return map[weather] || weather;
+        }
+
+        // 启动
+        console.log("🚀 Initializing Pokemon Battle Assistant");
+
+        // 初始化按钮状态
+        const btnDetect = document.getElementById("btn-detect-opp");
+        const btnStart = document.getElementById("btn-start");
+        const btnStop = document.getElementById("btn-stop");
+        if (btnDetect) btnDetect.disabled = false;
+        if (btnStart) btnStart.disabled = false;
+        if (btnStop) btnStop.disabled = true;
+
+        // 定时更新状态（只有在监控时）
+        setInterval(() => {
+            if (isMonitoring) {
+                fetchStatus();
+            }
+        }, 1000);
+
+        // 清理
+        window.addEventListener("beforeunload", () => {
+            if (isMonitoring) {
+                stopMonitoring();
+            }
+            if (updateInterval) clearInterval(updateInterval);
+        });
+
+        // ========== 属性计算函数 ==========
+
+        // ========== 通用渲染函数 ==========
+        const pokemonData = { opp: {}, my: {} };
+
+        async function loadTeamData({ mode, fetcher, loadingText = "加载中..." }) {
+            const isMyTeam = mode === "my";
+            const listDivId = isMyTeam ? "my-team-list" : "opp-team-list";
+            const displayDivId = isMyTeam ? "my-team-display" : "opp-team-display";
+            const listDiv = document.getElementById(listDivId);
+
+            if (listDiv) {
+                listDiv.innerHTML = `<div style="text-align: center; padding: 20px; color: #999;">${loadingText}</div>`;
+            }
+
+            try {
+                const response = await fetcher();
+                if (response.ok) {
+                    const data = await response.json();
+                    await renderTeamRoster({ mode, data, displayDivId, listDivId });
+                    console.log(`✓ ${isMyTeam ? "My" : "Opponent"} team loaded:`, data.team);
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to load ${isMyTeam ? "my" : "opponent"} team: ${error.error || "Unknown error"}`);
+                }
+            } catch (error) {
+                console.error("Load error:", error);
+                alert("Error: " + error);
+            }
+        }
+
+        async function renderTeamRoster({ mode, data, displayDivId, listDivId }) {
+            const displayDiv = document.getElementById(displayDivId);
+            const listDiv = document.getElementById(listDivId);
+
+            if (!displayDiv || !listDiv) return;
+
+            listDiv.innerHTML = "";
+
+            data.team.roster.forEach((pokemon, idx) => {
+                pokemon.slot = idx + 1;
+                const card = buildPokemonCard(pokemon, mode);
+                listDiv.appendChild(card);
+                pokemonData[mode][pokemon.slot] = pokemon;
+            });
+
+            displayDiv.style.display = "block";
+        }
+
+        function buildPokemonCard(pokemon, mode) {
+            const isMyTeam = mode === "my";
+            const card = document.createElement("div");
+            card.style.cssText = `
+                background: #f0f4ff;
+                border: 1px solid #667eea;
+                border-radius: 6px;
+                padding: 12px;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: grid;
+                grid-template-columns: 100px 150px 300px 1fr;
+                gap: 12px;
+                align-items: stretch;
+            `;
+
+            // 第1列：精灵图 + 基本信息
+            const col1 = document.createElement("div");
+            col1.style.cssText = "text-align: center; padding-right: 8px; border-right: 1px solid #e0e0e0;";
+            col1.innerHTML = `
+                ${renderSpriteBlock(pokemon)}
+                <div style="font-weight: bold; margin-bottom: 3px; font-size: 11px;">${pokemon.name_zh}</div>
+                <div style="font-size: 8px; color: #999; margin-bottom: 3px;">${pokemon.name}</div>
+                <div style="display: flex; gap: 2px; justify-content: center; margin-bottom: 4px;">
+                    ${renderTypeIcons(pokemon.types)}
+                </div>
+                ${renderMegaBlocks(pokemon, mode)}
+            `;
+
+            // 第2列：持有物 + 特性
+            const col2 = document.createElement("div");
+            col2.style.cssText = "padding-right: 8px; border-right: 1px solid #e0e0e0;";
+            col2.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    ${renderItems(pokemon, mode)}
+                </div>
+                <div style="border-top: 1px solid #d0d0d0; padding-top: 8px;">
+                    ${renderAbilities(pokemon, mode)}
+                </div>
+            `;
+
+            // 第3列：种族值 + 属性相性
+            const col3 = document.createElement("div");
+            col3.style.cssText = "padding-right: 8px; border-right: 1px solid #e0e0e0; overflow: hidden; min-width: 0;";
+            col3.innerHTML = `
+                ${renderStats(pokemon, mode)}
+                ${renderTypeEffectiveness(pokemon)}
+            `;
+
+            // 第4列：招式表格
+            const col4 = document.createElement("div");
+            col4.style.cssText = "display: flex; flex-direction: column; min-height: 240px; overflow: visible; min-width: 0;";
+            col4.innerHTML = renderMoves(pokemon, mode);
+
+            card.appendChild(col1);
+            card.appendChild(col2);
+            card.appendChild(col3);
+            card.appendChild(col4);
+
+            card.onmouseover = () => card.style.background = "#e3f2fd";
+            card.onmouseout = () => card.style.background = "#f0f4ff";
+
+            return card;
+        }
+
+        function renderSpriteBlock(pokemon) {
+            if (!pokemon.sprite) return "";
+            const encodedSprite = encodeURIComponent(pokemon.sprite);
+            return `<img src="/${encodedSprite}" style="width: 70px; height: 70px; object-fit: contain; margin-bottom: 6px;" onerror="this.style.display='none';" />`;
+        }
+
+        function renderTypeIcons(types) {
+            return (types || []).map((typeEn) => {
+                const typeId = TYPE_ID_MAP[typeEn];
+                if (typeId) {
+                    return `<img src="/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png" style="width: 16px; height: 16px;" title="${typeEn}" />`;
+                }
+                return "";
+            }).join("");
+        }
+
+        function renderMegaBlocks(pokemon, mode) {
+            if (!pokemon.evoforms || pokemon.evoforms.length === 0) return "";
+
+            let html = "";
+            pokemon.evoforms.forEach((mega, idx) => {
+                if (!mega.sprite) return;
+                const encodedMega = encodeURIComponent(mega.sprite);
+                const label = mega.form_name || "mega";
+                const megaTypes = renderTypeIcons(mega.types);
+                const prefix = mode === "my" ? "my" : "opp";
+
+                html += `
+                    <div onclick="switchMega('${mode}', '${pokemon.slot}', ${idx})"
+                         id="${prefix}-mega-img-${pokemon.slot}-${idx}"
+                         style="margin-top:4px; cursor:pointer; border:2px solid transparent;
+                                border-radius:4px; padding:2px; display:inline-block;">
+                        <img src="/${encodedMega}"
+                             style="width:44px; height:44px; object-fit:contain; display:block; margin-bottom:2px;"
+                             onerror="this.parentElement.style.display='none';" />
+                        <div style="font-size:7px; color:#9c27b0; font-weight:bold; text-align:center; margin-bottom:2px;">${label}</div>
+                        <div style="display: flex; gap: 2px; justify-content: center;">${megaTypes}</div>
+                    </div>`;
+            });
+
+            return html;
+        }
+
+        function renderItems(pokemon, mode) {
+            let html = "<div style='font-size: 12px; line-height: 1.8;'>";
+            if (pokemon.held_item) {
+                const items = Array.isArray(pokemon.held_item) ? pokemon.held_item : [pokemon.held_item];
+                if (items.length > 0 && typeof items[0] === 'object') {
+                    const label = mode === "my" ? "持有物" : "常用持有物";
+                    html += `<div style='color: #666; margin-bottom: 6px; font-weight: bold; font-size: 13px;'>${label}</div>`;
+                    items.forEach(i => {
+                        const effect = i.description_zh || i.description || "无";
+                        html += `<div style='margin-bottom: 2px;'>
+                            <span class='tooltip-item' style='color: #555; font-weight: 400;'>
+                                ${i.name_zh || i.name}
+                                <span class='tooltip-content' style='white-space: pre-wrap;'>${effect}</span>
+                            </span>`;
+                        if (i.pct !== undefined) {
+                            html += `<span style='color: #999; font-size: 8px;'> ${(i.pct * 100).toFixed(0)}%</span>`;
+                        }
+                        html += `</div>`;
+                    });
+                } else {
+                    html += "<div style='color: #ccc;'>-</div>";
+                }
+            } else {
+                html += "<div style='color: #ccc;'>-</div>";
+            }
+            html += "</div>";
+            return html;
+        }
+
+        function renderAbilities(pokemon, mode) {
+            let html = "<div style='font-size: 12px; line-height: 1.8;'>";
+            if (pokemon.ability) {
+                const abilities = Array.isArray(pokemon.ability) ? pokemon.ability : [pokemon.ability];
+                if (abilities.length > 0 && typeof abilities[0] === 'object') {
+                    const label = mode === "my" ? "特性" : "常用特性";
+                    html += `<div style='color: #666; margin-bottom: 6px; font-weight: bold; font-size: 13px;'>${label}</div>`;
+                    abilities.forEach(a => {
+                        const desc = a.description_zh || a.description || "无";
+                        html += `<div style='margin-bottom: 2px;'>
+                            <span class='tooltip-item' style='color: #555; font-weight: 400;'>
+                                ${a.name_zh || a.name}
+                                <span class='tooltip-content' style='white-space: pre-wrap;'>${desc}</span>
+                            </span>`;
+                        if (a.pct !== undefined) {
+                            html += `<span style='color: #999; font-size: 8px;'> ${(a.pct * 100).toFixed(0)}%</span>`;
+                        }
+                        html += `</div>`;
+                    });
+                } else {
+                    html += "<div style='color: #ccc;'>-</div>";
+                }
+            } else {
+                html += "<div style='color: #ccc;'>-</div>";
+            }
+
+            // 添加进化形态特性
+            if (pokemon.evoforms && pokemon.evoforms.length > 0) {
+                html += `<div style='color:#d0d0d0; margin-top:8px; margin-bottom:8px; height:1px; background:#d0d0d0;'></div>`;
+                html += `<div style='color:#9c27b0; margin-bottom:6px; font-weight:bold;'>Mega特性</div>`;
+                pokemon.evoforms.forEach(evo => {
+                    const ability = evo.ability;
+                    if (ability && typeof ability === 'object') {
+                        const abilityDesc = ability.description_zh || ability.description || "无";
+                        const abilityName = ability.name_zh || ability.name || "—";
+                        html += `<div style='margin-bottom: 2px;'>
+                            <span class='tooltip-item' style='color:#7b1fa2; font-weight:400;'>
+                               ${abilityName}
+                                <span class='tooltip-content' style='white-space: pre-wrap;'>${abilityDesc}</span>
+                            </span>
+                        </div>`;
+                    }
+                });
+            }
+
+            html += "</div>";
+            return html;
+        }
+
+        function renderStats(pokemon, mode) {
+            const isMyTeam = mode === "my";
+            let html = `<div style='font-size: 11px; line-height: 2;' id='${mode}-stats-slot-${pokemon.slot}'>`;
+            const baseStats = pokemon.base_stats;
+            const currentStats = pokemon.stats || pokemon.base_stats;
+
+            if (!baseStats || Object.keys(baseStats).length === 0) {
+                html += "<div style='color: #ccc;'>-</div>";
+                html += "</div>";
+                return html;
+            }
+
+            // 我方特有：解析 nature 修正
+            let natureMap = { "hp": "", "attack": "", "defense": "", "sp_atk": "", "sp_def": "", "speed": "" };
+            if (isMyTeam && pokemon.nature) {
+                const parts = pokemon.nature.split("/");
+                const incMatch = parts[0].match(/(\w+)↑/);
+                if (incMatch) {
+                    const incKey = incMatch[1].toLowerCase();
+                    if (natureMap.hasOwnProperty(incKey)) natureMap[incKey] = "↑";
+                }
+                if (parts.length > 1) {
+                    const decMatch = parts[1].match(/(\w+)↓/);
+                    if (decMatch) {
+                        const decKey = decMatch[1].toLowerCase();
+                        if (natureMap.hasOwnProperty(decKey)) natureMap[decKey] = "↓";
+                    }
+                }
+            }
+
+            const statInfo = [
+                { key: "hp", name: "HP" },
+                { key: "attack", name: "攻击" },
+                { key: "defense", name: "防御" },
+                { key: "sp_atk", name: "特攻" },
+                { key: "sp_def", name: "特防" },
+                { key: "speed", name: "速度" }
+            ];
+
+            html += "<div style='color: #666; margin-bottom: 8px; font-weight: bold; font-size: 12px;'>种族值</div>";
+            statInfo.forEach(stat => {
+                const baseVal = baseStats[stat.key] || 0;
+                const statVal = currentStats[stat.key];
+                let displayText, barWidth;
+
+                if (isMyTeam) {
+                    // 我方：base_stat (actual_value)
+                    const currentVal = statVal || 0;
+                    barWidth = Math.min(baseVal / 160 * 100, 100) + '%';
+                    displayText = `${baseVal} (${currentVal})`;
+
+                    let statNameStyle = 'width: 35px; font-weight: 400;';
+                    if (natureMap[stat.key] === "↑") {
+                        statNameStyle = 'width: 35px; font-weight: 700; color: #ff6b6b;';
+                    } else if (natureMap[stat.key] === "↓") {
+                        statNameStyle = 'width: 35px; font-weight: 700; color: #4dabf7;';
+                    }
+
+                    html += `<div class='stat-row' data-stat='${stat.key}' style='display: flex; gap: 4px; align-items: center; margin-bottom: 4px;'>
+                        <span style='${statNameStyle}'>${stat.name}</span>
+                        <div style='background: #e0e0e0; flex: 1; height: 8px; border-radius: 2px; position: relative;'>
+                            <div class='stat-bar' style='background: #667eea; height: 100%; width: ${barWidth}; border-radius: 2px;'></div>
+                        </div>
+                        <span class='stat-val' style='width: 100px; text-align: right; font-weight: 700; font-size: 9px;'>${displayText}</span>
+                    </div>`;
+                } else {
+                    // 对方：base_stat (min, max) 或 base_stat (value)
+                    if (Array.isArray(statVal)) {
+                        const [min, max] = statVal;
+                        barWidth = Math.min(max / 280 * 100, 100) + '%';
+                        displayText = `${baseVal} (${min}, ${max})`;
+                    } else {
+                        barWidth = Math.min(statVal / 280 * 100, 100) + '%';
+                        displayText = `${baseVal} (${statVal})`;
+                    }
+
+                    html += `<div class='stat-row' data-stat='${stat.key}' style='display: flex; gap: 4px; align-items: center; margin-bottom: 4px;'>
+                        <span style='width: 35px; font-weight: 400;'>${stat.name}</span>
+                        <div style='background: #e0e0e0; height: 8px; border-radius: 2px; position: relative; flex: 1;'>
+                            <div class='stat-bar' style='background: #667eea; height: 100%; width: ${barWidth}; border-radius: 2px;'></div>
+                        </div>
+                        <span class='stat-val' style='width: 100px; text-align: right; font-weight: 700; font-size: 9px;'>${displayText}</span>
+                    </div>`;
+                }
+            });
+
+            // 添加 Mega 切换按钮
+            if (pokemon.evoforms && pokemon.evoforms.length > 0) {
+                html += `<div style='margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap;'>
+                    <button onclick="switchMega('${mode}', '${pokemon.slot}', null)" id="${mode}-mega-btn-${pokemon.slot}-base"
+                            style='font-size: 8px; padding: 2px 6px; border: 1px solid #667eea;
+                                   background: #667eea; color: white; border-radius: 3px; cursor: pointer;'>普通</button>`;
+                pokemon.evoforms.forEach((mega, idx) => {
+                    const label = mega.form_name || "Mega";
+                    html += `<button onclick="switchMega('${mode}', '${pokemon.slot}', ${idx})" id="${mode}-mega-btn-${pokemon.slot}-${idx}"
+                                      style='font-size: 8px; padding: 2px 6px; border: 1px solid #9c27b0;
+                                             background: white; color: #9c27b0; border-radius: 3px; cursor: pointer;'>${label}</button>`;
+                });
+                html += `</div>`;
+            }
+
+            html += "</div>";
+            return html;
+        }
+
+        function renderMoves(pokemon, mode) {
+            const isMyTeam = mode === "my";
+
+            let html = "<div style='font-size: 13px; display: flex; flex-direction: column; height: 100%;'>";
+
+            if (!pokemon.moves || pokemon.moves.length === 0) {
+                html += "<div style='color: #ccc;'>-</div>";
+                html += "</div>";
+                return html;
+            }
+
+            const movesLabel = isMyTeam ? "招式" : "常用招式";
+            const movesCount = isMyTeam ? pokemon.moves.length : Math.min(pokemon.moves.length, 8);
+            html += `<div style='color: #666; margin-bottom: 6px; font-weight: bold; font-size: ${isMyTeam ? "14px" : "11px"};'>${movesLabel} (${movesCount})</div>`;
+
+            const fontSize = isMyTeam ? "13px" : "9px";
+            const headFontSize = isMyTeam ? "13px" : "9px";
+            const movesToShow = isMyTeam ? pokemon.moves : pokemon.moves.slice(0, 8);
+            const paddings = isMyTeam ? "padding: 6px 4px;" : "padding: 5px 3px;";
+
+            html += `<table style='width: 100%; border-collapse: collapse; font-size: ${fontSize}; flex: 1;'>
+                <thead>
+                    <tr style='background: #e3f2fd; border-bottom: 2px solid #667eea;'>
+                        <th style='${paddings} text-align: left; color: #666; font-size: ${headFontSize};'>名字</th>
+                        <th style='${paddings} text-align: center; color: #666; font-size: ${headFontSize};'>属性</th>
+                        <th style='${paddings} text-align: center; color: #666; font-size: ${headFontSize};'>类型</th>
+                        <th style='${paddings} text-align: center; color: #666; font-size: ${headFontSize};'>威力</th>
+                        <th style='${paddings} text-align: center; color: #666; font-size: ${headFontSize};'>命中</th>
+                        <th style='${paddings} text-align: center; color: #666; font-size: ${headFontSize};'>先制</th>
+                        ${!isMyTeam ? `<th style='${paddings} text-align: center; color: #666; font-size: ${headFontSize};'>使用率</th>` : ''}
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            movesToShow.forEach((m, idx) => {
+                const power = m.power || 0;
+                const acc = m.accuracy || 0;
+                const category = m.category ? (m.category === 'physical' ? '物' : m.category === 'special' ? '特' : '变') : '—';
+                const priorityNum = m.priority ? parseInt(m.priority) : 0;
+                const priority = priorityNum > 0 ? `+${priorityNum}` : String(priorityNum);
+                const effect = m.short_effect_zh || m.short_effect || "无";
+                const typeStr = m.type ? m.type.toLowerCase() : "normal";
+                const typeId = TYPE_ID_MAP[typeStr];
+                const usage = !isMyTeam && m.pct !== undefined ? (m.pct * 100).toFixed(0) + '%' : '—';
+
+                const bgColor = idx % 2 === 0 ? '#ffffff' : '#f9f9f9';
+                const priorityColor = priorityNum === 0 ? '#999' : priorityNum > 0 ? '#d32f2f' : '#1976d2';
+
+                html += `<tr style='background: ${bgColor}; border-bottom: 1px solid #e0e0e0;'>
+                    <td style='${paddings} font-size: ${fontSize};'>
+                        <span class='tooltip-item' style='color: #333; font-weight: 400; cursor: help;'>
+                            ${m.name_zh || m.name}
+                            <span class='tooltip-content' style='white-space: pre-wrap;'>${effect}</span>
+                        </span>
+                    </td>
+                    <td style='${paddings} text-align: center; font-size: ${fontSize};'>
+                        ${typeId ? `<img src="/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png" style="width: 18px; height: 18px;" title="${typeStr}" />` : '—'}
+                    </td>
+                    <td style='${paddings} text-align: center; color: #666; font-size: ${fontSize};'>${category}</td>
+                    <td style='${paddings} text-align: center; color: #666; font-size: ${fontSize};'>${power}</td>
+                    <td style='${paddings} text-align: center; color: #666; font-size: ${fontSize};'>${acc}%</td>
+                    <td style='${paddings} text-align: center; color: ${priorityColor}; font-size: ${fontSize};'>${priority}</td>
+                    ${!isMyTeam ? `<td style='padding: 5px 3px; text-align: center; color: #999;'>${usage}</td>` : ''}
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        function renderTypeEffectiveness(pokemon) {
+            if (!pokemon.type_effectiveness || Object.keys(pokemon.type_effectiveness).length === 0) {
+                return "";
+            }
+
+            let html = "<div style='margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;'>";
+            html += "<div style='font-size: 13px; font-weight: bold; color: #666; margin-bottom: 8px;'>属性相性</div>";
+
+            const grouped = { 4: [], 2: [], "0.5": [], "0.25": [], 0: [] };
+            Object.entries(pokemon.type_effectiveness).forEach(([type, mult]) => {
+                if (mult === 0) grouped[0].push(type);
+                else if (mult === 0.25) grouped["0.25"].push(type);
+                else if (mult === 0.5) grouped["0.5"].push(type);
+                else if (mult === 2) grouped[2].push(type);
+                else if (mult === 4) grouped[4].push(type);
+            });
+
+            [
+                { key: 4, label: "4倍弱" },
+                { key: 2, label: "2倍弱" },
+                { key: "0.5", label: "1/2抵" },
+                { key: "0.25", label: "1/4抵" },
+                { key: 0, label: "免疫" }
+            ].forEach(g => {
+                if (grouped[g.key].length > 0) {
+                    html += `<div style='margin-bottom: 6px; font-size: 11px;'><span style='color: #999; font-weight: bold; margin-right: 4px;'>${g.label}:</span>`;
+                    grouped[g.key].forEach(t => {
+                        const id = TYPE_ID_MAP[t] || 1;
+                        html += `<img src='/sprites/sprites/types/generation-ix/scarlet-violet/small/${id}.png' style='width: 20px; height: 20px; margin-right: 2px; vertical-align: middle;' title='${t}'>`;
+                    });
+                    html += `</div>`;
+                }
+            });
+
+            html += "</div>";
+            return html;
+        }
+
+        // ========== Mega 进化切换函数 ==========
+
+        function switchMega(team, slot, megaIdx) {
+            // 如果是旧的调用方式（两个参数），向后兼容
+            if (typeof team === 'number' && typeof slot === 'number') {
+                megaIdx = slot;
+                slot = team;
+                // 尝试自动判断（这种情况不应该发生）
+                team = pokemonData.opp[slot] ? 'opp' : 'my';
+            }
+
+            const isMyTeam = team === 'my';
+            const poke = isMyTeam ? pokemonData.my[slot] : pokemonData.opp[slot];
+            if (!poke) return;
+
+            const isBase = megaIdx === null;
+
+            // 更新按钮样式
+            const prefix = isMyTeam ? 'my' : 'opp';
+            const baseBtn = document.getElementById(`${prefix}-mega-btn-${slot}-base`);
+            if (baseBtn) {
+                baseBtn.style.background = isBase ? "#667eea" : "white";
+                baseBtn.style.color = isBase ? "white" : "#667eea";
+            }
+            if (poke.evoforms) {
+                poke.evoforms.forEach((_, i) => {
+                    const btn = document.getElementById(`${prefix}-mega-btn-${slot}-${i}`);
+                    if (btn) {
+                        btn.style.background = (!isBase && megaIdx === i) ? "#9c27b0" : "white";
+                        btn.style.color = (!isBase && megaIdx === i) ? "white" : "#9c27b0";
+                    }
+                    // 高亮 mega 精灵图
+                    const imgDiv = document.getElementById(`${prefix}-mega-img-${slot}-${i}`);
+                    if (imgDiv) {
+                        imgDiv.style.borderColor = (!isBase && megaIdx === i) ? "#9c27b0" : "transparent";
+                    }
+                });
+            }
+
+            // 更新种族值数字 + 进度条
+            const containerId = isMyTeam ? `my-stats-slot-${slot}` : `opp-stats-slot-${slot}`;
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            container.querySelectorAll(".stat-row").forEach(row => {
+                const key = row.dataset.stat;
+                if (!isBase && (!poke.evoforms || !poke.evoforms[megaIdx])) return;
+                const baseVal = isBase ? (poke.base_stats[key] || 0) : (poke.evoforms[megaIdx].base_stats[key] || 0);
+                const baseValOriginal = poke.base_stats[key] || 0;
+                const increase = baseVal - baseValOriginal;
+                const isHP = key === "hp";
+
+                if (isMyTeam) {
+                    // 我方队伍：显示 base_stat (actual_value)
+                    const statObj = isBase ? poke.stats : poke.evoforms[megaIdx].stats;
+                    const currentVal = statObj[key] || 0;
+                    const barWidth = Math.min(baseVal / 160 * 100, 100) + '%';
+                    const displayText = increase === 0
+                        ? `${baseValOriginal} (${currentVal})`
+                        : `${baseValOriginal}${increase > 0 ? '+' : ''}${increase} (${currentVal})`;
+
+                    row.querySelector(".stat-bar").style.width = barWidth;
+                    row.querySelector(".stat-val").textContent = displayText;
+                } else {
+                    // 对方队伍：显示 base_stat + increase (min, max)
+                    const statObj = isBase ? poke.stats : poke.evoforms[megaIdx].stats;
+                    const statVal = statObj[key];
+                    if (Array.isArray(statVal)) {
+                        const [min, max] = statVal;
+                        const barWidth = Math.min(max / 280 * 100, 100) + '%';
+                        const displayText = increase === 0
+                            ? `${baseValOriginal} (${min}, ${max})`
+                            : `${baseValOriginal}${increase > 0 ? '+' : ''}${increase} (${min}, ${max})`;
+                        row.querySelector(".stat-bar").style.width = barWidth;
+                        row.querySelector(".stat-val").textContent = displayText;
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
