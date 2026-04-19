@@ -301,10 +301,10 @@ class PokemonDetector:
 
         if variant:
             # 构建相对于项目根目录的完整精灵图路径
-            if is_shiny and variant.sprite_shiny_filename:
-                sprite_key = f"sprites/champions_shiny/{variant.sprite_shiny_filename}"
-            elif variant.sprite_filename:
+            if variant.sprite_filename:
                 sprite_key = f"sprites/champions/{variant.sprite_filename}"
+            elif variant.sprite_shiny_filename:
+                sprite_key = f"sprites/champions_shiny/{variant.sprite_shiny_filename}"
             else:
                 sprite_key = None
             return {
