@@ -2,7 +2,10 @@ __pycache__/
 
 api-data/
 sprites/
-data/
+/data/*
 screenshots/
 
 .claude/
+
+!data/type_effectiveness.json
+!data/manual.json
