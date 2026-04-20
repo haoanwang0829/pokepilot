@@ -187,11 +187,35 @@ html, body {
 }
 
 .video-container {
-    flex: 1;
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+}
+
+.status-panel {
+    flex: 1;
+    padding: 12px;
+    background: #252526;
+    border-top: 1px solid #3e3e42;
+    overflow-y: auto;
+    font-size: 12px;
+    color: #d0d0d0;
+}
+
+.status-panel .info-label {
+    color: #888;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.status-panel .info-value {
+    color: #d0d0d0;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
 }
 
 video {
@@ -563,7 +587,7 @@ video {
 
 /* ==================== 底部信息区 ==================== */
 .bottom-bar {
-    height: 180px;
+    height: 100px;
     flex-shrink: 0;
     border-top: 1px solid #3e3e42;
     background: #252526;

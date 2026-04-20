@@ -69,24 +69,33 @@ class PokemonBuilder:
 
         return {"pokemon": []}
 
-    def read_pikalytics(self, slug: str, name: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    def read_pikalytics(self, slug: str, name: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]], list[tuple[str, str]]]:
         pika_info = self.pika_cache.get(slug, {})
         pika_info = self.pika_cache.get(name, {}) if not pika_info else pika_info
-        # 获取招式详细信息
-        top_moves = []
-        for m in pika_info.get("moves", [])[:6]:
-            top_moves.append(
-                (m["name"].lower().replace(" ", "-"), f"{m['pct']:.1f}%"))
 
-        top_items = []
+        # 处理招式 - 合并重复的
+        moves_dict = {}
+        for m in pika_info.get("moves", [])[:6]:
+            key = m["name"].lower().replace(" ", "-")
+            pct = m.get('pct', 0)
+            moves_dict[key] = moves_dict.get(key, 0) + pct
+        top_moves = [(k, f"{v:.1f}%") for k, v in moves_dict.items()]
+
+        # 处理道具 - 合并重复的
+        items_dict = {}
         for i in pika_info.get("items", [])[:3]:
-            top_items.append(
-                (i["name"].lower().replace(" ", "-"), f"{i['pct']:.1f}%"))
-        
-        top_abilities = []
+            key = i["name"].lower().replace(" ", "-")
+            pct = i.get('pct', 0)
+            items_dict[key] = items_dict.get(key, 0) + pct
+        top_items = [(k, f"{v:.1f}%") for k, v in items_dict.items()]
+
+        # 处理特性 - 合并重复的
+        abilities_dict = {}
         for a in pika_info.get("abilities", [])[:3]:
-            top_abilities.append(
-                (a["name"].lower().replace(" ", "-"), f"{a['pct']:.1f}%"))
+            key = a["name"].lower().replace(" ", "-")
+            pct = a.get('pct', 0)
+            abilities_dict[key] = abilities_dict.get(key, 0) + pct
+        top_abilities = [(k, f"{v:.1f}%") for k, v in abilities_dict.items()]
 
         return top_moves, top_items, top_abilities
 

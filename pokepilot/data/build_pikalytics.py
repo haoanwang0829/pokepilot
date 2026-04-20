@@ -33,8 +33,10 @@ _ROSTER_PATH  = _ROOT / "data" / "champions_roster.json"
 _OUT_PATH     = _ROOT / "data" / "pikalytics_cache.json"
 _BASE_URL     = "https://www.pikalytics.com/pokedex/championstournaments"
 _HEADERS      = {
-    "User-Agent": "Mozilla/5.0 pokepilot-bot",
-    "Accept-Language": "en-US,en;q=0.9"  # 指定英文语言偏好
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Charset": "utf-8",
+    "Referer": "https://www.pikalytics.com/",
 }
 _DELAY        = 1.0   # 请求间隔（秒），避免频率过高
 

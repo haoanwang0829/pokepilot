@@ -13,22 +13,22 @@
             <div class="menu-item" id="menu-team" onclick="toggleMenu('menu-team')">
                 我方队伍 ▾
                 <div class="dropdown-menu">
-                    <div class="dropdown-item" onclick="captureScreen('moves')">截取页面1</div>
-                    <div class="dropdown-item" onclick="captureScreen('stats')">截取页面2</div>
-                    <div class="dropdown-item" onclick="generateTeam()">生成队伍</div>
-                    <div class="dropdown-item submenu-item">
+                    <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); captureScreen('moves')">截取页面1</div>
+                    <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); captureScreen('stats')">截取页面2</div>
+                    <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); generateTeam()">生成队伍</div>
+                    <div class="dropdown-item submenu-item" onclick="event.stopPropagation()">
                         读取队伍 ▶
                         <div class="submenu" id="load-team-submenu">
                             <div class="dropdown-item">-- 加载中 --</div>
                         </div>
                     </div>
-                    <div class="dropdown-item submenu-item">
+                    <div class="dropdown-item submenu-item" onclick="event.stopPropagation()">
                         写入队伍 ▶
                         <div class="submenu" id="save-team-submenu">
                             <div class="dropdown-item">-- 加载中 --</div>
                         </div>
                     </div>
-                    <div class="dropdown-item submenu-item">
+                    <div class="dropdown-item submenu-item" onclick="event.stopPropagation()">
                         删除队伍 ▶
                         <div class="submenu" id="delete-team-submenu">
                             <div class="dropdown-item">-- 加载中 --</div>
@@ -83,6 +83,8 @@
                 <div class="video-container">
                     <video id="video" autoplay playsinline></video>
                 </div>
+                <div class="status-panel">
+                </div>
             </div>
 
             <!-- 右：对方队伍 -->
@@ -98,10 +100,6 @@
 
         <!-- 底部信息区 -->
         <div class="bottom-bar">
-            <div class="info-group">
-                <div class="info-label">设备状态</div>
-                <div class="info-value" id="info-device">未选择设备</div>
-            </div>
             <div class="info-group">
                 <div class="info-label">日志</div>
                 <div class="info-value" id="info-log">就绪</div>

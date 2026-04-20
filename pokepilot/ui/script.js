@@ -201,7 +201,8 @@ function setStatus(msg, cls = '') {
 }
 
 function setInfo(msg) {
-    document.getElementById('info-device').textContent = msg;
+    // 设备信息现在显示在日志里
+    setLog(msg);
 }
 
 function setLog(msg) {

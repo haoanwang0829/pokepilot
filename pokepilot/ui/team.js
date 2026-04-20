@@ -35,26 +35,28 @@ function renderCard(pokemon, side, index) {
         return `<div class="type-icon" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
     }).join('');
 
-    // 处理 ability - 统一为列表格式
+    // 处理 ability - 统一为列表格式，每个分别带 hover
     let abilityHtml = '';
-    let abilityTitle = '';
     if (pokemon.ability && Array.isArray(pokemon.ability) && pokemon.ability.length > 0) {
         abilityHtml = pokemon.ability.map(a => {
-            const pctStr = a.pct ? `${Math.round(a.pct * 100)}%` : '';
-            return `${a.name_zh || a.name || ''}${pctStr ? ' ' + pctStr : ''}`;
+            const name = a.name_zh || a.name || '';
+            const pctStr = a.pct ? ` (${Math.round(a.pct * 100)}%)` : '';
+            const desc = a.description_zh || a.description || '';
+            const title = `${name}${pctStr}\n${desc}`;
+            return `<span class="card-ability" title="${title.replace(/"/g, '&quot;')}">${name}</span>`;
         }).join(', ');
-        abilityTitle = pokemon.ability.map(a => `${a.name_zh || a.name || ''}: ${a.description_zh || a.description || ''}`).join('\n');
     }
 
-    // 处理 held_item - 统一为列表格式
+    // 处理 held_item - 统一为列表格式，每个分别带 hover
     let itemHtml = '';
-    let itemTitle = '';
     if (pokemon.held_item && Array.isArray(pokemon.held_item) && pokemon.held_item.length > 0) {
         itemHtml = pokemon.held_item.map(i => {
-            const pctStr = i.pct ? `${Math.round(i.pct * 100)}%` : '';
-            return `${i.name_zh || i.name || ''}${pctStr ? ' ' + pctStr : ''}`;
+            const name = i.name_zh || i.name || '';
+            const pctStr = i.pct ? ` (${Math.round(i.pct * 100)}%)` : '';
+            const desc = i.description_zh || i.description || '';
+            const title = `${name}${pctStr}\n${desc}`;
+            return `<span class="card-item" title="${title.replace(/"/g, '&quot;')}">${name}</span>`;
         }).join(', ');
-        itemTitle = pokemon.held_item.map(i => `${i.name_zh || i.name || ''}: ${i.description_zh || i.description || ''}`).join('\n');
     }
 
     // 进化形态按钮
@@ -70,9 +72,11 @@ function renderCard(pokemon, side, index) {
     // 招式（用属性颜色作为背景，显示威力/准确度）
     const moves = pokemon.moves.map(m => {
         const powerAccuracy = m.power !== null ? `${m.power}/${m.accuracy ?? '-'}` : '-/-';
-        const moveTitle = m.short_effect_zh || m.short_effect || '';
+        const desc = m.short_effect_zh || m.short_effect || '';
+        const pctStr = m.pct ? `使用率: ${Math.round(m.pct * 100)}%` : '';
+        const moveTitle = [desc, pctStr].filter(Boolean).join('\n');
         const moveName = m.name_zh || m.name || '';
-        return `<div class="move-chip type-${m.type.toLowerCase()}" title="${moveTitle}">${moveName}<span class="move-stats">${powerAccuracy}</span></div>`;
+        return `<div class="move-chip type-${m.type.toLowerCase()}" title="${moveTitle.replace(/"/g, '&quot;')}">${moveName}<span class="move-stats">${powerAccuracy}</span></div>`;
     }).join('');
 
     // Stats barplot 显示
@@ -182,10 +186,10 @@ function renderCard(pokemon, side, index) {
                         ${evoButtonsHtml ? `<div class="evo-buttons">${evoButtonsHtml}</div>` : ''}
                     </div>
                     <div class="card-meta">
-                        <span class="card-item" title="${itemTitle}">${itemHtml || '无道具'}</span>
+                        ${itemHtml || '<span class="card-item" title="">无道具</span>'}
                     </div>
                     <div class="card-meta">
-                        <span class="card-ability" title="${abilityTitle}">${abilityHtml}</span>
+                        ${abilityHtml}
                     </div>
                 </div>
                 <div class="card-stats-section">
@@ -229,21 +233,21 @@ async function loadTeamMenus() {
     // Load submenu
     const loadSub = document.getElementById('load-team-submenu');
     loadSub.innerHTML = teams.length
-        ? teams.map(t => `<div class="dropdown-item" onclick="loadTeamSlot('${t.id}')">${t.slot_name}</div>`).join('')
+        ? teams.map(t => `<div class="dropdown-item" onclick="event.stopPropagation(); loadTeamSlot('${t.id}')">${t.slot_name}</div>`).join('')
         : '<div class="dropdown-item" style="color:#888">暂无队伍</div>';
 
     // Save submenu
     const saveSub = document.getElementById('save-team-submenu');
     const existingItems = teams.map(t =>
-        `<div class="dropdown-item" onclick="saveTeamToSlot('${t.id}')">${t.slot_name}</div>`
+        `<div class="dropdown-item" onclick="event.stopPropagation(); saveTeamToSlot('${t.id}')">${t.slot_name}</div>`
     ).join('');
     saveSub.innerHTML = existingItems +
-        `<div class="dropdown-item" onclick="saveTeamAsNew()">+ 新建</div>`;
+        `<div class="dropdown-item" onclick="event.stopPropagation(); saveTeamAsNew()">+ 新建</div>`;
 
     // Delete submenu
     const delSub = document.getElementById('delete-team-submenu');
     delSub.innerHTML = teams.length
-        ? teams.map(t => `<div class="dropdown-item" onclick="deleteTeamSlot('${t.id}','${t.slot_name}')">${t.slot_name}</div>`).join('')
+        ? teams.map(t => `<div class="dropdown-item" onclick="event.stopPropagation(); deleteTeamSlot('${t.id}','${t.slot_name}')">${t.slot_name}</div>`).join('')
         : '<div class="dropdown-item" style="color:#888">暂无队伍</div>';
 }
 
@@ -301,6 +305,7 @@ async function deleteTeamSlot(slotId, slotName) {
 
 async function generateTeam() {
     closeAllMenus();
+    logMsg('正在生成队伍。请等待。');
     const res = await fetch('/api/teams/generate', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
@@ -356,7 +361,8 @@ function switchEvoform(side, index, evoIndex) {
 }
 
 async function generateOpponentTeam() {
-    closeAllMenus();
+    document.querySelectorAll('.menu-item.active').forEach(m => m.classList.remove('active'));
+    logMsg('正在生成对方队伍。请等待。');
     const res = await fetch('/api/teams/generate-opponent', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
