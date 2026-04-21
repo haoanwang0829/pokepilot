@@ -216,8 +216,7 @@ def _parse_moves_screen(image_path: str) -> tuple[list[dict], list[dict]]:
         cH, cW = card.shape[:2]
 
         # 整张卡片 OCR
-        results = read_region(card)
-
+        results = read_region(card, min_conf=0.1)
         # 按 y 坐标分组，提取前3行（名字、特性、道具）和后4行（招式）
         split_x = cW // 2
         split_y = cH // 2  # 大概中线分左右
@@ -237,6 +236,12 @@ def _parse_moves_screen(image_path: str) -> tuple[list[dict], list[dict]]:
                 results_left.append((box, text, conf))
             else:
                 results_right.append((box, text, conf))
+
+        slot_num = slot_idx + 1
+        print(f"\n[Slot {slot_num}] OCR 识别 {len(results)} 个区域，左列 {len(results_left)}，右列 {len(results_right)}")
+        for i, (box, text, conf) in enumerate(results):
+            center_x = sum(p[0] for p in box) / len(box)
+            print(f"  {i}: x={center_x:.0f} y={box[0][1]:.0f} '{text}' (conf={conf:.2f})")
 
         # 按 y 坐标分组提取（同一行的词汇合并）
         def group_by_y(items, y_threshold=20):
@@ -262,6 +267,10 @@ def _parse_moves_screen(image_path: str) -> tuple[list[dict], list[dict]]:
         # 分组
         left_groups = group_by_y(results_left)
         right_groups = group_by_y(results_right)
+
+        print(f"  左列 {len(left_groups)} 组，右列 {len(right_groups)} 组")
+        for i, group in enumerate(right_groups):
+            print(f"    右组{i}: {[t for _, t, _ in group]}")
 
         # 提取数据（每组内按 x 排序后拼接）
         def extract_text_from_group(group):
@@ -302,7 +311,7 @@ def _parse_moves_screen(image_path: str) -> tuple[list[dict], list[dict]]:
 # Stats 页解析
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _parse_stats_screen(image_path: str) -> list[dict]:
+def _parse_stats_screen(image_path: str, layout: dict = None) -> list[dict]:
     """提取 Stats 页数据"""
     img = cv2.imread(image_path)
     cards = []
@@ -315,8 +324,9 @@ def _parse_stats_screen(image_path: str) -> list[dict]:
     card_output_dir = Path(__file__).parent.parent.parent / "screenshots" / "stat_cards"
     card_output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 获取动态布局坐标
-    layout = _get_card_coords(image_path)
+    # 获取动态布局坐标（如果没有传入，则自己检测）
+    if layout is None:
+        layout = _get_card_coords(image_path)
     all_cards = layout['left_cards'] + layout['right_cards']  # 左3个 + 右3个
 
     for slot_idx, card_info in enumerate(all_cards):
@@ -495,7 +505,9 @@ def _parse_stats_screen(image_path: str) -> list[dict]:
 def parse_team(moves_screenshot: str, stats_screenshot: str) -> dict:
     detect_cards, moves_cards = _parse_moves_screen(moves_screenshot)
 
-    stats_cards = _parse_stats_screen(stats_screenshot)
+    # 从 moves 获取布局，传递给 stats（避免 stats 重复检测）
+    layout = _get_card_coords(moves_screenshot)
+    stats_cards = _parse_stats_screen(stats_screenshot, layout=layout)
 
 
     builder = PokemonBuilder()

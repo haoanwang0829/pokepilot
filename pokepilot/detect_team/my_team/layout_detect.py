@@ -7,6 +7,29 @@ import cv2
 import numpy as np
 import os
 
+# ============ 静态卡片位置配置（自动检测失败时使用）============
+# 基于1920x1080分辨率的截图，通过实际测试确定
+_FALLBACK_LAYOUT = {
+    'layout': {
+        'top_x': 183,
+        'top_y': 271,
+        'rect_w': 753,
+        'rect_h': 194,
+        'vertical_gap': 22,
+        'horizontal_gap': 47,
+    },
+    'left_cards': [
+        {'x': 183, 'y': 271, 'w': 753, 'h': 194},
+        {'x': 183, 'y': 487, 'w': 753, 'h': 194},
+        {'x': 183, 'y': 703, 'w': 753, 'h': 194},
+    ],
+    'right_cards': [
+        {'x': 983, 'y': 271, 'w': 753, 'h': 194},
+        {'x': 983, 'y': 487, 'w': 753, 'h': 194},
+        {'x': 983, 'y': 703, 'w': 753, 'h': 194},
+    ]
+}
+
 
 def detect_card_layout(image_path, debug=False, output_dir="debug_output"):
     """
@@ -93,12 +116,12 @@ def detect_card_layout(image_path, debug=False, output_dir="debug_output"):
     # 去重：合并接近的矩形
     rectangles = _merge_close_rectangles(rectangles, threshold=10)
 
-    # ============ 6. 分析布局 ============
+# ============ 6. 分析布局 ============
     layout_info = _analyze_layout(rectangles, img)
 
     if layout_info is None:
-        print("错误：无法检测到完整的布局")
-        return None
+        print("警告：自动检测失败，使用静态fallback配置")
+        return _FALLBACK_LAYOUT
 
     # ============ 调试输出 ============
     if debug:
