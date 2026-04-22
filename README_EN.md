@@ -1,4 +1,4 @@
-# PokePilot
+# PokePilot Pokémon Champions
 
 **English** | [中文](README.md)
 
