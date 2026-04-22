@@ -190,7 +190,7 @@ class Pokemon:
     def from_dict(cls, data: dict) -> "Pokemon":
         """从字典构造 Pokemon 对象"""
         name = data.get("name", "")
-        name_zh = data.get("nickname", "")  # nickname 存的是中文名
+        name_zh = data.get("name_zh", "")
         index = data.get("index", 0)
 
         # 构造招式列表
@@ -200,7 +200,7 @@ class Pokemon:
             for m in moves_data
         ]
 
-        # 处理特性：支持字符串（向后兼容）、字典或列表
+        # 处理特性和持有物：支持字符串（向后兼容）、字典或列表
         def deserialize_attribute(attr_data, attr_class):
             """反序列化特性或持有物"""
             if isinstance(attr_data, str):
@@ -219,16 +219,10 @@ class Pokemon:
             name=name,
             name_zh=name_zh,
             index=index,
-            nickname=data.get("nickname", ""),  # 用户自定义昵称
-            slug=data.get("slug", ""),  # 地区形态信息
+            nickname=data.get("nickname", ""),
+            slug=data.get("slug", ""),
             ability=ability,
-            ability_zh=data.get("ability_zh", ""),
-            ability_description=data.get("ability_description", ""),
-            ability_description_zh=data.get("ability_description_zh", ""),
             held_item=held_item,
-            held_item_zh=data.get("held_item_zh", ""),
-            held_item_description=data.get("held_item_description", ""),
-            held_item_description_zh=data.get("held_item_description_zh", ""),
             stats=data.get("stats", {}),
             base_stats=data.get("base_stats", {}),
             evs=data.get("evs", {}),
@@ -264,21 +258,10 @@ class Pokemon:
             "types": self.types,
             "type_effectiveness": self.type_effectiveness,
             "moves": [
-                m.to_dict() if isinstance(m, Move) else m  # 处理 Move 对象或字典
+                m.to_dict() if isinstance(m, Move) else m
                 for m in self.moves
             ],
         }
-
-        # 仅当使用字符串模式时才添加这些字段（向后兼容）
-        if isinstance(self.ability, str):
-            result["ability_zh"] = self.ability_zh
-            result["ability_description"] = self.ability_description
-            result["ability_description_zh"] = self.ability_description_zh
-
-        if isinstance(self.held_item, str):
-            result["held_item_zh"] = self.held_item_zh
-            result["held_item_description"] = self.held_item_description
-            result["held_item_description_zh"] = self.held_item_description_zh
 
         if self.sprite:
             result["sprite"] = self.sprite
@@ -290,7 +273,7 @@ class Pokemon:
                     "form_name_zh": f.form_name_zh,
                     "base_stats": f.base_stats,
                     "stats": f.stats,
-                    "ability": f.ability.to_dict() if isinstance(f.ability, Ability) else f.ability,
+                    "ability": serialize_attribute(f.ability),
                     "types": f.types,
                     "type_effectiveness": f.type_effectiveness,
                     "sprite": f.sprite,

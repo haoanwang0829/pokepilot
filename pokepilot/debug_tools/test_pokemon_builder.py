@@ -26,8 +26,8 @@ def test_with_real_screenshots():
 def test_opponents_with_real_screenshot():
     """测试对手队伍识别"""
 
-    team = detect_opponents_team("C:\\Users\\wangh\\pokepilot\\screenshots\\opp_team\\frame_000000.png")
-
+    team = detect_opponents_team("C:\\Users\\wangh\\test\\pokepilot\\screenshots\\opp_team\\team.png")
+    print(team)
     output_file = Path("debug_output/parse_opp_team_test.json")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text(json.dumps([i.to_dict() for i in team['roster']], ensure_ascii=False, indent=2), encoding="utf-8")
