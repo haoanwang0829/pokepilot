@@ -3,3 +3,6 @@ numpy>=1.26.0
 flask>=2.3.0
 flask-cors>=4.0.0
 pillow>=10.0.0
+requests
+beautifulsoup4
+easyocr
