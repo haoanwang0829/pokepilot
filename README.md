@@ -1,4 +1,4 @@
-# PokePilot
+# PokePilot 宝可梦冠军对战小助手
 
 [English](README_EN.md) | **中文**
 
