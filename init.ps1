@@ -72,12 +72,11 @@ try {
 }
 Write-Host ""
 
-# 7. 构建数据库
-Write-Host "[7/7] 构建数据库..." -ForegroundColor Cyan
-python -m pokepilot.data.build_roster
+# 7. 初始化数据库
+Write-Host "[7/7] 初始化数据库..." -ForegroundColor Cyan
 python -m pokepilot.data.build_pikalytics
 python -m pokepilot.data.pokedb --all
-Write-Host "✓ 数据库构建完成" -ForegroundColor Green
+Write-Host "✓ 数据库初始化完成" -ForegroundColor Green
 Write-Host ""
 
 Write-Host "==========================================" -ForegroundColor Green

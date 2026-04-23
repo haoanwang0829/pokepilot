@@ -114,14 +114,11 @@ git sparse-checkout add sprites/types/generation-ix/scarlet-violet
 cd ..
 ```
 
-#### 4.4 Download and Build Data
+#### 4.4 Download and Initialize Data
 
 ```bash
 # Download sprites
 python -m pokepilot.data.download_sprites
-
-# Build Pokémon roster
-python -m pokepilot.data.build_roster
 
 # Build Pikalytics data
 python -m pokepilot.data.build_pikalytics

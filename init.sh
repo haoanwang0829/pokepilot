@@ -72,12 +72,11 @@ else
 fi
 echo ""
 
-# 7. 构建数据库
-echo "[7/7] 构建数据库..."
-python -m pokepilot.data.build_roster
+# 7. 初始化数据库
+echo "[7/7] 初始化数据库..."
 python -m pokepilot.data.build_pikalytics
 python -m pokepilot.data.pokedb --all
-echo "✓ 数据库构建完成"
+echo "✓ 数据库初始化完成"
 echo ""
 
 echo "=========================================="

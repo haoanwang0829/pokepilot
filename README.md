@@ -114,14 +114,11 @@ git sparse-checkout add sprites/types/generation-ix/scarlet-violet
 cd ..
 ```
 
-#### 4.4 下载和构建数据
+#### 4.4 下载和初始化数据
 
 ```bash
 # 下载精灵图
 python -m pokepilot.data.download_sprites
-
-# 构建宝可梦名册
-python -m pokepilot.data.build_roster
 
 # 构建Pikalytics数据
 python -m pokepilot.data.build_pikalytics
