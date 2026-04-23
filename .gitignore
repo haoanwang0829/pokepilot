@@ -138,6 +138,7 @@ sprites/
 screenshots/
 !data/type_effectiveness.json
 !data/manual.json
+！data/champions_roster.json
 
 # Claude Code
 .claude/

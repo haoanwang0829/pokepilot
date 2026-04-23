@@ -48,8 +48,28 @@ Write-Host ""
 
 # 6. 下载精灵图片
 Write-Host "[6/7] 下载精灵图片..." -ForegroundColor Cyan
-python -m pokepilot.data.download_sprites
-Write-Host "✓ 精灵图片下载完成" -ForegroundColor Green
+try {
+    python -m pokepilot.data.download_sprites -ErrorAction Stop
+    Write-Host "✓ 精灵图片下载完成" -ForegroundColor Green
+} catch {
+    Write-Host "⚠️ 在线下载精灵图片失败" -ForegroundColor Yellow
+    if (Test-Path "sprites.rar") {
+        Write-Host "✓ 检测到 sprites.rar，请手动解压：" -ForegroundColor Yellow
+        Write-Host "   右键点击 sprites.rar -> 解压到 sprites/" -ForegroundColor Yellow
+        Write-Host "   或使用命令: Expand-Archive sprites.rar -DestinationPath sprites" -ForegroundColor Yellow
+        $continue = Read-Host "是否继续其他初始化步骤？(y/n)"
+        if ($continue -ne "y" -and $continue -ne "Y") {
+            Write-Host "初始化中止" -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host "❌ 错误：在线下载失败，且未找到 sprites.rar" -ForegroundColor Red
+        Write-Host "解决方案：" -ForegroundColor Yellow
+        Write-Host "1. 检查网络连接" -ForegroundColor Yellow
+        Write-Host "2. 或手动下载sprites后放在项目根目录，重新运行脚本" -ForegroundColor Yellow
+        exit 1
+    }
+}
 Write-Host ""
 
 # 7. 构建数据库

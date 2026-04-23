@@ -53,9 +53,40 @@ powershell -ExecutionPolicy Bypass -File init.ps1
 bash init.sh
 ```
 
+**网络问题？** 如果在线下载Sprites失败，脚本会提示你手动解压 `sprites.rar`（如有）。
+
 ---
 
-### 4. 手动初始化（如果不使用脚本）
+### 4. 离线安装（如果网络下载失败）
+
+如果你无法在线下载Sprites，可以使用离线包：
+
+**前置条件：** 已获得 `sprites.rar` 文件
+
+**步骤：**
+
+1. 将 `sprites.rar` 放在项目根目录（pokepilot文件夹同级）
+
+2. **解压Sprites：**
+   
+   **Windows (PowerShell):**
+   ```powershell
+   Expand-Archive sprites.rar -DestinationPath sprites
+   ```
+   
+   **macOS / Linux (需要unrar):**
+   ```bash
+   unrar x sprites.rar
+   # 或使用其他解压工具：7z x sprites.rar
+   ```
+
+3. 继续运行初始化脚本或手动执行其他步骤
+
+**自动处理：** 如果 `sprites.rar` 在项目根目录，初始化脚本会自动检测并提示解压。
+
+---
+
+### 5. 手动初始化（如果不使用脚本）
 
 如果你需要逐步执行，请按以下步骤进行：
 

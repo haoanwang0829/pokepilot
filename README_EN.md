@@ -53,9 +53,40 @@ powershell -ExecutionPolicy Bypass -File init.ps1
 bash init.sh
 ```
 
+**Network Issues?** If online Sprite download fails, the script will prompt you to manually extract `sprites.rar` (if available).
+
 ---
 
-### 4. Manual Initialization (Alternative)
+### 4. Offline Installation (If Network Download Fails)
+
+If you cannot download Sprites online, you can use an offline package:
+
+**Prerequisite:** You have the `sprites.rar` file
+
+**Steps:**
+
+1. Place `sprites.rar` in the project root directory (same level as the pokepilot folder)
+
+2. **Extract Sprites:**
+   
+   **Windows (PowerShell):**
+   ```powershell
+   Expand-Archive sprites.rar -DestinationPath sprites
+   ```
+   
+   **macOS / Linux (requires unrar):**
+   ```bash
+   unrar x sprites.rar
+   # Or use other tools: 7z x sprites.rar
+   ```
+
+3. Continue with the initialization script or perform manual steps
+
+**Automatic Handling:** If `sprites.rar` is in the project root, the initialization script will automatically detect it and prompt you to extract.
+
+---
+
+### 5. Manual Initialization (Alternative)
 
 If you prefer to perform steps manually:
 

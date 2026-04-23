@@ -48,8 +48,28 @@ echo ""
 
 # 6. 下载精灵图片
 echo "[6/7] 下载精灵图片..."
-python -m pokepilot.data.download_sprites
-echo "✓ 精灵图片下载完成"
+if python -m pokepilot.data.download_sprites 2>/dev/null; then
+    echo "✓ 精灵图片下载完成"
+else
+    echo "⚠️ 在线下载精灵图片失败"
+    if [ -f "sprites.rar" ]; then
+        echo "✓ 检测到 sprites.rar，建议手动解压："
+        echo "   unrar x sprites.rar"
+        echo "   或使用其他解压工具解压 sprites.rar 到项目根目录"
+        read -p "是否要继续其他初始化步骤？(y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "初始化中止"
+            exit 1
+        fi
+    else
+        echo "❌ 错误：在线下载失败，且未找到 sprites.rar"
+        echo "解决方案："
+        echo "1. 检查网络连接"
+        echo "2. 或手动下载sprites后放在项目根目录，重新运行脚本"
+        exit 1
+    fi
+fi
 echo ""
 
 # 7. 构建数据库
