@@ -181,6 +181,12 @@ function stopOppSpeedDrag() {
 }
 
 
+function resetOppSpeedMarkerRatio() {
+    oppSpeedMarkerRatio = {};
+    stopOppSpeedDrag();
+}
+
+
 function renderCard(pokemon, side, index) {
     const inner = document.createElement('div');
     inner.className = 'card-inner';
@@ -847,6 +853,8 @@ async function generateOpponentTeam() {
     const data = await res.json();
     if (data.success) {
         currentTeams['opp-team'] = data.team.roster;
+        // 新对手队伍加载后，清空旧拖拽偏移，避免同槽位继承历史位置。
+        resetOppSpeedMarkerRatio();
         renderTeam(currentTeams['opp-team'], 'opp-team');
         logMsg(`对方队伍已生成`);
     } else {
