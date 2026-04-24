@@ -697,6 +697,34 @@ video {
     box-sizing: border-box;
 }
 
+.speed-axis-controls {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.speed-axis-toggle {
+    padding: 3px 8px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: #252526;
+    color: #aaa;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.speed-axis-toggle:hover {
+    border-color: #777;
+    color: #ddd;
+}
+
+.speed-axis-toggle.active {
+    border-color: #0d7377;
+    color: #4ec9b0;
+    background: rgba(13, 115, 119, 0.2);
+}
+
 .speed-opp-section {
     flex: 1;
     display: flex;
@@ -789,7 +817,12 @@ video {
     background-repeat: no-repeat;
     background-position: center;
     image-rendering: pixelated;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: grab;
+}
+
+.speed-opp-row.dragging .speed-opp-sprite {
+    cursor: grabbing;
 }
 
 .speed-opp-text {

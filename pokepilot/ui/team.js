@@ -24,6 +24,161 @@ const TYPE_ID_MAP = {
 let currentTeams = { 'my-team': [], 'opp-team': [] };
 // 虚化状态
 let fadedElements = { my: new Set(), opp: new Set() };
+// 对方速度图标拖拽位置（0~1，表示在范围内的相对位置）
+let oppSpeedMarkerRatio = {};
+let oppSpeedDragState = null;
+// 速度轴配置
+const MIN_SPEED = 50;
+const BASE_MAX_SPEED = 200;
+const MAX_SPEED_STEP = 10;
+const AXIS_MAJOR_STEP = 50;
+// 场地状态
+let speedFieldState = {
+    my_tailwind: false,
+    opp_tailwind: false
+};
+
+
+function getEffectiveSpeed(speed, hasTailwind) {
+    const value = Number(speed) || 0;
+    return hasTailwind ? value * 2 : value;
+}
+
+
+function getDynamicMaxSpeed() {
+    const maxCandidates = [];
+
+    (currentTeams['my-team'] || []).forEach((pokemon) => {
+        const speed = pokemon?.stats?.speed;
+        maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.my_tailwind));
+    });
+
+    (currentTeams['opp-team'] || []).forEach((pokemon) => {
+        const speed = pokemon?.stats?.speed;
+        if (Array.isArray(speed)) {
+            maxCandidates.push(getEffectiveSpeed(speed[0], speedFieldState.opp_tailwind));
+            maxCandidates.push(getEffectiveSpeed(speed[1], speedFieldState.opp_tailwind));
+        } else {
+            maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.opp_tailwind));
+        }
+    });
+
+    const currentMaxSpeed = Math.max(BASE_MAX_SPEED, ...maxCandidates);
+    return Math.ceil(currentMaxSpeed / MAX_SPEED_STEP) * MAX_SPEED_STEP;
+}
+
+
+function speedToPercent(speed, maxSpeed) {
+    if (maxSpeed <= MIN_SPEED) return 0;
+    const ratio = (speed - MIN_SPEED) / (maxSpeed - MIN_SPEED);
+    return Math.max(0, Math.min(ratio * 100, 100));
+}
+
+
+function updateTailwindButtons() {
+    const myTailwindButton = document.getElementById('btn-tailwind-my');
+    const oppTailwindButton = document.getElementById('btn-tailwind-opp');
+    if (myTailwindButton) myTailwindButton.classList.toggle('active', speedFieldState.my_tailwind);
+    if (oppTailwindButton) oppTailwindButton.classList.toggle('active', speedFieldState.opp_tailwind);
+}
+
+
+function toggleTailwind(side) {
+    if (side === 'my') {
+        speedFieldState.my_tailwind = !speedFieldState.my_tailwind;
+    } else if (side === 'opp') {
+        speedFieldState.opp_tailwind = !speedFieldState.opp_tailwind;
+    }
+    updateTailwindButtons();
+    renderSpeedAxis();
+}
+
+
+function renderSpeedAxisTicks(maxSpeed) {
+    const axisMain = document.getElementById('speed-axis-main');
+    if (!axisMain) return;
+
+    const staticTicks = axisMain.querySelectorAll('.speed-tick:not(.speed-my-tick)');
+    staticTicks.forEach((tick) => tick.remove());
+
+    const tickValues = [];
+    for (let value = MIN_SPEED; value <= maxSpeed; value += AXIS_MAJOR_STEP) {
+        tickValues.push(value);
+    }
+    if (!tickValues.includes(maxSpeed)) {
+        tickValues.push(maxSpeed);
+    }
+
+    tickValues.forEach((value) => {
+        const tickEl = document.createElement('div');
+        tickEl.className = 'speed-tick';
+        tickEl.style.left = `${speedToPercent(value, maxSpeed)}%`;
+        tickEl.innerHTML = `<span>${value}</span>`;
+        axisMain.appendChild(tickEl);
+    });
+}
+
+
+function clamp(value, minValue, maxValue) {
+    return Math.max(minValue, Math.min(value, maxValue));
+}
+
+
+function startOppSpeedDrag(event, globalIndex, rowEl, pctMin, pctMax) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rowRect = rowEl.getBoundingClientRect();
+    const rangeWidth = Math.max(pctMax - pctMin, 0.0001);
+    const currentRatio = clamp(oppSpeedMarkerRatio[globalIndex] ?? 0.5, 0, 1);
+    const currentPct = pctMin + rangeWidth * currentRatio;
+    const pointerPct = ((event.clientX - rowRect.left) / rowRect.width) * 100;
+    const pointerOffsetPct = pointerPct - currentPct;
+
+    oppSpeedDragState = {
+        globalIndex,
+        rowEl,
+        pctMin,
+        pctMax,
+        pointerOffsetPct
+    };
+
+    rowEl.classList.add('dragging');
+    document.addEventListener('mousemove', onOppSpeedDragMove);
+    document.addEventListener('mouseup', stopOppSpeedDrag);
+}
+
+
+function onOppSpeedDragMove(event) {
+    if (!oppSpeedDragState) return;
+
+    const { globalIndex, rowEl, pctMin, pctMax, pointerOffsetPct } = oppSpeedDragState;
+    const rowRect = rowEl.getBoundingClientRect();
+    if (!rowRect.width) return;
+
+    const pointerPct = ((event.clientX - rowRect.left) / rowRect.width) * 100;
+    const nextPct = clamp(pointerPct - pointerOffsetPct, pctMin, pctMax);
+    const rangeWidth = Math.max(pctMax - pctMin, 0.0001);
+    const nextRatio = clamp((nextPct - pctMin) / rangeWidth, 0, 1);
+
+    oppSpeedMarkerRatio[globalIndex] = nextRatio;
+
+    const spriteEl = rowEl.querySelector('.speed-opp-sprite');
+    if (spriteEl) {
+        spriteEl.style.left = `${nextPct}%`;
+    }
+}
+
+
+function stopOppSpeedDrag() {
+    if (oppSpeedDragState && oppSpeedDragState.rowEl) {
+        oppSpeedDragState.rowEl.classList.remove('dragging');
+    }
+
+    oppSpeedDragState = null;
+    document.removeEventListener('mousemove', onOppSpeedDragMove);
+    document.removeEventListener('mouseup', stopOppSpeedDrag);
+}
 
 
 function renderCard(pokemon, side, index) {
@@ -729,16 +884,17 @@ function toggleSpeedFade(side, index) {
 }
 
 function renderSpeedAxis() {
-    const MIN_SPEED = 50;
-    const MAX_SPEED = 200;
+    const maxSpeed = getDynamicMaxSpeed();
+    renderSpeedAxisTicks(maxSpeed);
 
     // 我方：sprite 画在轴上
     const myContainer = document.getElementById('speed-markers-my');
     if (myContainer) {
         myContainer.innerHTML = '';
         (currentTeams['my-team'] || []).forEach((p, index) => {
-            const spd = p.stats && p.stats.speed != null ? p.stats.speed : 0;
-            const pct = Math.max(0, Math.min((spd - MIN_SPEED) / (MAX_SPEED - MIN_SPEED) * 100, 100));
+            const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind);
+            const pct = speedToPercent(effectiveSpeed, maxSpeed);
             const label = p.name_zh || p.name || '?';
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
 
@@ -748,7 +904,7 @@ function renderSpeedAxis() {
             spriteEl.dataset.pokemonIndex = index;
             spriteEl.style.left = `${pct}%`;
             spriteEl.style.cursor = 'pointer';
-            spriteEl.title = `${label}: ${spd}`;
+            spriteEl.title = `${label}: ${effectiveSpeed}${speedFieldState.my_tailwind ? ` (${speed}×2)` : ''}`;
             if (spritePath) spriteEl.style.backgroundImage = `url('/sprites/${spritePath}')`;
             spriteEl.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -763,14 +919,15 @@ function renderSpeedAxis() {
         existingMyTicks.forEach(el => el.remove());
 
         (currentTeams['my-team'] || []).forEach((p, index) => {
-            const spd = p.stats && p.stats.speed != null ? p.stats.speed : 0;
-            const pct = Math.max(0, Math.min((spd - MIN_SPEED) / (MAX_SPEED - MIN_SPEED) * 100, 100));
+            const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind);
+            const pct = speedToPercent(effectiveSpeed, maxSpeed);
 
             const tickEl = document.createElement('div');
             tickEl.className = 'speed-tick speed-my-tick';
             tickEl.dataset.pokemonIndex = index;
             tickEl.style.left = `${pct}%`;
-            tickEl.innerHTML = `<span>${spd}</span>`;
+            tickEl.innerHTML = `<span>${effectiveSpeed}</span>`;
             axisMain.appendChild(tickEl);
         });
     }
@@ -783,9 +940,11 @@ function renderSpeedAxis() {
         pokemon.forEach((p, i) => {
             const globalIndex = startIndex + i;
             const spd = p.stats && p.stats.speed;
-            const [sMin, sMax] = Array.isArray(spd) ? spd : [spd || 0, spd || 0];
-            const pctMin = Math.max(0, Math.min((sMin - MIN_SPEED) / (MAX_SPEED - MIN_SPEED) * 100, 100));
-            const pctMax = Math.max(0, Math.min((sMax - MIN_SPEED) / (MAX_SPEED - MIN_SPEED) * 100, 100));
+            const [baseMin, baseMax] = Array.isArray(spd) ? spd : [spd || 0, spd || 0];
+            const sMin = getEffectiveSpeed(baseMin, speedFieldState.opp_tailwind);
+            const sMax = getEffectiveSpeed(baseMax, speedFieldState.opp_tailwind);
+            const pctMin = speedToPercent(sMin, maxSpeed);
+            const pctMax = speedToPercent(sMax, maxSpeed);
             const label = p.name_zh || p.name || '?';
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
 
@@ -793,7 +952,7 @@ function renderSpeedAxis() {
             rowEl.className = 'speed-opp-row';
             rowEl.dataset.pokemonIndex = globalIndex;
             rowEl.style.cursor = 'pointer';
-            rowEl.title = `${label}: ${sMin}–${sMax}`;
+            rowEl.title = `${label}: ${sMin}–${sMax}${speedFieldState.opp_tailwind ? ` (${baseMin}-${baseMax}×2)` : ''}`;
 
             // 范围条
             const barEl = document.createElement('div');
@@ -803,9 +962,11 @@ function renderSpeedAxis() {
             rowEl.appendChild(barEl);
 
             // 精灵图标（bar 中间）
-            const pctMid = (pctMin + pctMax) / 2;
+            const markerRatio = clamp(oppSpeedMarkerRatio[globalIndex] ?? 0.5, 0, 1);
+            const pctMid = pctMin + (pctMax - pctMin) * markerRatio;
             const spriteEl = document.createElement('div');
             spriteEl.className = 'speed-opp-sprite';
+            spriteEl.dataset.pokemonIndex = globalIndex;
             spriteEl.style.left = `${pctMid}%`;
             spriteEl.style.transform = 'translate(-50%, -50%)';
             if (spritePath) spriteEl.style.backgroundImage = `url('/sprites/${spritePath}')`;
@@ -834,8 +995,13 @@ function renderSpeedAxis() {
                 toggleSpeedFade('opp', globalIndex);
             };
             rowEl.addEventListener('click', clickHandler);
-            spriteEl.addEventListener('click', clickHandler);
             barEl.addEventListener('click', clickHandler);
+            spriteEl.addEventListener('mousedown', (event) => {
+                startOppSpeedDrag(event, globalIndex, rowEl, pctMin, pctMax);
+            });
+            spriteEl.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
 
             container.appendChild(rowEl);
         });
@@ -859,3 +1025,9 @@ function renderSpeedAxis() {
         if (row) row.style.opacity = '0.3';
     });
 }
+
+
+window.addEventListener('load', () => {
+    updateTailwindButtons();
+    renderSpeedAxis();
+});
