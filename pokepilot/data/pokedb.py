@@ -89,6 +89,7 @@ class PokeDB:
             self._data.setdefault("abilities", {})
 
             # 从 _data 生成中文映射表
+            self._name_mappings = {v['name_zh']: k.split('-')[0] for k, v in self._data.get('pokemon', {}).items() if v.get('name_zh')}
             self._move_mappings = {v['name_zh']: k for k, v in self._data.get('moves', {}).items() if v.get('name_zh')}
             self._item_mappings = {v['name_zh']: k for k, v in self._data.get('items', {}).items() if v.get('name_zh')}
             self._ability_mappings = {v['name_zh']: k for k, v in self._data.get('abilities', {}).items() if v.get('name_zh')}
@@ -141,6 +142,10 @@ class PokeDB:
             return mapping[matched_key]
 
         return fallback
+    
+    def name_zh_to_en(self, name_zh: str) -> str:
+        """中文招式名 → 英文招式名"""
+        return self._translate_with_preloaded(name_zh, self._name_mappings, name_zh)
 
     def move_zh_to_en(self, move_zh: str) -> str:
         """中文招式名 → 英文招式名"""

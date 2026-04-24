@@ -15,7 +15,7 @@
                 <div class="dropdown-menu">
                     <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); captureScreen('moves')">截取页面1</div>
                     <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); captureScreen('stats')">截取页面2</div>
-                    <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); generateTeam()">生成队伍</div>
+                    <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); identifyTeam()">识别队伍</div>
                     <div class="dropdown-item submenu-item" onclick="event.stopPropagation()">
                         读取队伍 ▶
                         <div class="submenu" id="load-team-submenu">
@@ -114,6 +114,22 @@
             <div class="info-group">
                 <div class="info-label">日志</div>
                 <div class="info-value" id="info-log">就绪</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 草稿编辑器模态框 -->
+    <div id="draft-editor-overlay">
+        <div class="draft-editor-box">
+            <div class="draft-editor-header">
+                <span>确认并编辑 OCR 结果</span>
+                <button class="draft-editor-close-btn" onclick="closeDraftEditor()">×</button>
+            </div>
+            <div class="draft-tab-bar" id="draft-tab-bar"></div>
+            <div id="draft-tab-panels"></div>
+            <div class="draft-editor-footer">
+                <button onclick="closeDraftEditor()">取消</button>
+                <button onclick="buildTeamFromDraft()">生成队伍</button>
             </div>
         </div>
     </div>

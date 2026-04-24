@@ -813,3 +813,237 @@ video {
     transform: translateY(-50%);
 }
 
+/* ==================== 草稿编辑器模态框 ==================== */
+#draft-editor-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+#draft-editor-overlay.open {
+    display: flex;
+}
+
+.draft-editor-box {
+    background: #1e1e1e;
+    color: #ccc;
+    border: 1px solid #444;
+    border-radius: 8px;
+    width: 680px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.draft-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #444;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.draft-editor-close-btn {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.draft-editor-close-btn:hover {
+    color: #ccc;
+}
+
+.draft-tab-bar {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.draft-tab-bar button {
+    background: #2d2d2d;
+    border: 1px solid #444;
+    color: #999;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.draft-tab-bar button:hover {
+    background: #3d3d3d;
+    color: #ccc;
+    border-color: #666;
+}
+
+.draft-tab-bar button.active {
+    background: #0d7377;
+    color: #fff;
+    border-color: #0d7377;
+}
+
+#draft-tab-panels {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.draft-tab-panel {
+    display: none;
+}
+
+.draft-tab-panel.active {
+    display: block;
+}
+
+.draft-pokemon-slot {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: #2d2d2d;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.draft-pokemon-sprite {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #444;
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.draft-pokemon-sprite img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.draft-pokemon-fields {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.draft-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.draft-field-group label {
+    font-size: 11px;
+    color: #999;
+    font-weight: 500;
+}
+
+.draft-field-group input {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+}
+
+.draft-field-group input:focus {
+    outline: none;
+    border-color: #0d7377;
+    background: #0a0a0a;
+    box-shadow: 0 0 4px rgba(13, 115, 119, 0.3);
+}
+
+.draft-field-group input[type="number"] {
+    width: 100%;
+}
+
+.draft-stats-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+}
+
+.draft-stats-row .draft-field-group {
+    gap: 2px;
+}
+
+.draft-stats-row .draft-field-group label {
+    font-size: 10px;
+}
+
+.draft-stats-row .draft-field-group input {
+    padding: 4px 6px;
+    font-size: 11px;
+}
+
+.draft-moves-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+.draft-editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #444;
+}
+
+.draft-editor-footer button {
+    background: #2d2d2d;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.draft-editor-footer button:hover {
+    background: #3d3d3d;
+    border-color: #666;
+}
+
+.draft-editor-footer button:last-child {
+    background: #0d7377;
+    border-color: #0d7377;
+    color: #fff;
+}
+
+.draft-editor-footer button:last-child:hover {
+    background: #0a5a5d;
+    border-color: #0a5a5d;
+}
+

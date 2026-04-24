@@ -306,17 +306,339 @@ async function deleteTeamSlot(slotId, slotName) {
     }
 }
 
-async function generateTeam() {
+async function identifyTeam() {
     closeAllMenus();
-    logMsg('正在生成队伍。请等待。');
+    logMsg('正在识别队伍。请等待。');
     const res = await fetch('/api/teams/generate', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-        currentTeams['my-team'] = data.team.roster;
-        renderTeam(currentTeams['my-team'], 'my-team');
-        logMsg(`队伍已生成到临时区`);
+        openDraftEditor(data.draft);
+        logMsg('识别完成，请编辑并确认。');
     } else {
-        logMsg(`生成失败：${data.error}`);
+        logMsg(`识别失败：${data.error}`);
+    }
+}
+
+let currentDraft = null;
+
+function openDraftEditor(draft) {
+    currentDraft = JSON.parse(JSON.stringify(draft));
+    const overlay = document.getElementById('draft-editor-overlay');
+    const tabBar = document.getElementById('draft-tab-bar');
+    const panels = document.getElementById('draft-tab-panels');
+
+    tabBar.innerHTML = '';
+    panels.innerHTML = '';
+
+    for (let i = 0; i < 6; i++) {
+        const detectCard = currentDraft.detect_cards[i] || {};
+        const moveCard = currentDraft.move_cards[i] || {};
+        const statCard = currentDraft.stat_cards[i] || {};
+
+        const tabBtn = document.createElement('button');
+        tabBtn.className = i === 0 ? 'active' : '';
+        tabBtn.textContent = `${i + 1}`;
+        tabBtn.onclick = () => switchDraftTab(i);
+        tabBar.appendChild(tabBtn);
+
+        const panel = document.createElement('div');
+        panel.className = `draft-tab-panel ${i === 0 ? 'active' : ''}`;
+        panel.id = `draft-panel-${i}`;
+
+        const slot = document.createElement('div');
+        slot.className = 'draft-pokemon-slot';
+
+        const sprite = document.createElement('div');
+        sprite.className = 'draft-pokemon-sprite';
+        const spriteImg = document.createElement('img');
+        spriteImg.id = `dc-sprite-${i}`;
+        if (detectCard.sprite_key) {
+            const spriteRelPath = detectCard.sprite_key.replace(/^sprites\//, '');
+            spriteImg.src = `/sprites/${spriteRelPath}`;
+        }
+        sprite.appendChild(spriteImg);
+
+        const fields = document.createElement('div');
+        fields.className = 'draft-pokemon-fields';
+
+        const slugGroup = createFieldGroup('Slug', `dc-slug-${i}`, detectCard.slug || '', false);
+        slugGroup.querySelector('input').onblur = () => lookupSlug(i);
+        fields.appendChild(slugGroup);
+
+        const nameGroup = createFieldGroup('Pokemon', `dc-name-${i}`, detectCard.name || '', true);
+        fields.appendChild(nameGroup);
+
+        const nameGroup2 = document.createElement('div');
+        nameGroup2.className = 'draft-field-group';
+        const nameLabel2 = document.createElement('label');
+        nameLabel2.textContent = '中文名';
+        const nameContainer = document.createElement('div');
+        nameContainer.style.display = 'flex';
+        nameContainer.style.gap = '4px';
+        const nameInputCN = document.createElement('input');
+        nameInputCN.id = `dc-name-zh-${i}`;
+        nameInputCN.type = 'text';
+        nameInputCN.placeholder = '输入中文名...';
+        nameInputCN.value = detectCard.name_zh || '';
+        nameContainer.appendChild(nameInputCN);
+        const queryBtn = document.createElement('button');
+        queryBtn.textContent = '查询';
+        queryBtn.style.padding = '6px 8px';
+        queryBtn.style.background = '#0d7377';
+        queryBtn.style.color = '#fff';
+        queryBtn.style.border = 'none';
+        queryBtn.style.borderRadius = '4px';
+        queryBtn.style.cursor = 'pointer';
+        queryBtn.style.fontSize = '12px';
+        queryBtn.onclick = () => lookupNameZh(i);
+        nameContainer.appendChild(queryBtn);
+        nameGroup2.appendChild(nameLabel2);
+        nameGroup2.appendChild(nameContainer);
+        fields.appendChild(nameGroup2);
+
+        const formGroup = document.createElement('div');
+        formGroup.className = 'draft-field-group';
+        const formLabel = document.createElement('label');
+        formLabel.textContent = 'Form';
+        const formSelect = document.createElement('select');
+        formSelect.id = `dc-form-${i}`;
+        formSelect.style.background = '#1a1a1a';
+        formSelect.style.border = '1px solid #444';
+        formSelect.style.color = '#ccc';
+        formSelect.style.padding = '6px 8px';
+        formSelect.style.borderRadius = '4px';
+        formSelect.style.fontSize = '12px';
+        formSelect.style.fontFamily = 'inherit';
+        formSelect.style.cursor = 'pointer';
+        formSelect.onchange = () => selectForm(i);
+        const optionDefault = document.createElement('option');
+        optionDefault.value = '';
+        optionDefault.textContent = '-- 选择 --';
+        formSelect.appendChild(optionDefault);
+        formGroup.appendChild(formLabel);
+        formGroup.appendChild(formSelect);
+        fields.appendChild(formGroup);
+
+        const nicknameGroup = createFieldGroup('昵称', `mc-nickname-${i}`, moveCard.nickname || '', false);
+        fields.appendChild(nicknameGroup);
+
+        const abilityGroup = createFieldGroup('特性', `mc-ability-${i}`, moveCard.ability || '', false);
+        fields.appendChild(abilityGroup);
+
+        const heldItemGroup = createFieldGroup('持有物', `mc-item-${i}`, moveCard.held_item || '', false);
+        fields.appendChild(heldItemGroup);
+
+        for (let j = 0; j < 4; j++) {
+            const moveGroup = createFieldGroup(`招式${j + 1}`, `mc-move-${i}-${j}`, moveCard.moves?.[j] || '', false);
+            fields.appendChild(moveGroup);
+        }
+
+        const statsRow = document.createElement('div');
+        statsRow.className = 'draft-stats-row';
+        const statNames = ['hp', 'attack', 'defense', 'sp_atk', 'sp_def', 'speed'];
+        const statLabels = ['HP', 'Atk', 'Def', 'SpA', 'SpD', 'Spe'];
+        for (let j = 0; j < 6; j++) {
+            const statGroup = createFieldGroup(
+                statLabels[j],
+                `sc-stat-${i}-${statNames[j]}`,
+                (statCard.stats?.[statNames[j]] || 0).toString(),
+                false,
+                'number'
+            );
+            statsRow.appendChild(statGroup);
+        }
+        fields.appendChild(statsRow);
+
+        const natureGroup = createFieldGroup('性格', `sc-nature-${i}`, statCard.nature || '', false);
+        natureGroup.style.gridColumn = '1 / -1';
+        fields.appendChild(natureGroup);
+
+        slot.appendChild(sprite);
+        slot.appendChild(fields);
+        panel.appendChild(slot);
+        panels.appendChild(panel);
+    }
+
+    overlay.classList.add('open');
+}
+
+function createFieldGroup(label, inputId, value, readonly, type = 'text') {
+    const group = document.createElement('div');
+    group.className = 'draft-field-group';
+
+    const labelEl = document.createElement('label');
+    labelEl.textContent = label;
+    labelEl.htmlFor = inputId;
+
+    const input = document.createElement('input');
+    input.id = inputId;
+    input.type = type;
+    input.value = value;
+    input.readOnly = readonly;
+
+    group.appendChild(labelEl);
+    group.appendChild(input);
+    return group;
+}
+
+function switchDraftTab(idx) {
+    const panels = document.querySelectorAll('.draft-tab-panel');
+    const buttons = document.querySelectorAll('.draft-tab-bar button');
+
+    panels.forEach((p, i) => {
+        p.classList.toggle('active', i === idx);
+    });
+
+    buttons.forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+    });
+}
+
+async function lookupSlug(slotIdx) {
+    const slugInput = document.getElementById(`dc-slug-${slotIdx}`);
+    const slug = slugInput.value.trim();
+
+    if (!slug) return;
+
+    try {
+        const res = await fetch(`/api/pokemon/detect-card/${slug}`);
+        const data = await res.json();
+        if (data.success) {
+            const card = data.card;
+            currentDraft.detect_cards[slotIdx] = card;
+
+            document.getElementById(`dc-name-${slotIdx}`).value = card.name || '';
+
+            const spriteImg = document.getElementById(`dc-sprite-${slotIdx}`);
+            if (card.sprite_key) {
+                const spriteRelPath = card.sprite_key.replace(/^sprites\//, '');
+                spriteImg.src = `/sprites/${spriteRelPath}`;
+            }
+
+            logMsg(`已更新 Slot ${slotIdx + 1}: ${card.name}`);
+        } else {
+            logMsg(`Slug "${slug}" 不存在`);
+        }
+    } catch (err) {
+        logMsg(`查询失败: ${err.message}`);
+    }
+}
+
+async function lookupNameZh(slotIdx) {
+    const nameInput = document.getElementById(`dc-name-zh-${slotIdx}`);
+    const nameZh = nameInput.value.trim();
+
+    if (!nameZh) return;
+
+    try {
+        const res = await fetch(`/api/pokemon/by-name-zh/${encodeURIComponent(nameZh)}`);
+        const data = await res.json();
+        if (data.success) {
+            const variants = data.variants;
+            const formSelect = document.getElementById(`dc-form-${slotIdx}`);
+            formSelect.innerHTML = '<option value="">-- 选择 --</option>';
+            variants.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.form || '';
+                opt.textContent = v.form || '(默认)';
+                formSelect.appendChild(opt);
+            });
+            // 自动选择第一个form（通常是默认的）
+            if (variants.length > 0) {
+                formSelect.value = variants[0].form || '';
+                await selectForm(slotIdx);
+            }
+            logMsg(`找到 ${variants.length} 个形态`);
+        } else {
+            logMsg(`中文名 "${nameZh}" 不存在`);
+        }
+    } catch (err) {
+        logMsg(`查询失败: ${err.message}`);
+    }
+}
+
+async function selectForm(slotIdx) {
+    const nameInput = document.getElementById(`dc-name-zh-${slotIdx}`);
+    const formSelect = document.getElementById(`dc-form-${slotIdx}`);
+    const nameZh = nameInput.value.trim();
+    const form = formSelect.value;
+
+    if (!nameZh) return;
+
+    try {
+        const formParam = form || '_none';
+        const res = await fetch(`/api/pokemon/detect-card-by-name-form/${encodeURIComponent(nameZh)}/${encodeURIComponent(formParam)}`);
+        const data = await res.json();
+        if (data.success) {
+            const card = data.card;
+            currentDraft.detect_cards[slotIdx] = card;
+
+            document.getElementById(`dc-slug-${slotIdx}`).value = card.slug || '';
+            document.getElementById(`dc-name-${slotIdx}`).value = card.name || '';
+
+            const spriteImg = document.getElementById(`dc-sprite-${slotIdx}`);
+            if (card.sprite_key) {
+                const spriteRelPath = card.sprite_key.replace(/^sprites\//, '');
+                spriteImg.src = `/sprites/${spriteRelPath}`;
+            }
+
+            logMsg(`已更新 Slot ${slotIdx + 1}: ${card.name}/${form || '默认'}`);
+        } else {
+            logMsg(`查询失败: ${data.error}`);
+        }
+    } catch (err) {
+        logMsg(`查询错误: ${err.message}`);
+    }
+}
+
+function closeDraftEditor() {
+    const overlay = document.getElementById('draft-editor-overlay');
+    overlay.classList.remove('open');
+    currentDraft = null;
+}
+
+async function buildTeamFromDraft() {
+    if (!currentDraft) return;
+
+    for (let i = 0; i < 6; i++) {
+        const moveCard = currentDraft.move_cards[i];
+        const statCard = currentDraft.stat_cards[i];
+
+        moveCard.nickname = document.getElementById(`mc-nickname-${i}`).value;
+        moveCard.ability = document.getElementById(`mc-ability-${i}`).value;
+        moveCard.held_item = document.getElementById(`mc-item-${i}`).value;
+        moveCard.moves = [
+            document.getElementById(`mc-move-${i}-0`).value,
+            document.getElementById(`mc-move-${i}-1`).value,
+            document.getElementById(`mc-move-${i}-2`).value,
+            document.getElementById(`mc-move-${i}-3`).value
+        ];
+
+        const statNames = ['hp', 'attack', 'defense', 'sp_atk', 'sp_def', 'speed'];
+        for (const statName of statNames) {
+            statCard.stats[statName] = parseInt(document.getElementById(`sc-stat-${i}-${statName}`).value) || 0;
+        }
+        statCard.nature = document.getElementById(`sc-nature-${i}`).value;
+    }
+
+    logMsg('正在生成队伍...');
+    try {
+        const res = await fetch('/api/teams/build', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentDraft)
+        });
+        const data = await res.json();
+        if (data.success) {
+            currentTeams['my-team'] = data.team.roster;
+            renderTeam(currentTeams['my-team'], 'my-team');
+            closeDraftEditor();
+            logMsg('队伍已生成！');
+        } else {
+            logMsg(`生成失败：${data.error}`);
+        }
+    } catch (err) {
+        logMsg(`生成错误: ${err.message}`);
     }
 }
 

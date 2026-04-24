@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 
 from pokepilot.tools.logger_util import setup_logger
+from pokepilot.data.pokedb import PokeDB
 
 logger = setup_logger(__name__)
 
@@ -45,6 +46,7 @@ class PokemonVariant:
     id: int
     name: str
     types: list[str]
+    form: str
     sprite_filename: str | None = None  # sprite 文件名，如 "Menu CP 0025.png"
     sprite_shiny_filename: str | None = None  # shiny sprite 文件名
     sprite: np.ndarray | None = None    # 加载后的 normal sprite 图片
@@ -93,8 +95,10 @@ def _remove_bg(img: np.ndarray, bg_color=None, tolerance: int = 30) -> np.ndarra
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask_fg = cv2.morphologyEx(mask_fg, cv2.MORPH_OPEN, kernel)
 
-    result = np.full_like(img, 255)
-    result[mask_fg > 0] = img[mask_fg > 0]
+    result = img.copy()
+    result[mask_fg == 0] = 0
+    # result = np.full_like(img, 255)
+    # result[mask_fg > 0] = img[mask_fg > 0]
     return result
 
 
@@ -133,6 +137,9 @@ class PokemonDetector:
         setup_logger(__name__, debug=debug)
         self.debug = debug
 
+        # 加载数据库
+        self.db = PokeDB()
+
         # 加载属性图标
         self.type_refs = self._load_type_refs()
 
@@ -149,6 +156,7 @@ class PokemonDetector:
                 slug=slug,
                 id=pokemon_data["id"],
                 name=pokemon_data["name"],
+                form=pokemon_data['form'],
                 types=pokemon_data.get("types", []),
                 sprite_filename=pokemon_data.get("sprite"),
                 sprite_shiny_filename=pokemon_data.get("sprite_shiny"),
@@ -308,7 +316,7 @@ class PokemonDetector:
         if types_found:
             candidates = [
                 v for v in self.variants.values()
-                if all(t in v.types for t in types_found) and "Mega" not in v.slug
+                if all(t in v.types for t in types_found) and "mega" not in v.slug
             ]
 
         # 如果候选为空，再尝试不排除 Mega
@@ -353,3 +361,68 @@ class PokemonDetector:
                 "score": round(score, 2),
                 "candidates_searched": n_searched,
             }
+
+    def get_variants_by_name(self, name: str) -> list[PokemonVariant]:
+        """按英文名字查找所有 variants（可能包含多个form）"""
+        return [v for v in self.variants.values() if v.name == name]
+
+    def get_detect_card_by_name_and_form(self, name_zh: str, form: str = "") -> dict | None:
+        """
+        根据中文名和form查询detect_card。
+        1. 通过PokeDB将中文名转为英文name
+        2. 查找匹配的variants
+        3. 按form过滤
+        4. 返回detect_card dict
+        """
+        try:
+            name_en = self.db.name_zh_to_en(name_zh)
+            if not name_en:
+                return None
+
+            matching_variants = self.get_variants_by_name(name_en)
+            if not matching_variants:
+                return None
+
+            variant = None
+            if form:
+                variant = next((v for v in matching_variants if v.form == form), None)
+            if not variant and matching_variants:
+                variant = matching_variants[0]
+
+            if not variant:
+                return None
+
+            sprite_filename = variant.sprite_filename
+            sprite_key = f"sprites/champions/{sprite_filename}" if sprite_filename else None
+
+            return {
+                "id": variant.id,
+                "name": variant.name,
+                "slug": variant.slug,
+                "sprite_key": sprite_key,
+                "types": variant.types,
+                "score": 0,
+                "candidates_searched": 0,
+            }
+        except Exception as e:
+            logger.error(f"查询detect_card失败: {e}")
+            return None
+
+    def get_detect_card_by_slug(self, slug: str) -> dict | None:
+        """根据 slug 查询 detect_card"""
+        variant = self.variants.get(slug)
+        if not variant:
+            return None
+
+        sprite_filename = variant.sprite_filename
+        sprite_key = f"sprites/champions/{sprite_filename}" if sprite_filename else None
+
+        return {
+            "id": variant.id,
+            "name": variant.name,
+            "slug": variant.slug,
+            "sprite_key": sprite_key,
+            "types": variant.types,
+            "score": 0,
+            "candidates_searched": 0,
+        }

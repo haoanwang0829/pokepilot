@@ -13,8 +13,10 @@ from pathlib import Path
 from flask import Flask, send_file, request, jsonify, send_from_directory
 from flask_cors import CORS
 from PIL import Image
-from pokepilot.detect_team.my_team.parse_team import parse_team
+from pokepilot.detect_team.my_team.parse_team import parse_team_init
 from pokepilot.detect_team.opponent_team.detect_opponents import detect_opponents_team
+from pokepilot.common.pokemon_detect import PokemonDetector
+from pokepilot.common.pokemon_builder import PokemonBuilder
 
 _ROOT = Path(__file__).parent
 PROJECT_ROOT = _ROOT.parent.parent
@@ -23,6 +25,16 @@ OPP_SCREENSHOTS_DIR = PROJECT_ROOT / "screenshots" / "opp_team"
 SPRITES_DIR = PROJECT_ROOT / "sprites"
 TEAM_DIR = PROJECT_ROOT / "data" / "my_team"
 OPP_TEAM_DIR = PROJECT_ROOT / "data" / "opp_team"
+
+# 全局 PokemonDetector 实例
+_pokemon_detector = None
+
+def get_detector():
+    """获取全局 PokemonDetector 实例（懒加载）"""
+    global _pokemon_detector
+    if _pokemon_detector is None:
+        _pokemon_detector = PokemonDetector()
+    return _pokemon_detector
 
 
 def create_app():
@@ -152,7 +164,7 @@ def create_app():
 
     @app.route("/api/teams/generate", methods=["POST"])
     def generate_team():
-        """从截图生成队伍，保存到 temp.json"""
+        """从截图提取 OCR 结果，保存到 draft.json，返回草稿供编辑"""
         try:
             moves_path = SCREENSHOTS_DIR / "moves.png"
             stats_path = SCREENSHOTS_DIR / "stats.png"
@@ -160,14 +172,56 @@ def create_app():
             if not moves_path.exists() or not stats_path.exists():
                 return jsonify({"success": False, "error": "缺少截图。请先截取页面1（moves）和页面2（stats）"}), 400
 
-            team = parse_team(str(moves_path), str(stats_path))
+            detect_cards, move_cards, stat_cards = parse_team_init(str(moves_path), str(stats_path), debug=True)
+
+            draft = {
+                "detect_cards": detect_cards,
+                "move_cards": move_cards,
+                "stat_cards": stat_cards
+            }
+
+            draft_path = TEAM_DIR / "draft.json"
+            TEAM_DIR.mkdir(parents=True, exist_ok=True)
+            with open(draft_path, "w", encoding="utf-8") as f:
+                json.dump(draft, f, ensure_ascii=False, indent=2)
+
+            return jsonify({
+                "success": True,
+                "draft": draft
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/teams/build", methods=["POST"])
+    def build_team():
+        """从编辑后的卡数据生成最终队伍，保存到 temp.json"""
+        try:
+            body = request.get_json() or {}
+            detect_cards = body.get("detect_cards", [])
+            move_cards = body.get("move_cards", [])
+            stat_cards = body.get("stat_cards", [])
+
+            if not (detect_cards and move_cards and stat_cards):
+                return jsonify({"success": False, "error": "缺少卡数据"}), 400
+
+            builder = PokemonBuilder()
+            roster = []
+            for dc, mc, sc in zip(detect_cards, move_cards, stat_cards):
+                pokemon = builder.build_pokemon(
+                    detect_data=dc,
+                    moves_data=mc,
+                    stats_data=sc,
+                    language="zh"
+                )
+                roster.append(pokemon)
+
+            team_data = {
+                "trainer_name": "",
+                "roster": [p.to_dict() if hasattr(p, 'to_dict') else p for p in roster]
+            }
 
             output_path = TEAM_DIR / "temp.json"
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            team_data = {
-                "trainer_name": team.get("trainer_name", ""),
-                "roster": [p.to_dict() if hasattr(p, 'to_dict') else p for p in team.get("roster", [])]
-            }
+            TEAM_DIR.mkdir(parents=True, exist_ok=True)
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(team_data, f, ensure_ascii=False, indent=2)
 
@@ -176,6 +230,60 @@ def create_app():
                 "team": team_data,
                 "slot": "temp"
             })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/pokemon/detect-card/<slug>")
+    def pokemon_detect_card(slug):
+        """根据 slug 查询宝可梦的 detect_card 数据"""
+        try:
+            detector = get_detector()
+            card = detector.get_detect_card_by_slug(slug)
+            if card:
+                return jsonify({"success": True, "card": card})
+            return jsonify({"success": False, "error": "slug 不存在"}), 404
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/pokemon/by-name-zh/<name_zh>")
+    def pokemon_by_name_zh(name_zh):
+        """根据中文名查询宝可梦，返回所有匹配的variants（用于form下拉）"""
+        try:
+            detector = get_detector()
+            db = detector.db
+            name_en = db.name_zh_to_en(name_zh)
+            if not name_en:
+                return jsonify({"success": False, "error": f"中文名 '{name_zh}' 不存在"}), 404
+
+            variants = detector.get_variants_by_name(name_en)
+            if not variants:
+                return jsonify({"success": False, "error": f"英文名 '{name_en}' 不存在"}), 404
+
+            result = []
+            for v in variants:
+                sprite_filename = v.sprite_filename
+                sprite_key = f"sprites/champions/{sprite_filename}" if sprite_filename else None
+                result.append({
+                    "id": v.id,
+                    "name": v.name,
+                    "slug": v.slug,
+                    "form": v.form or "",
+                    "sprite_key": sprite_key,
+                    "types": v.types,
+                })
+            return jsonify({"success": True, "variants": result})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/pokemon/detect-card-by-name-form/<name_zh>/<form>")
+    def pokemon_detect_card_by_name_form(name_zh, form):
+        """根据中文名和form查询 detect_card"""
+        try:
+            detector = get_detector()
+            card = detector.get_detect_card_by_name_and_form(name_zh, form if form != "_none" else "")
+            if card:
+                return jsonify({"success": True, "card": card})
+            return jsonify({"success": False, "error": f"未找到: {name_zh}/{form}"}), 404
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
