@@ -99,10 +99,14 @@ def _compute_damage_range(attacker, defender, move):
 
     stab = 1.5 if move_type in attacker.get("types", []) else 1.0
     # 最低伤害：最低 roll + 对方最大防御
-    damage_min = _compute_damage_with_roll(power, atk_stat, def_max, stab, type_multiplier, 85)
+    is_guaranteed_crit = _is_guaranteed_crit_move(move)
+    crit_modifier = 1.5 if is_guaranteed_crit else 1.0
+    damage_min = _compute_damage_with_roll(
+        power, atk_stat, def_max, stab * crit_modifier, type_multiplier, 85
+    )
     # 最高伤害：最高 roll + 对方最小防御
     damage_max = _compute_damage_with_roll(
-        power, atk_stat, max(def_min, 1), stab, type_multiplier, 100
+        power, atk_stat, max(def_min, 1), stab * crit_modifier, type_multiplier, 100
     )
     hp_pct_min = round(damage_min * 100 / hp_max, 2)
     hp_pct_max = round(damage_max * 100 / hp_min, 2)
@@ -113,6 +117,7 @@ def _compute_damage_range(attacker, defender, move):
         "hp_pct_min": hp_pct_min,
         "hp_pct_max": hp_pct_max,
         "type_multiplier": type_multiplier,
+        "is_guaranteed_crit": is_guaranteed_crit,
     }
 
 
@@ -189,6 +194,27 @@ def _is_multi_hit_move(move):
     if any(token in short_effect for token in multi_hit_tokens):
         return True
     if "连续" in short_effect_zh and "攻击" in short_effect_zh:
+        return True
+    return False
+
+
+def _is_guaranteed_crit_move(move):
+    """识别必定击中要害技能。"""
+    move_name = (move.get("name") or "").lower().strip().replace(" ", "-").replace("_", "-")
+    short_effect = (move.get("short_effect") or "").lower()
+    short_effect_zh = move.get("short_effect_zh") or ""
+    always_crit_moves = {
+        "wicked-blow",
+        "surging-strikes",
+        "flower-trick",
+        "frost-breath",
+        "storm-throw",
+    }
+    if move_name in always_crit_moves:
+        return True
+    if "always results in a critical hit" in short_effect:
+        return True
+    if "必定会击中要害" in short_effect_zh:
         return True
     return False
 
@@ -533,6 +559,7 @@ def create_app():
                 "battle_mode": battle_mode,
                 "is_spread_move": is_spread,
                 "is_multi_hit": _is_multi_hit_move(move),
+                "is_guaranteed_crit": _is_guaranteed_crit_move(move),
                 "rows": rows,
             })
         except Exception as e:

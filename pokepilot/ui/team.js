@@ -39,6 +39,7 @@ let speedFieldState = {
 };
 let moveDamageDragState = null;
 let battleMode = 'double';
+let lastDamageQuery = null;
 
 
 function getEffectiveSpeed(speed, hasTailwind) {
@@ -510,6 +511,7 @@ async function showMoveDamageRange(side, pokemonIndex, moveIndex) {
     }
 
     const move = attacker.moves[moveIndex];
+    lastDamageQuery = { side, pokemonIndex, moveIndex };
     title.textContent = `${attacker.name_zh || attacker.name} - ${move.name_zh || move.name}`;
     content.textContent = '计算中...';
     overlay.classList.add('open');
@@ -545,6 +547,9 @@ async function showMoveDamageRange(side, pokemonIndex, moveIndex) {
         }
         if (data.is_multi_hit) {
             title.textContent += '（多段技能，当前为单段伤害）';
+        }
+        if (data.is_guaranteed_crit) {
+            title.textContent += '（必定要害修正）';
         }
         renderMoveDamageRows(data.rows || []);
     } catch (err) {
@@ -1014,6 +1019,14 @@ function switchEvoform(side, index, evoIndex) {
     }
 
     renderTeam(team, side);
+    const overlay = document.getElementById('move-damage-overlay');
+    if (overlay && overlay.classList.contains('open') && lastDamageQuery) {
+        showMoveDamageRange(
+            lastDamageQuery.side,
+            lastDamageQuery.pokemonIndex,
+            lastDamageQuery.moveIndex
+        );
+    }
 }
 
 async function generateOpponentTeam() {
