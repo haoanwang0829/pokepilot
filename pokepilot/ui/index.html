@@ -57,6 +57,7 @@
                     <div class="dropdown-item" id="btn-stop" onclick="stopCapture()" disabled>停止</div>
                 </div>
             </div>
+            <div class="menu-item" onclick="viewTypeEffectiveness()">查看伤害克制</div>
             <div class="menu-item" onclick="captureScreen('opp_team')">截取对方队伍</div>
             <div class="menu-item" onclick="generateOpponentTeam()">生成对方队伍</div>
 
@@ -133,7 +134,26 @@
             </div>
         </div>
     </div>
-
+    <!-- 伤害克制表弹窗 -->
+    <div id="type-effect-overlay">
+        <div class="effect-table-box">
+            <button class="effect-close-btn" onclick="closeTypeEffect()">×</button>
+            <div class="effect-table-container">
+                <!-- 左侧我方6行宝可梦 -->
+                <div class="effect-side my-side">
+                    <!-- <div class="effect-side-title">我方队伍</div> -->
+                    <div id="my-effect-rows"></div>
+                </div>
+                <!-- 中间分隔 -->
+                <div class="effect-divider"></div>
+                <!-- 右侧对方6行宝可梦 -->
+                <div class="effect-side opp-side">
+                    <!-- <div class="effect-side-title">对方队伍</div> -->
+                    <div id="opp-effect-rows"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
     <script src="team.js"></script>
 </body>

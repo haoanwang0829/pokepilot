@@ -1080,3 +1080,365 @@ video {
     border-color: #0a5a5d;
 }
 
+
+/* ==================== 属性克制表模态框 ==================== */
+#type-effect-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+#type-effect-overlay.open {
+    display: flex;
+}
+
+.effect-table-box {
+    background: #2d2d2d;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 98vw;
+    min-width: 1200px;
+    max-height: 90vh;
+    overflow: auto;
+    position: relative;
+}
+
+.effect-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #444;
+    border: none;
+    color: #ccc;
+    font-size: 24px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.effect-close-btn:hover {
+    background: #555;
+}
+
+.effect-table-container {
+    display: flex;
+    gap: 30px;
+    margin-top: 10px;
+}
+
+.effect-side {
+    flex: 1;
+    min-width: 400px;
+}
+
+.effect-side-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 12px;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #444;
+}
+
+.effect-divider {
+    width: 2px;
+    background: #444;
+    margin: 0 10px;
+}
+
+.effect-row {
+    display: flex;
+    align-items: stretch;
+    margin-bottom: 8px;
+    min-height: 60px;
+    background: #1e1e1e;
+    border-radius: 6px;
+    padding: 8px;
+    gap: 8px;
+}
+
+.effect-row-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 14px;
+    width: 100%;
+}
+
+.effect-avatar {
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.effect-avatar img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+.effect-pokemon-name {
+    font-size: 11px;
+    color: #ccc;
+    text-align: center;
+    margin-top: 4px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.effect-moves {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.effect-move-chip {
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.move-name {
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.move-stats-mini {
+    font-size: 9px;
+    opacity: 0.8;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.effect-move-empty {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    padding: 8px;
+}
+
+/* 表头样式 */
+.effect-header {
+    display: flex;
+    align-items: stretch;
+    margin-bottom: 8px;
+    padding: 8px;
+    gap: 8px;
+    background: #252525;
+    border-radius: 6px;
+    border-bottom: 2px solid #444;
+}
+
+.effect-avatar-placeholder {
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.effect-moves-placeholder {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+.effect-damage-header {
+    display: grid;
+    grid-template-columns: repeat(6, 50px);
+    gap: 0;
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.effect-damage-item-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #ccc;
+    text-align: center;
+}
+
+.effect-damage-item-header img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: 2px;
+}
+
+.effect-damage-item-header span {
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.type-icon-mini {
+    width: 16px;
+    height: 16px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.effect-damage-grid {
+    width: 300px;
+    flex-shrink:0;
+}
+
+.effect-damage-row {
+    display: grid;
+    grid-template-columns: repeat(6, 50px);
+    gap: 0;
+    margin-bottom: 3px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 3px;
+}
+
+.effect-damage-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.effect-damage-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.effect-damage-header {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.effect-damage-item-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #ccc;
+    text-align: center;
+}
+
+.effect-damage-header {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.effect-damage-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    padding: 2px 0;
+}
+
+.effect-damage-value {
+    padding: 3px 4px;
+    border-radius: 2px;
+    font-weight: 600;
+    font-size: 10px;
+    text-align: center;
+    display: block;
+    width: 100%;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.effect-damage-value:last-child {
+    border-bottom: none;
+}
+
+.effect-damage-placeholder {
+    display: block;
+    width: 100%;
+    height: 16px;
+    visibility: hidden;
+}
+
+.dmg-normal {
+    background: #555;
+    color: #ccc;
+}
+
+.dmg-immune {
+    background: #333;
+    color: #888;
+}
+
+.dmg-quarter {
+    background: #1a3a5c;
+    color: #5ba0e0;
+}
+
+.dmg-half {
+    background: #1a4a3a;
+    color: #5be090;
+}
+
+.dmg-2x {
+    background: #4a2a1a;
+    color: #e0905b;
+}
+
+.dmg-4x {
+    background: #5a1a1a;
+    color: #e05050;
+}
+
+/* 技能类型颜色 */
+.type-normal { background: #A8A878; }
+.type-fighting { background: #C03028; }
+.type-flying { background: #A890F0; }
+.type-poison { background: #A040A0; }
+.type-ground { background: #E0C068; }
+.type-rock { background: #B8A038; }
+.type-bug { background: #A8B820; }
+.type-ghost { background: #705898; }
+.type-steel { background: #B8B8D0; }
+.type-fire { background: #F08030; }
+.type-water { background: #6890F0; }
+.type-grass { background: #78C850; }
+.type-electric { background: #F8D030; }
+.type-psychic { background: #F85888; }
+.type-ice { background: #98D8D8; }
+.type-dragon { background: #7038F8; }
+.type-dark { background: #705848; }
+.type-fairy { background: #EE99AC; }

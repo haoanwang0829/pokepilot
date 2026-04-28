@@ -1039,3 +1039,206 @@ window.addEventListener('load', () => {
     updateTailwindButtons();
     renderSpeedAxis();
 });
+
+// ===== 查看伤害克制关系=====
+function viewTypeEffectiveness(){
+    const overlay = document.getElementById('type-effect-overlay');
+    const myRows = document.getElementById('my-effect-rows');
+    const oppRows = document.getElementById('opp-effect-rows');
+
+    // 清空旧内容
+    myRows.innerHTML = '';
+    oppRows.innerHTML = '';
+
+    const myTeam = currentTeams['my-team'] || [];
+    const oppTeam = currentTeams['opp-team'] || [];
+
+    // 我方侧：表头（对方6只宝可梦头像）
+    const myHeader = document.createElement('div');
+    myHeader.className = 'effect-header';
+    myHeader.innerHTML = `
+        <div class="effect-avatar-placeholder"></div>
+        <div class="effect-moves-placeholder"></div>
+        <div class="effect-damage-header">
+            ${oppTeam.map((oppPokemon, idx) => {
+                if (!oppPokemon) return '<div class="effect-damage-item-header"></div>';
+                const spritePath = oppPokemon.sprite ? oppPokemon.sprite.replace(/^sprites\//, '') : '';
+                const pokemonName = oppPokemon.name_zh || oppPokemon.name || '?';
+                return `<div class="effect-damage-item-header" title="${pokemonName}">
+                    <img src="/sprites/${spritePath}" alt="${pokemonName}">
+                    <span>${pokemonName}</span>
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+    myRows.appendChild(myHeader);
+
+    // 渲染我方6行
+    for (let i = 0; i < 6; i++) {
+        const myPokemon = myTeam[i];
+        const row = document.createElement('div');
+        row.className = 'effect-row';
+
+        if (!myPokemon) {
+            row.innerHTML = `<div class="effect-row-empty">我方 ${i+1}</div>`;
+        } else {
+            const spritePath = myPokemon.sprite ? myPokemon.sprite.replace(/^sprites\//, '') : '';
+            const pokemonName = myPokemon.name_zh || myPokemon.name || '?';
+
+            // 左侧头像
+            const avatarHtml = `
+                <div class="effect-avatar">
+                    ${spritePath ? `<img src="/sprites/${spritePath}" alt="${pokemonName}">` : ''}
+                    <div class="effect-pokemon-name">${pokemonName}</div>
+                </div>
+            `;
+
+            // 中间技能列表
+            const movesHtml = `
+                <div class="effect-moves">
+                    ${(myPokemon.moves || []).map(m => {
+                        const moveName = m.name_zh || m.name || '';
+                        const moveType = m.type || '';
+                        const typeId = TYPE_ID_MAP[moveType] || 1;
+                        const power = m.power !== null ? m.power : '-';
+                        const accuracy = m.accuracy !== null ? m.accuracy : '-';
+                        return `<div class="effect-move-chip type-${moveType.toLowerCase()}" title="${moveType}">
+                            <span class="move-name">${moveName}</span>
+                            <div class="type-icon-mini" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>
+                            <span class="move-stats-mini">${power}/${accuracy}</span>
+                        </div>`;
+                    }).join('') || '<div class="effect-move-empty">无技能</div>'}
+                </div>
+            `;
+
+            // 右侧伤害列表(对对方6只宝可梦) - 每个技能一行
+            const damageHtml = `
+                <div class="effect-damage-grid">
+                    ${(myPokemon.moves || []).map(m => {
+                        const moveType = (m.type || '').toLowerCase();
+                        const power = m.power;
+                        const moveName = m.name_zh || m.name || '';
+                        return `<div class="effect-damage-row" title="${moveName}">
+                            ${oppTeam.map(oppPokemon => {
+                                if (!oppPokemon) return '<div class="effect-damage-cell">-</div>';
+                                if (power === 0 || power === null) return '<div class="effect-damage-cell"><span class="effect-damage-placeholder"></span></div>';
+                                const oppName = oppPokemon.name_zh || oppPokemon.name || '?';
+                                const effectiveness = oppPokemon.type_effectiveness || {};
+                                const mult = effectiveness[moveType] !== undefined ? effectiveness[moveType] : 1;
+                                let cls = 'dmg-normal';
+                                if (mult === 0) cls = 'dmg-immune';
+                                else if (mult === 0.25) cls = 'dmg-quarter';
+                                else if (mult === 0.5) cls = 'dmg-half';
+                                else if (mult === 2) cls = 'dmg-2x';
+                                else if (mult === 4) cls = 'dmg-4x';
+                                return `<div class="effect-damage-cell"><span class="effect-damage-value ${cls}" title="${oppName}">${mult === 0 ? '0x' : mult+'×'}</span></div>`;
+                            }).join('')}
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+
+            row.innerHTML = avatarHtml + movesHtml + damageHtml;
+        }
+
+        myRows.appendChild(row);
+    }
+
+    // 对方侧：表头（我方6只宝可梦头像）
+    const oppHeader = document.createElement('div');
+    oppHeader.className = 'effect-header';
+    oppHeader.innerHTML = `
+        <div class="effect-damage-list effect-damage-header">
+            ${myTeam.map((myPokemon, idx) => {
+                if (!myPokemon) return '<div class="effect-damage-item-header"></div>';
+                const spritePath = myPokemon.sprite ? myPokemon.sprite.replace(/^sprites\//, '') : '';
+                const pokemonName = myPokemon.name_zh || myPokemon.name || '?';
+                return `<div class="effect-damage-item-header" title="${pokemonName}">
+                    <img src="/sprites/${spritePath}" alt="${pokemonName}">
+                    <span>${pokemonName}</span>
+                </div>`;
+            }).join('')}
+        </div>
+        <div class="effect-moves-placeholder"></div>
+        <div class="effect-avatar-placeholder"></div>
+    `;
+    oppRows.appendChild(oppHeader);
+
+    // 渲染对方6行
+    for (let i = 0; i < 6; i++) {
+        const oppPokemon = oppTeam[i];
+        const row = document.createElement('div');
+        row.className = 'effect-row';
+
+        if (!oppPokemon) {
+            row.innerHTML = `<div class="effect-row-empty">对方 ${i+1}</div>`;
+        } else {
+            const spritePath = oppPokemon.sprite ? oppPokemon.sprite.replace(/^sprites\//, '') : '';
+            const pokemonName = oppPokemon.name_zh || oppPokemon.name || '?';
+
+            // 左侧伤害列表(对我方6只宝可梦) - 每个技能一行
+            const damageHtml = `
+                <div class="effect-damage-grid">
+                    ${(oppPokemon.moves || []).map(m => {
+                        const moveType = (m.type || '').toLowerCase();
+                        const power = m.power;
+                        const moveName = m.name_zh || m.name || '';
+                        return `<div class="effect-damage-row" title="${moveName}">
+                            ${myTeam.map(myPokemon => {
+                                if (!myPokemon) return '<div class="effect-damage-cell">-</div>';
+                                if (power === 0 || power === null) return '<div class="effect-damage-cell"><span class="effect-damage-placeholder"></span></div>';
+                                const myName = myPokemon.name_zh || myPokemon.name || '?';
+                                const effectiveness = myPokemon.type_effectiveness || {};
+                                const mult = effectiveness[moveType] !== undefined ? effectiveness[moveType] : 1;
+                                let cls = 'dmg-normal';
+                                if (mult === 0) cls = 'dmg-immune';
+                                else if (mult === 0.25) cls = 'dmg-quarter';
+                                else if (mult === 0.5) cls = 'dmg-half';
+                                else if (mult === 2) cls = 'dmg-2x';
+                                else if (mult === 4) cls = 'dmg-4x';
+                                return `<div class="effect-damage-cell"><span class="effect-damage-value ${cls}" title="${myName}">${mult === 0 ? '无' : mult+'×'}</span></div>`;
+                            }).join('')}
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+
+            // 中间技能列表
+            const movesHtml = `
+                <div class="effect-moves">
+                    ${(oppPokemon.moves || []).map(m => {
+                        const moveName = m.name_zh || m.name || '';
+                        const moveType = m.type || '';
+                        const typeId = TYPE_ID_MAP[moveType] || 1;
+                        const power = m.power !== null ? m.power : '-';
+                        const accuracy = m.accuracy !== null ? m.accuracy : '-';
+                        return `<div class="effect-move-chip type-${moveType.toLowerCase()}" title="${moveType}">
+                            <span class="move-name">${moveName}</span>
+                            <div class="type-icon-mini" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>
+                            <span class="move-stats-mini">${power}/${accuracy}</span>
+                        </div>`;
+                    }).join('') || '<div class="effect-move-empty">无技能</div>'}
+                </div>
+            `;
+
+            // 右侧头像
+            const avatarHtml = `
+                <div class="effect-avatar">
+                    ${spritePath ? `<img src="/sprites/${spritePath}" alt="${pokemonName}">` : ''}
+                    <div class="effect-pokemon-name">${pokemonName}</div>
+                </div>
+            `;
+
+            row.innerHTML = damageHtml + movesHtml + avatarHtml;
+        }
+
+        oppRows.appendChild(row);
+    }
+
+    overlay.classList.add('open');
+}
+
+function closeTypeEffect(){
+    const overlay = document.getElementById('type-effect-overlay');
+    overlay.classList.remove('open');
+}
