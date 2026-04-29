@@ -558,6 +558,10 @@ video {
     box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
 }
 
+.move-chip.clickable {
+    cursor: pointer;
+}
+
 .move-stats {
     font-size: 9px;
     opacity: 0.9;
@@ -1080,7 +1084,6 @@ video {
     border-color: #0a5a5d;
 }
 
-
 /* ==================== 属性克制表模态框 ==================== */
 #type-effect-overlay {
     display: none;
@@ -1442,3 +1445,83 @@ video {
 .type-dragon { background: #7038F8; }
 .type-dark { background: #705848; }
 .type-fairy { background: #EE99AC; }
+
+.move-damage-overlay {
+    position: fixed;
+    right: 16px;
+    top: 48px;
+    width: 360px;
+    max-height: 70vh;
+    border: 1px solid #3e3e42;
+    background: #1e1e1e;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    z-index: 1100;
+    display: none;
+    flex-direction: column;
+}
+
+.move-damage-overlay.open {
+    display: flex;
+}
+
+.move-damage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid #3e3e42;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: move;
+    user-select: none;
+}
+
+.move-damage-header button {
+    border: 1px solid #555;
+    background: #2d2d2d;
+    color: #ddd;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.move-damage-content {
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.move-damage-row {
+    background: #252526;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.move-damage-row-name {
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.move-damage-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.move-damage-type-icons {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.move-damage-row-range {
+    margin-top: 4px;
+    color: #4ec9b0;
+}
+

@@ -37,6 +37,9 @@ let speedFieldState = {
     my_tailwind: false,
     opp_tailwind: false
 };
+let moveDamageDragState = null;
+let battleMode = 'double';
+let activeDamageQuery = null;
 
 
 function getEffectiveSpeed(speed, hasTailwind) {
@@ -233,13 +236,18 @@ function renderCard(pokemon, side, index) {
     }
 
     // 招式（用属性颜色作为背景，显示威力/准确度）
-    const moves = pokemon.moves.map(m => {
+    const moves = pokemon.moves.map((m, moveIdx) => {
         const powerAccuracy = m.power !== null ? `${m.power}/${m.accuracy ?? '-'}` : '-/-';
+        const priorityText = Number(m.priority || 0) !== 0 ? ` P${Number(m.priority) >= 0 ? '+' : ''}${m.priority}` : '';
         const desc = m.short_effect_zh || m.short_effect || '';
         const pctStr = m.pct ? `使用率: ${Math.round(m.pct * 100)}%` : '';
         const moveTitle = [desc, pctStr].filter(Boolean).join('\n');
         const moveName = m.name_zh || m.name || '';
-        return `<div class="move-chip type-${m.type.toLowerCase()}" title="${moveTitle.replace(/"/g, '&quot;')}">${moveName}<span class="move-stats">${powerAccuracy}</span></div>`;
+        const clickableClass = (side === 'my-team' || side === 'opp-team') ? ' clickable' : '';
+        const clickAttr = (side === 'my-team' || side === 'opp-team')
+            ? ` onclick="showMoveDamageRange('${side}', ${index}, ${moveIdx})"`
+            : '';
+        return `<div class="move-chip type-${m.type.toLowerCase()}${clickableClass}" title="${moveTitle.replace(/"/g, '&quot;')}"${clickAttr}>${moveName}<span class="move-stats">${powerAccuracy}${priorityText}</span></div>`;
     }).join('');
 
     // Stats barplot 显示
@@ -384,8 +392,175 @@ function renderTeam(team, side) {
     renderSpeedAxis();
 }
 
+
+function closeMoveDamageOverlay() {
+    const overlay = document.getElementById('move-damage-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('open');
+}
+
+
+function updateBattleModeToggleLabel() {
+    const toggle = document.getElementById('battle-mode-toggle');
+    if (!toggle) return;
+    toggle.textContent = battleMode === 'double' ? '双打' : '单打';
+}
+
+
+function toggleBattleMode() {
+    battleMode = battleMode === 'double' ? 'single' : 'double';
+    updateBattleModeToggleLabel();
+}
+
+
+function onMoveDamageOverlayDragMove(event) {
+    if (!moveDamageDragState) return;
+    const overlay = moveDamageDragState.overlay;
+    const nextLeft = event.clientX - moveDamageDragState.offsetX;
+    const nextTop = event.clientY - moveDamageDragState.offsetY;
+    overlay.style.left = `${Math.max(0, nextLeft)}px`;
+    overlay.style.top = `${Math.max(0, nextTop)}px`;
+    overlay.style.right = 'auto';
+}
+
+
+function stopMoveDamageOverlayDrag() {
+    moveDamageDragState = null;
+    document.removeEventListener('mousemove', onMoveDamageOverlayDragMove);
+    document.removeEventListener('mouseup', stopMoveDamageOverlayDrag);
+}
+
+
+function startMoveDamageOverlayDrag(event) {
+    const overlay = document.getElementById('move-damage-overlay');
+    if (!overlay) return;
+    if (event.target.closest('button')) return;
+
+    const rect = overlay.getBoundingClientRect();
+    moveDamageDragState = {
+        overlay: overlay,
+        offsetX: event.clientX - rect.left,
+        offsetY: event.clientY - rect.top
+    };
+    document.addEventListener('mousemove', onMoveDamageOverlayDragMove);
+    document.addEventListener('mouseup', stopMoveDamageOverlayDrag);
+}
+
+
+function initMoveDamageOverlayDrag() {
+    const header = document.querySelector('#move-damage-overlay .move-damage-header');
+    if (!header || header.dataset.dragBound === '1') return;
+    header.dataset.dragBound = '1';
+    header.addEventListener('mousedown', startMoveDamageOverlayDrag);
+}
+
+
+function renderMoveDamageRows(rows) {
+    const content = document.getElementById('move-damage-content');
+    if (!content) return;
+    if (!rows || !rows.length) {
+        content.textContent = '没有可展示的目标。';
+        return;
+    }
+
+    content.innerHTML = rows.map((row) => {
+        const name = row.opp_name_zh || row.opp_name || '-';
+        const types = row.opp_types || [];
+        const range = row.range || {};
+        const dmgText = `${range.damage_min} - ${range.damage_max}`;
+        const hpText = `${range.hp_pct_min}% - ${range.hp_pct_max}%`;
+        const typeMult = Number(range.type_multiplier || 1).toFixed(2);
+        const hpRangeText = `${row.opp_hp_min || 0} - ${row.opp_hp_max || 0}`;
+        const typeIcons = types.map((typeName) => {
+            const typeId = TYPE_ID_MAP[typeName] || 1;
+            return `<div class="type-icon-small" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')" title="${typeName}"></div>`;
+        }).join('');
+        return `
+            <div class="move-damage-row">
+                <div class="move-damage-name-row">
+                    <div class="move-damage-row-name">${name}</div>
+                    <div class="move-damage-type-icons">${typeIcons}</div>
+                </div>
+                <div class="move-damage-row-range">极限HP: ${hpRangeText}</div>
+                <div class="move-damage-row-range">伤害: ${dmgText}</div>
+                <div class="move-damage-row-range">生命值: ${hpText} (x${typeMult})</div>
+            </div>
+        `;
+    }).join('');
+}
+
+
+async function showMoveDamageRange(side, pokemonIndex, moveIndex) {
+    activeDamageQuery = { side: side, pokemonIndex: pokemonIndex, moveIndex: moveIndex };
+    const myTeam = currentTeams['my-team'] || [];
+    const oppTeam = currentTeams['opp-team'] || [];
+    const isMySide = side === 'my-team';
+    const attackerTeam = isMySide ? myTeam : oppTeam;
+    const targetTeam = isMySide ? oppTeam : myTeam;
+    const attacker = attackerTeam[pokemonIndex];
+    const overlay = document.getElementById('move-damage-overlay');
+    const title = document.getElementById('move-damage-title');
+    const content = document.getElementById('move-damage-content');
+
+    if (!overlay || !title || !content) return;
+    if (!attacker || !attacker.moves || !attacker.moves[moveIndex]) return;
+    if (!targetTeam.length) {
+        title.textContent = '技能伤害范围';
+        content.textContent = isMySide ? '请先生成对方队伍。' : '请先生成我方队伍。';
+        overlay.classList.add('open');
+        return;
+    }
+
+    const move = attacker.moves[moveIndex];
+    title.textContent = `${attacker.name_zh || attacker.name} - ${move.name_zh || move.name}`;
+    content.textContent = '计算中...';
+    overlay.classList.add('open');
+
+    try {
+        const response = await fetch('/api/damage/range', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                attacker: attacker,
+                move_index: moveIndex,
+                opp_team: targetTeam,
+                battle_mode: battleMode
+            })
+        });
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            const text = await response.text();
+            content.textContent = `接口返回非JSON（HTTP ${response.status}）：${text.slice(0, 120)}`;
+            return;
+        }
+        const data = await response.json();
+        if (!data.success) {
+            content.textContent = `计算失败：${data.error || 'unknown'}`;
+            return;
+        }
+        if (Number(data.move_priority || 0) !== 0) {
+            const p = Number(data.move_priority);
+            title.textContent += `（先制度 ${p >= 0 ? '+' : ''}${p}）`;
+        }
+        if (data.battle_mode === 'double' && data.is_spread_move) {
+            title.textContent += '（双打范围修正）';
+        }
+        if (data.is_guaranteed_critical) {
+            title.textContent += '（必定要害修正）';
+        }
+        if (data.is_multi_hit) {
+            title.textContent += '（多段技能，当前为单段伤害）';
+        }
+        renderMoveDamageRows(data.rows || []);
+    } catch (err) {
+        content.textContent = `计算错误：${err.message}`;
+    }
+}
+
 window.addEventListener('load', () => {
     loadTeamMenus();
+    initMoveDamageOverlayDrag();
+    updateBattleModeToggleLabel();
 });
 
 // Team management
@@ -844,6 +1019,10 @@ function switchEvoform(side, index, evoIndex) {
     }
 
     renderTeam(team, side);
+    const overlay = document.getElementById('move-damage-overlay');
+    if (overlay && overlay.classList.contains('open') && activeDamageQuery) {
+        showMoveDamageRange(activeDamageQuery.side, activeDamageQuery.pokemonIndex, activeDamageQuery.moveIndex);
+    }
 }
 
 async function generateOpponentTeam() {

@@ -9,6 +9,7 @@ import argparse
 import io
 import json
 import shutil
+from math import floor
 from pathlib import Path
 from flask import Flask, send_file, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -28,6 +29,206 @@ OPP_TEAM_DIR = PROJECT_ROOT / "data" / "opp_team"
 
 # 全局 PokemonDetector 实例
 _pokemon_detector = None
+_DAMAGE_LEVEL = 50
+
+
+def _to_int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _stat_min_max(value):
+    """将属性值统一为 (min, max) 区间。"""
+    if isinstance(value, list) and value:
+        values = [_to_int(v, 0) for v in value]
+        return min(values), max(values)
+    scalar = _to_int(value, 0)
+    return scalar, scalar
+
+
+def _attacker_stat_value(value):
+    """攻击方属性取最大值，兼容对方队伍的区间属性。"""
+    if isinstance(value, list) and value:
+        return max(_to_int(v, 0) for v in value)
+    return _to_int(value, 0)
+
+
+def _compute_damage_with_roll(power, atk, defense, stab, type_multiplier, roll):
+    if power <= 0 or atk <= 0 or defense <= 0 or type_multiplier <= 0:
+        return 0
+    base = floor(floor((2 * _DAMAGE_LEVEL) / 5 + 2) * power * atk / defense / 50) + 2
+    return max(1, floor(base * stab * type_multiplier * roll / 100))
+
+
+def _compute_damage_range(attacker, defender, move):
+    """计算某技能对目标的极限伤害范围（对方属性取极限值）。"""
+    power = _to_int(move.get("power"), 0)
+    if power <= 0:
+        return None
+
+    category = (move.get("category") or "").lower()
+    if category == "physical":
+        atk_stat = _attacker_stat_value(attacker.get("stats", {}).get("attack"))
+        def_min, def_max = _stat_min_max(defender.get("stats", {}).get("defense"))
+    elif category == "special":
+        atk_stat = _attacker_stat_value(attacker.get("stats", {}).get("sp_atk"))
+        def_min, def_max = _stat_min_max(defender.get("stats", {}).get("sp_def"))
+    else:
+        return None
+
+    if atk_stat <= 0 or def_max <= 0:
+        return None
+
+    hp_min, hp_max = _stat_min_max(defender.get("stats", {}).get("hp"))
+    hp_min = max(hp_min, 1)
+    hp_max = max(hp_max, 1)
+
+    move_type = move.get("type", "")
+    effectiveness = defender.get("type_effectiveness", {})
+    type_multiplier = float(effectiveness.get(move_type.lower(), 1.0))
+    if type_multiplier <= 0:
+        return {
+            "damage_min": 0,
+            "damage_max": 0,
+            "hp_pct_min": 0.0,
+            "hp_pct_max": 0.0,
+            "type_multiplier": type_multiplier,
+        }
+
+    stab = 1.5 if move_type in attacker.get("types", []) else 1.0
+    # 最低伤害：最低 roll + 对方最大防御
+    damage_min = _compute_damage_with_roll(power, atk_stat, def_max, stab, type_multiplier, 85)
+    # 最高伤害：最高 roll + 对方最小防御
+    damage_max = _compute_damage_with_roll(
+        power, atk_stat, max(def_min, 1), stab, type_multiplier, 100
+    )
+    hp_pct_min = round(damage_min * 100 / hp_max, 2)
+    hp_pct_max = round(damage_max * 100 / hp_min, 2)
+
+    return {
+        "damage_min": damage_min,
+        "damage_max": damage_max,
+        "hp_pct_min": hp_pct_min,
+        "hp_pct_max": hp_pct_max,
+        "type_multiplier": type_multiplier,
+    }
+
+
+def _is_guaranteed_critical_move(move):
+    """识别“必定击中要害”技能（不含仅提高要害率）。"""
+    move_name_raw = (move.get("name") or "").lower().strip()
+    move_name = move_name_raw.replace(" ", "-").replace("_", "-")
+    short_effect = (move.get("short_effect") or "").lower()
+    short_effect_zh = move.get("short_effect_zh") or ""
+    guaranteed_critical_move_names = {
+        "frost-breath",
+        "storm-throw",
+        "wicked-blow",
+        "surging-strikes",
+        "flower-trick",
+    }
+    if move_name in guaranteed_critical_move_names:
+        return True
+    guaranteed_tokens_en = [
+        "always results in a critical hit",
+        "always scores a critical hit",
+    ]
+    if any(token in short_effect for token in guaranteed_tokens_en):
+        return True
+    return "必定会击中要害" in short_effect_zh
+
+
+def _apply_guaranteed_critical_modifier(range_info, is_guaranteed_critical):
+    """必定要害修正：当前简化按 1.5 倍处理。"""
+    if not is_guaranteed_critical:
+        return range_info
+    crit_modifier = 1.5
+    return {
+        "damage_min": 0 if range_info["damage_min"] <= 0 else max(1, floor(range_info["damage_min"] * crit_modifier)),
+        "damage_max": 0 if range_info["damage_max"] <= 0 else max(1, floor(range_info["damage_max"] * crit_modifier)),
+        "hp_pct_min": round(range_info["hp_pct_min"] * crit_modifier, 2),
+        "hp_pct_max": round(range_info["hp_pct_max"] * crit_modifier, 2),
+        "type_multiplier": range_info["type_multiplier"],
+    }
+
+
+def _is_spread_move(move):
+    """轻量识别双打范围招式（命中多个目标时会有伤害修正）。"""
+    move_name_raw = (move.get("name") or "").lower().strip()
+    move_name = move_name_raw.replace(" ", "-").replace("_", "-")
+    short_effect = (move.get("short_effect") or "").lower()
+    short_effect_zh = move.get("short_effect_zh") or ""
+    spread_move_names = {
+        "heat-wave",
+        "rock-slide",
+        "blizzard",
+        "earthquake",
+        "surf",
+        "discharge",
+        "dazzling-gleam",
+        "muddy-water",
+        "snarl",
+        "icy-wind",
+        "electroweb",
+        "eruption",
+        "water-spout",
+        "hyper-voice",
+        "boomburst",
+        "sludge-wave",
+        "brutal-swing",
+        "lava-plume",
+        "bulldoze",
+        "breaking-swipe",
+    }
+    if move_name in spread_move_names:
+        return True
+    spread_tokens_en = [
+        "all adjacent foes",
+        "all adjacent pokemon",
+        "hits both opponents",
+        "all other pokemon",
+    ]
+    spread_tokens_zh = ["全体", "所有", "双方", "除自己以外"]
+    if any(token in short_effect for token in spread_tokens_en):
+        return True
+    if any(token in short_effect_zh for token in spread_tokens_zh):
+        return True
+    return False
+
+
+def _apply_spread_modifier(range_info, battle_mode, is_spread_move):
+    """双打下范围技能伤害修正。"""
+    if battle_mode != "double" or not is_spread_move:
+        return range_info
+    modifier = 0.75
+    damage_min = 0 if range_info["damage_min"] <= 0 else max(1, floor(range_info["damage_min"] * modifier))
+    damage_max = 0 if range_info["damage_max"] <= 0 else max(1, floor(range_info["damage_max"] * modifier))
+    return {
+        "damage_min": damage_min,
+        "damage_max": damage_max,
+        "hp_pct_min": round(range_info["hp_pct_min"] * modifier, 2),
+        "hp_pct_max": round(range_info["hp_pct_max"] * modifier, 2),
+        "type_multiplier": range_info["type_multiplier"],
+    }
+
+
+def _is_multi_hit_move(move):
+    """基于技能描述做轻量识别：是否可能为多段伤害技能。"""
+    short_effect = (move.get("short_effect") or "").lower()
+    short_effect_zh = move.get("short_effect_zh") or ""
+    multi_hit_tokens = [
+        "2 to 5 times",
+        "hits 2 times",
+        "hits twice",
+        "two to five times",
+    ]
+    if any(token in short_effect for token in multi_hit_tokens):
+        return True
+    if "连续" in short_effect_zh and "攻击" in short_effect_zh:
+        return True
+    return False
 
 def get_detector():
     """获取全局 PokemonDetector 实例（懒加载）"""
@@ -311,6 +512,69 @@ def create_app():
                 "success": True,
                 "team": team_data,
                 "slot": "temp"
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/damage/range", methods=["GET", "POST"])
+    def damage_range():
+        """点击我方技能后，返回该技能对对方全队的伤害范围。"""
+        try:
+            body = request.get_json(silent=True) or {}
+            if request.method == "GET" and not body:
+                payload = request.args.get("payload", "")
+                body = json.loads(payload) if payload else {}
+            attacker = body.get("attacker") or {}
+            move_index = _to_int(body.get("move_index"), -1)
+            opp_team = body.get("opp_team") or []
+            battle_mode = body.get("battle_mode") or "double"
+            if battle_mode not in ("single", "double"):
+                battle_mode = "double"
+
+            moves = attacker.get("moves") or []
+            if move_index < 0 or move_index >= len(moves):
+                return jsonify({"success": False, "error": "无效的技能索引"}), 400
+
+            move = moves[move_index]
+            if not move or move.get("power") is None:
+                return jsonify({"success": False, "error": "该技能非伤害技能"}), 400
+            is_spread = _is_spread_move(move)
+            is_guaranteed_critical = _is_guaranteed_critical_move(move)
+
+            rows = []
+            for opp in opp_team:
+                range_info = _compute_damage_range(attacker, opp, move)
+                if range_info is None:
+                    continue
+                range_info = _apply_guaranteed_critical_modifier(range_info, is_guaranteed_critical)
+                range_info = _apply_spread_modifier(range_info, battle_mode, is_spread)
+                hp_min, hp_max = _stat_min_max((opp.get("stats") or {}).get("hp"))
+                rows.append({
+                    "opp_name": opp.get("name", ""),
+                    "opp_name_zh": opp.get("name_zh", ""),
+                    "opp_types": opp.get("types", []),
+                    "opp_hp_min": hp_min,
+                    "opp_hp_max": hp_max,
+                    "range": range_info,
+                })
+
+            rows.sort(
+                key=lambda item: (
+                    item["range"]["hp_pct_max"],
+                    item["range"]["hp_pct_min"],
+                ),
+                reverse=True,
+            )
+            return jsonify({
+                "success": True,
+                "move_name": move.get("name", ""),
+                "move_name_zh": move.get("name_zh", ""),
+                "move_priority": _to_int(move.get("priority"), 0),
+                "battle_mode": battle_mode,
+                "is_spread_move": is_spread,
+                "is_guaranteed_critical": is_guaranteed_critical,
+                "is_multi_hit": _is_multi_hit_move(move),
+                "rows": rows,
             })
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500

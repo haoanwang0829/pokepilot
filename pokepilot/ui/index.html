@@ -60,6 +60,7 @@
             <div class="menu-item" onclick="viewTypeEffectiveness()">查看伤害克制</div>
             <div class="menu-item" onclick="captureScreen('opp_team')">截取对方队伍</div>
             <div class="menu-item" onclick="generateOpponentTeam()">生成对方队伍</div>
+            <div class="menu-item" id="battle-mode-toggle" onclick="toggleBattleMode()">双打</div>
 
             <div class="menu-status" id="status">等待</div>
         </div>
@@ -134,6 +135,7 @@
             </div>
         </div>
     </div>
+
     <!-- 伤害克制表弹窗 -->
     <div id="type-effect-overlay">
         <div class="effect-table-box">
@@ -154,6 +156,15 @@
             </div>
         </div>
     </div>
+
+    <div id="move-damage-overlay" class="move-damage-overlay">
+        <div class="move-damage-header">
+            <span id="move-damage-title">技能伤害范围</span>
+            <button onclick="closeMoveDamageOverlay()">×</button>
+        </div>
+        <div id="move-damage-content" class="move-damage-content"></div>
+    </div>
+
     <script src="script.js"></script>
     <script src="team.js"></script>
 </body>
