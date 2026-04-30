@@ -1222,19 +1222,21 @@ window.addEventListener('load', () => {
 // ===== 查看伤害克制关系=====
 function viewTypeEffectiveness(){
     const overlay = document.getElementById('type-effect-overlay');
-    const myRows = document.getElementById('my-effect-rows');
-    const oppRows = document.getElementById('opp-effect-rows');
+    const myHeader = document.getElementById('my-effect-header');
+    const myContent = document.getElementById('my-effect-content');
+    const oppHeader = document.getElementById('opp-effect-header');
+    const oppContent = document.getElementById('opp-effect-content');
 
     // 清空旧内容
-    myRows.innerHTML = '';
-    oppRows.innerHTML = '';
+    myHeader.innerHTML = '';
+    myContent.innerHTML = '';
+    oppHeader.innerHTML = '';
+    oppContent.innerHTML = '';
 
     const myTeam = currentTeams['my-team'] || [];
     const oppTeam = currentTeams['opp-team'] || [];
 
-    // 我方侧：表头（对方6只宝可梦头像）
-    const myHeader = document.createElement('div');
-    myHeader.className = 'effect-header';
+    // ===== 我方侧：表头（对方6只宝可梦头像）=====
     myHeader.innerHTML = `
         <div class="effect-avatar-placeholder"></div>
         <div class="effect-moves-placeholder"></div>
@@ -1250,9 +1252,25 @@ function viewTypeEffectiveness(){
             }).join('')}
         </div>
     `;
-    myRows.appendChild(myHeader);
 
-    // 渲染我方6行
+    // ===== 对方侧：表头（我方6只宝可梦头像）=====
+    oppHeader.innerHTML = `
+        <div class="effect-damage-header">
+            ${myTeam.map((myPokemon, idx) => {
+                if (!myPokemon) return '<div class="effect-damage-item-header"></div>';
+                const spritePath = myPokemon.sprite ? myPokemon.sprite.replace(/^sprites\//, '') : '';
+                const pokemonName = myPokemon.name_zh || myPokemon.name || '?';
+                return `<div class="effect-damage-item-header" title="${pokemonName}">
+                    <img src="/sprites/${spritePath}" alt="${pokemonName}">
+                    <span>${pokemonName}</span>
+                </div>`;
+            }).join('')}
+        </div>
+        <div class="effect-moves-placeholder"></div>
+        <div class="effect-avatar-placeholder"></div>
+    `;
+
+    // ===== 我方侧：内容（我方6只宝可梦伤害行）=====
     for (let i = 0; i < 6; i++) {
         const myPokemon = myTeam[i];
         const row = document.createElement('div');
@@ -1320,30 +1338,10 @@ function viewTypeEffectiveness(){
             row.innerHTML = avatarHtml + movesHtml + damageHtml;
         }
 
-        myRows.appendChild(row);
+        myContent.appendChild(row);
     }
 
-    // 对方侧：表头（我方6只宝可梦头像）
-    const oppHeader = document.createElement('div');
-    oppHeader.className = 'effect-header';
-    oppHeader.innerHTML = `
-        <div class="effect-damage-list effect-damage-header">
-            ${myTeam.map((myPokemon, idx) => {
-                if (!myPokemon) return '<div class="effect-damage-item-header"></div>';
-                const spritePath = myPokemon.sprite ? myPokemon.sprite.replace(/^sprites\//, '') : '';
-                const pokemonName = myPokemon.name_zh || myPokemon.name || '?';
-                return `<div class="effect-damage-item-header" title="${pokemonName}">
-                    <img src="/sprites/${spritePath}" alt="${pokemonName}">
-                    <span>${pokemonName}</span>
-                </div>`;
-            }).join('')}
-        </div>
-        <div class="effect-moves-placeholder"></div>
-        <div class="effect-avatar-placeholder"></div>
-    `;
-    oppRows.appendChild(oppHeader);
-
-    // 渲染对方6行
+    // ===== 对方侧：内容（对方6只宝可梦伤害行）=====
     for (let i = 0; i < 6; i++) {
         const oppPokemon = oppTeam[i];
         const row = document.createElement('div');
@@ -1411,7 +1409,7 @@ function viewTypeEffectiveness(){
             row.innerHTML = damageHtml + movesHtml + avatarHtml;
         }
 
-        oppRows.appendChild(row);
+        oppContent.appendChild(row);
     }
 
     overlay.classList.add('open');
