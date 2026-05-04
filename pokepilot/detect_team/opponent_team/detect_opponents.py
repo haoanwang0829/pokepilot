@@ -13,7 +13,7 @@ from pathlib import Path
 import cv2
 
 from pokepilot.common.pokemon_builder import PokemonBuilder
-from pokepilot.common.pokemon_detect import PokemonDetector, _remove_bg
+from pokepilot.common.pokemon_detect import PokemonDetector
 from pokepilot.tools.logger_util import setup_logger
 
 logger = setup_logger(__name__)
@@ -74,7 +74,7 @@ def detect_opponents(screenshot: str, debug: bool = False) -> list[dict]:
             result
         )
 
-        logger.info(f"槽{i}: {result['slug']:25s}  score={result['score']:.1f}  "
+        logger.info(f"槽{i}: {result['slug']:25s}  score={result['score']:.4f}  "
               f"属性={result['types']}  候选={result['candidates_searched']}")
 
         if debug:
@@ -86,10 +86,10 @@ def detect_opponents(screenshot: str, debug: bool = False) -> list[dict]:
             cv2.imwrite(str(pokemon_dir / f"slot_{i}_type1.png"), t1_img)
             cv2.imwrite(str(pokemon_dir / f"slot_{i}_type2.png"), t2_img)
 
-            # 去除背景后的图片
-            sprite_clean = _remove_bg(sprite, )
+            # # 去除背景后的图片
+            # sprite_clean = _remove_bg(sprite, )
 
-            cv2.imwrite(str(pokemon_dir / f"slot_{i}_sprite_clean.png"), sprite_clean)
+            # cv2.imwrite(str(pokemon_dir / f"slot_{i}_sprite_clean.png"), sprite_clean)
 
             logger.debug(f"三个 region 已保存：{pokemon_dir}/slot_{i}_*.png (原始和去背景版)")
     return results

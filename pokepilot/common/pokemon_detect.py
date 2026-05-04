@@ -12,6 +12,10 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import torch
+import torch.nn as nn
+import torchvision.transforms as transforms
+from torchvision.models import resnet50
 
 from pokepilot.tools.logger_util import setup_logger
 from pokepilot.data.pokedb import PokeDB
@@ -61,44 +65,41 @@ def _alpha_to_white(img: np.ndarray) -> np.ndarray:
     return img
 
 
+def _extract_features(img: np.ndarray, model: nn.Module, device: torch.device) -> np.ndarray:
+    """用ResNet50提取图片特征向量"""
+    # 转为RGB（opencv是BGR）
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # 预处理：resize到224x224，归一化
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((224, 224)),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                           std=[0.229, 0.224, 0.225])
+    ])
+
+    img_tensor = transform(img_rgb).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        features = model(img_tensor)
+
+    return features.cpu().numpy().flatten()
+
+
+def _cosine_similarity(feat1: np.ndarray, feat2: np.ndarray) -> float:
+    """计算两个特征向量的余弦距离（越小越相似）"""
+    feat1 = feat1 / (np.linalg.norm(feat1) + 1e-8)
+    feat2 = feat2 / (np.linalg.norm(feat2) + 1e-8)
+    # 距离 = 1 - 相似度
+    return 1.0 - np.dot(feat1, feat2)
+
+
 def _has_icon(img: np.ndarray, min_std: float = 60.0) -> bool:
     """颜色标准差低 → 纯色背景（无图标）。std >= min_std 才认为有图标"""
     # 分别计算三个通道的std，然后求平均
     channel_stds = np.std(img, axis=(0, 1))  # shape: (3,)
     avg_std = float(np.mean(channel_stds))
     return avg_std >= min_std
-
-
-def _remove_bg(img: np.ndarray, bg_color=None, tolerance: int = 30) -> np.ndarray:
-    """
-    去除单色背景（对手队伍用）。
-    bg_color: None 时自动检测四角颜色；指定时使用该颜色
-    """
-    if bg_color is None:
-        # 自动检测四角颜色
-        corners = [
-            img[:5, :5],
-            img[:5, -5:],
-            img[-5:, :5],
-            img[-5:, -5:],
-        ]
-        bg_color = np.median(np.concatenate([c.reshape(-1, 3) for c in corners], axis=0), axis=0)
-
-    bg_color = np.array(bg_color, dtype=np.uint8)
-    lo = np.clip(bg_color.astype(int) - tolerance, 0, 255).astype(np.uint8)
-    hi = np.clip(bg_color.astype(int) + tolerance, 0, 255).astype(np.uint8)
-    mask_bg = cv2.inRange(img, lo, hi)
-    mask_fg = cv2.bitwise_not(mask_bg)
-
-    # 形态学清理
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask_fg = cv2.morphologyEx(mask_fg, cv2.MORPH_OPEN, kernel)
-
-    result = img.copy()
-    result[mask_fg == 0] = 0
-    result = np.full_like(img, 255)
-    result[mask_fg > 0] = img[mask_fg > 0]
-    return result
 
 
 def _remove_bg_multi(img: np.ndarray, bg_colors: list, tolerance: int = 60) -> np.ndarray:
@@ -131,10 +132,18 @@ def _remove_bg_multi(img: np.ndarray, bg_colors: list, tolerance: int = 60) -> n
 class PokemonDetector:
     """宝可梦识别引擎"""
 
-    def __init__(self, debug=False):
+    def __init__(self):
         """初始化，加载库和参考数据"""
-        setup_logger(__name__, debug=debug)
-        self.debug = debug
+        setup_logger(__name__)
+
+        # 设置设备（GPU 或 CPU）
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # 加载预训练的 ResNet50（提取特征，去掉分类层）
+        self.feature_model = resnet50(pretrained=True)
+        self.feature_model = nn.Sequential(*list(self.feature_model.children())[:-1])
+        self.feature_model.to(self.device)
+        self.feature_model.eval()
 
         # 加载数据库
         self.db = PokeDB()
@@ -191,7 +200,7 @@ class PokemonDetector:
                 img = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
                 if img is None:
                     continue
-                refs[path.stem] = _alpha_to_white(img)
+                refs[path.stem] = img
         return refs
 
     def _load_sprites_into_variants(self):
@@ -234,9 +243,20 @@ class PokemonDetector:
 
         return best_id if best_score < threshold else None
 
-    def _match_sprite(self, sprite: np.ndarray, candidates: list[PokemonVariant] | None = None, target_size: int = 96) -> tuple[PokemonVariant | None, float]:
-        """识别精灵，返回 (variant, score)。也比较闪光版本"""
+    def _match_sprite(
+        self,
+        sprite: np.ndarray,
+        candidates: list[PokemonVariant] | None = None,
+        target_size: int = 96,
+        bg_removal: str = "none",
+        bg_colors: list = None,
+        bg_color: np.ndarray | None = None,
+    ) -> tuple[PokemonVariant | None, float, bool]:
+        """识别精灵，返回 (variant, score, is_shiny)。用ResNet50特征提取"""
         sprite_r = cv2.resize(sprite, (target_size, target_size))
+
+        # 提取目标图片特征
+        target_features = _extract_features(sprite_r, self.feature_model, self.device)
 
         search = candidates if candidates else list(self.variants.values())
         best_variant, best_score, is_shiny = None, float("inf"), False
@@ -244,20 +264,46 @@ class PokemonDetector:
         for variant in search:
             # 比较普通版
             if variant.sprite is not None:
-                ref_r = cv2.resize(variant.sprite, (target_size, target_size))
-                score = cv2.absdiff(sprite_r, ref_r).mean()
+                ref = cv2.resize(variant.sprite, (target_size, target_size))
+                ref = self._preprocess_ref_sprite(ref, bg_removal, bg_colors, bg_color)
+                ref_features = _extract_features(ref, self.feature_model, self.device)
+                score = _cosine_similarity(target_features, ref_features)
                 if score < best_score:
                     best_score, best_variant = score, variant
+                    is_shiny = False
 
             # 也比较闪光版
             if variant.sprite_shiny is not None:
-                ref_r = cv2.resize(variant.sprite_shiny, (target_size, target_size))
-                score = cv2.absdiff(sprite_r, ref_r).mean()
+                ref = cv2.resize(variant.sprite_shiny, (target_size, target_size))
+                ref = self._preprocess_ref_sprite(ref, bg_removal, bg_colors, bg_color)
+                ref_features = _extract_features(ref, self.feature_model, self.device)
+                score = _cosine_similarity(target_features, ref_features)
                 if score < best_score:
                     best_score, best_variant = score, variant
                     is_shiny = True
 
         return best_variant, best_score, is_shiny
+
+    def _preprocess_ref_sprite(
+        self,
+        ref: np.ndarray,
+        bg_removal: str,
+        bg_colors: list | None,
+        bg_color: np.ndarray | None,
+    ) -> np.ndarray:
+        """为参考精灵预处理背景"""
+        if bg_removal == "multi" and bg_colors:
+            # 对 RGBA 图使用 _alpha_to_white
+            return _alpha_to_white(ref)
+        elif bg_removal == "auto" and bg_color is not None:
+            # 用计算出的背景色填充参考图的透明部分
+            if ref.ndim == 3 and ref.shape[2] == 4:
+                alpha = ref[:, :, 3:] / 255.0
+                bgr = ref[:, :, :3].astype(float)
+                bg_color_float = bg_color.astype(float)
+                return (bgr * alpha + bg_color_float * (1 - alpha)).astype(np.uint8)
+            return ref
+        return ref
 
     def detect(
         self,
@@ -292,28 +338,37 @@ class PokemonDetector:
             }
         """
         # 处理背景
+        sprite_clean = sprite
+        bg_color = None
+
         if bg_removal == "auto":
-            sprite_clean = _remove_bg(sprite)
+            # 计算背景色但不移除，供参考精灵使用
+            corners = [
+                sprite[:5, :5],
+                sprite[:5, -5:],
+                sprite[-5:, :5],
+                sprite[-5:, -5:],
+            ]
+            bg_color = np.median(np.concatenate([c.reshape(-1, 3) for c in corners], axis=0), axis=0)
         elif bg_removal == "multi" and bg_colors:
+            # 移除目标精灵背景
             sprite_clean = _remove_bg_multi(sprite, bg_colors, tolerance=40)
-        else:
-            sprite_clean = sprite
 
         # 识别属性
         tid1 = self._match_type(type1_img)
         tid2 = self._match_type(type2_img)
         types_found = [_TYPE_NAMES[t] for t in [tid1, tid2] if t]
-        print(types_found)
+
         # 按属性过滤候选
         candidates = None
         if types_found:
             candidates = [
                 v for v in self.variants.values()
-                if (types_found == v.types)
+                if (types_found == v.types) and ('-mega' not in v.slug)
             ]
 
         # 识别精灵
-        variant, score, is_shiny = self._match_sprite(sprite_clean, candidates)
+        variant, score, is_shiny = self._match_sprite(sprite_clean, candidates, bg_removal=bg_removal, bg_colors=bg_colors, bg_color=bg_color)
 
         n_searched = len(candidates) if candidates else len(self.variants)
 
@@ -331,7 +386,7 @@ class PokemonDetector:
                 "slug": variant.slug,
                 "sprite_key": sprite_key,
                 "types": variant.types,
-                "score": round(score, 2),
+                "score": float(round(score, 4)),
                 "candidates_searched": n_searched,
             }
         else:
@@ -341,7 +396,7 @@ class PokemonDetector:
                 "slug": "unknown",
                 "sprite_key": None,
                 "types": [],
-                "score": round(score, 2),
+                "score": float(round(score, 4)),
                 "candidates_searched": n_searched,
             }
 
