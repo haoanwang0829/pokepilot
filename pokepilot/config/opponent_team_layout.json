@@ -1,0 +1,37 @@
+{
+  "base_resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "slot_layout": {
+    "x0": 1554,
+    "y0": 157,
+    "width": 300,
+    "height": 115,
+    "gap": 11,
+    "count": 6
+  },
+  "slot_regions": {
+    "sprite": {
+      "label": "sprite",
+      "rx0": 0.2152,
+      "ry0": 0.1466,
+      "rx1": 0.5662,
+      "ry1": 0.9914
+    },
+    "type1": {
+      "label": "type1",
+      "rx0": 0.6391,
+      "ry0": 0.1293,
+      "rx1": 0.798,
+      "ry1": 0.5517
+    },
+    "type2": {
+      "label": "type2",
+      "rx0": 0.8146,
+      "ry0": 0.1207,
+      "rx1": 0.9735,
+      "ry1": 0.5431
+    }
+  }
+}

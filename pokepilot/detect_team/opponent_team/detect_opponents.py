@@ -7,16 +7,42 @@
 """
 
 import argparse
+import json
 from pathlib import Path
 
 import cv2
 
 from pokepilot.common.pokemon_builder import PokemonBuilder
-from pokepilot.detect_team.opponent_team.crop_slots import OPP_SLOTS, SLOT_SPRITE, SLOT_TYPE1, SLOT_TYPE2
 from pokepilot.common.pokemon_detect import PokemonDetector, _remove_bg
 from pokepilot.tools.logger_util import setup_logger
 
 logger = setup_logger(__name__)
+
+# 加载对手队伍布局配置
+_CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
+_LAYOUT_CONFIG = json.loads((_CONFIG_DIR / "opponent_team_layout.json").read_text(encoding="utf-8"))
+_SLOT_CFG = _LAYOUT_CONFIG["slot_layout"]
+_SLOT_X0, _SLOT_Y0, _SLOT_W, _SLOT_H, _SLOT_GAP = (
+    _SLOT_CFG["x0"], _SLOT_CFG["y0"], _SLOT_CFG["width"], _SLOT_CFG["height"], _SLOT_CFG["gap"]
+)
+_W, _H = _LAYOUT_CONFIG["base_resolution"]["width"], _LAYOUT_CONFIG["base_resolution"]["height"]
+
+# 生成 6 个槽的归一化坐标
+OPP_SLOTS = [
+    (
+        _SLOT_X0 / _W,
+        (_SLOT_Y0 + i * (_SLOT_H + _SLOT_GAP)) / _H,
+        (_SLOT_X0 + _SLOT_W) / _W,
+        (_SLOT_Y0 + i * (_SLOT_H + _SLOT_GAP) + _SLOT_H) / _H,
+    )
+    for i in range(6)
+]
+
+# 槽内区域坐标
+_REGIONS = _LAYOUT_CONFIG["slot_regions"]
+SLOT_SPRITE = (_REGIONS["sprite"]["rx0"], _REGIONS["sprite"]["ry0"], _REGIONS["sprite"]["rx1"], _REGIONS["sprite"]["ry1"])
+SLOT_TYPE1 = (_REGIONS["type1"]["rx0"], _REGIONS["type1"]["ry0"], _REGIONS["type1"]["rx1"], _REGIONS["type1"]["ry1"])
+SLOT_TYPE2 = (_REGIONS["type2"]["rx0"], _REGIONS["type2"]["ry0"], _REGIONS["type2"]["rx1"], _REGIONS["type2"]["ry1"])
 
 
 def _sub(img, rx0, ry0, rx1, ry1):
@@ -42,7 +68,7 @@ def detect_opponents(screenshot: str, debug: bool = False) -> list[dict]:
         t1_img = _sub(slot, *SLOT_TYPE1)
         t2_img = _sub(slot, *SLOT_TYPE2)
 
-        result = detector.detect(sprite, t1_img, t2_img, bg_removal="auto", debug=debug)
+        result = detector.detect(sprite, t1_img, t2_img, bg_removal="auto")
 
         results.append(
             result

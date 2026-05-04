@@ -1,0 +1,91 @@
+{
+  "bg_colors_multi": [
+    [
+      221,
+      237,
+      245
+    ],
+    [
+      200,
+      95,
+      115
+    ]
+  ],
+  "layout": {
+    "horizontal_gap": 64,
+    "rect_h": 186,
+    "rect_w": 738,
+    "top_x": 190,
+    "top_y": 272,
+    "vertical_gap": 31
+  },
+  "regions": {
+    "sprite": {
+      "label": "Sprite",
+      "rx": 0.01,
+      "ry": -0.11,
+      "size": 66
+    },
+    "type1": {
+      "label": "Type1",
+      "rx": 0.471,
+      "ry": 0.05,
+      "size": 30
+    },
+    "type2": {
+      "label": "Type2",
+      "rx": 0.528,
+      "ry": 0.05,
+      "size": 30
+    }
+  },
+  "stat_arrows": [
+    {
+      "name": "hp",
+      "size": 27,
+      "x": 0.162,
+      "y": 0.302
+    },
+    {
+      "name": "attack",
+      "size": 27,
+      "x": 0.182,
+      "y": 0.552
+    },
+    {
+      "name": "defense",
+      "size": 27,
+      "x": 0.183,
+      "y": 0.79
+    },
+    {
+      "name": "sp_atk",
+      "size": 27,
+      "x": 0.653,
+      "y": 0.302
+    },
+    {
+      "name": "sp_def",
+      "size": 27,
+      "x": 0.656,
+      "y": 0.552
+    },
+    {
+      "name": "speed",
+      "size": 27,
+      "x": 0.656,
+      "y": 0.79
+    }
+  ],
+  "stat_boxes": {
+    "box_h": 0.19,
+    "box_w": 0.189,
+    "left_x": 0.287,
+    "right_x": 0.762,
+    "y_tops": [
+      0.2708,
+      0.52,
+      0.7692
+    ]
+  }
+}

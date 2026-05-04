@@ -34,10 +34,6 @@ _TYPE_NAMES = {
     17: "dark", 18: "fairy",
 }
 
-# 属性图标背景色（RGB → BGR）
-_TYPE_ICON_BG_COLOR = (212, 93, 107)  # RGB: 107, 93, 212
-_TYPE_ICON_BG_TOLERANCE = 30
-
 
 @dataclass
 class PokemonVariant:
@@ -67,7 +63,10 @@ def _alpha_to_white(img: np.ndarray) -> np.ndarray:
 
 def _has_icon(img: np.ndarray, min_std: float = 60.0) -> bool:
     """颜色标准差低 → 纯色背景（无图标）。std >= min_std 才认为有图标"""
-    return float(img.std()) >= min_std
+    # 分别计算三个通道的std，然后求平均
+    channel_stds = np.std(img, axis=(0, 1))  # shape: (3,)
+    avg_std = float(np.mean(channel_stds))
+    return avg_std >= min_std
 
 
 def _remove_bg(img: np.ndarray, bg_color=None, tolerance: int = 30) -> np.ndarray:
@@ -97,8 +96,8 @@ def _remove_bg(img: np.ndarray, bg_color=None, tolerance: int = 30) -> np.ndarra
 
     result = img.copy()
     result[mask_fg == 0] = 0
-    # result = np.full_like(img, 255)
-    # result[mask_fg > 0] = img[mask_fg > 0]
+    result = np.full_like(img, 255)
+    result[mask_fg > 0] = img[mask_fg > 0]
     return result
 
 
@@ -210,7 +209,7 @@ class PokemonDetector:
                 if key in self.sprite_refs:
                     variant.sprite_shiny = self.sprite_refs[key]
 
-    def _match_type(self, icon: np.ndarray, size: int = 32, threshold: float = 60.0, min_std: float = 60.0, remove_bg: bool = False) -> int | None:
+    def _match_type(self, icon: np.ndarray, size: int = 32, threshold: float = 60.0, min_std: float = 30.0) -> int | None:
         """识别属性图标，返回 type_id 或 None
 
         Args:
@@ -218,18 +217,14 @@ class PokemonDetector:
             size: resize 大小
             threshold: 匹配阈值
             min_std: 最小标准差（判断是否有图标）
-            remove_bg: 是否去除背景色
+            remove_bg: 是否去除背景色并用前景主颜色填充
         """
         if icon is None or icon.size == 0:
             return None
+    
 
         if not _has_icon(icon, min_std=min_std):
             return None
-
-        # 可选：去除背景色
-        if remove_bg:
-            icon = _remove_bg(icon, bg_color=_TYPE_ICON_BG_COLOR, tolerance=_TYPE_ICON_BG_TOLERANCE)
-
         icon_r = cv2.resize(icon, (size, size))
         best_id, best_score = None, float("inf")
         for tid, ref in self.type_refs.items():
@@ -271,8 +266,6 @@ class PokemonDetector:
         type2_img: np.ndarray,
         bg_removal: str = "none",
         bg_colors: list = None,
-        debug: bool = False,
-        remove_type_bg: bool = False,
     ) -> dict:
         """
         识别宝可梦。
@@ -307,27 +300,17 @@ class PokemonDetector:
             sprite_clean = sprite
 
         # 识别属性
-        tid1 = self._match_type(type1_img, remove_bg=remove_type_bg)
-        tid2 = self._match_type(type2_img, remove_bg=remove_type_bg)
+        tid1 = self._match_type(type1_img)
+        tid2 = self._match_type(type2_img)
         types_found = [_TYPE_NAMES[t] for t in [tid1, tid2] if t]
-
+        print(types_found)
         # 按属性过滤候选
         candidates = None
         if types_found:
             candidates = [
                 v for v in self.variants.values()
-                if all(t in v.types for t in types_found) and "mega" not in v.slug
+                if (types_found == v.types)
             ]
-
-        # 如果候选为空，再尝试不排除 Mega
-        if not candidates:
-            if types_found:
-                candidates = [
-                    v for v in self.variants.values()
-                    if all(t in v.types for t in types_found)
-                ]
-            else:
-                candidates = None
 
         # 识别精灵
         variant, score, is_shiny = self._match_sprite(sprite_clean, candidates)

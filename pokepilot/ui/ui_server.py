@@ -21,6 +21,8 @@ from pokepilot.common.pokemon_builder import PokemonBuilder
 
 _ROOT = Path(__file__).parent
 PROJECT_ROOT = _ROOT.parent.parent
+POKEPILOT_DIR = _ROOT.parent  # pokepilot/ 目录
+CONFIG_DIR = POKEPILOT_DIR / "config"
 SCREENSHOTS_DIR = PROJECT_ROOT / "screenshots" / "team"
 OPP_SCREENSHOTS_DIR = PROJECT_ROOT / "screenshots" / "opp_team"
 SPRITES_DIR = PROJECT_ROOT / "sprites"
@@ -497,7 +499,7 @@ def create_app():
             if not screenshot_path.exists():
                 return jsonify({"success": False, "error": "缺少对方队伍截图。请先截取对方队伍"}), 400
 
-            team = detect_opponents_team(str(screenshot_path))
+            team = detect_opponents_team(str(screenshot_path), debug=True)
 
             output_path = OPP_TEAM_DIR / "temp.json"
             output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -576,6 +578,83 @@ def create_app():
                 "is_multi_hit": _is_multi_hit_move(move),
                 "rows": rows,
             })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/get-layout-config", methods=["GET"])
+    def get_layout_config():
+        """获取卡片布局配置"""
+        try:
+            config_path = CONFIG_DIR / "card_layout.json"
+
+            if not config_path.exists():
+                return jsonify({
+                    "success": False,
+                    "error": f"Config file not found: {config_path}"
+                }), 404
+
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config_data = json.load(f)
+
+            return jsonify({
+                "success": True,
+                "data": config_data
+            }), 200
+
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
+    @app.route("/config/<filename>", methods=["GET"])
+    def get_config_file(filename):
+        """获取配置文件"""
+        return send_from_directory(CONFIG_DIR, filename)
+
+    @app.route("/api/save-layout-config", methods=["POST"])
+    def save_layout_config():
+        """保存卡片布局配置到 card_layout.json"""
+        try:
+            config_data = request.get_json()
+            if not config_data:
+                return jsonify({"success": False, "error": "Invalid JSON"}), 400
+
+            config_path = CONFIG_DIR / "card_layout.json"
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config_data, f, indent=2, ensure_ascii=False)
+
+            return jsonify({
+                "success": True,
+                "message": f"Config saved successfully",
+                "config": config_data
+            }), 200
+
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/save-opponent-layout-config", methods=["POST"])
+    def save_opponent_layout_config():
+        """保存对方队伍布局配置到 opponent_team_layout.json"""
+        try:
+            config_data = request.get_json()
+            if not config_data:
+                return jsonify({"success": False, "error": "Invalid JSON"}), 400
+
+            config_path = CONFIG_DIR / "opponent_team_layout.json"
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config_data, f, indent=2, ensure_ascii=False)
+
+            return jsonify({
+                "success": True,
+                "message": f"Config saved successfully",
+                "config": config_data
+            }), 200
+
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 

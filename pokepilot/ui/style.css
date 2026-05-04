@@ -1509,3 +1509,138 @@ video {
     color: #4ec9b0;
 }
 
+/* ==================== 布局框显示 ==================== */
+.video-container {
+    position: relative;
+}
+
+#layout-canvas,
+#opponent-layout-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    z-index: 10;
+}
+
+.menu-button-inline {
+    background: none;
+    border: none;
+    color: #d0d0d0;
+    padding: 0 6px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.menu-button-inline:hover {
+    opacity: 1;
+    color: #fff;
+}
+
+.menu-button-inline.active {
+    opacity: 1;
+    color: #4ec9b0;
+    font-weight: bold;
+}
+
+/* ==================== 布局控制面板 ==================== */
+.layout-controls {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid #3e3e42;
+    border-radius: 6px;
+    padding: 12px;
+    z-index: 20;
+    font-size: 12px;
+    min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.control-group {
+    margin-bottom: 12px;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-group label {
+    display: block;
+    color: #d0d0d0;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.control-group label span {
+    color: #4ec9b0;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.control-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+
+.control-buttons button {
+    background: #2d2d2d;
+    border: 1px solid #444;
+    color: #d0d0d0;
+    padding: 6px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.control-buttons button:hover {
+    background: #3d3d3d;
+    border-color: #666;
+    color: #fff;
+}
+
+.control-buttons button:active {
+    background: #4d4d4d;
+    transform: scale(0.95);
+}
+
+.save-btn {
+    width: 100%;
+    background: #0d7377;
+    border: 1px solid #0d7377;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.save-btn:hover {
+    background: #0a5a5d;
+    border-color: #0a5a5d;
+}
+
+.save-btn:active {
+    transform: scale(0.98);
+}
+
+.save-btn.saving {
+    background: #4ec9b0;
+    color: #000;
+}
+
+.save-btn.saved {
+    background: #00cc00;
+    color: #fff;
+}
+

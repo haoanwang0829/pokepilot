@@ -12,6 +12,7 @@
         <div class="menubar">
             <div class="menu-item" id="menu-team" onclick="toggleMenu('menu-team')">
                 我方队伍 ▾
+                <button id="btn-show-layout" class="menu-button-inline" onclick="event.stopPropagation(); toggleLayoutOverlay()" title="显示我方队伍布局">📐</button>
                 <div class="dropdown-menu">
                     <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); captureScreen('moves')">截取页面1</div>
                     <div class="dropdown-item" onclick="event.stopPropagation(); closeAllMenus(); captureScreen('stats')">截取页面2</div>
@@ -58,7 +59,9 @@
                 </div>
             </div>
             <div class="menu-item" onclick="viewTypeEffectiveness()">查看伤害克制</div>
-            <div class="menu-item" onclick="captureScreen('opp_team')">截取对方队伍</div>
+            <div class="menu-item" onclick="captureScreen('opp_team')">截取对方队伍
+                <button id="btn-show-opponent-layout" class="menu-button-inline" onclick="event.stopPropagation(); toggleOpponentLayoutOverlay()" title="显示对方队伍布局">📐</button>
+            </div>
             <div class="menu-item" onclick="generateOpponentTeam()">生成对方队伍</div>
             <div class="menu-item" id="battle-mode-toggle" onclick="toggleBattleMode()">双打</div>
 
@@ -84,6 +87,50 @@
                 </div> -->
                 <div class="video-container">
                     <video id="video" autoplay playsinline></video>
+                    <canvas id="layout-canvas" class="layout-overlay" style="display: none;"></canvas>
+                    <canvas id="opponent-layout-canvas" class="layout-overlay" style="display: none;"></canvas>
+                    <div id="layout-controls" class="layout-controls" style="display: none;">
+                        <div class="control-group">
+                            <label>top_y: <span id="top-y-value">265</span></label>
+                            <div class="control-buttons">
+                                <button onclick="adjustTopY(-5)">▲ -5</button>
+                                <button onclick="adjustTopY(-1)">▲ -1</button>
+                                <button onclick="adjustTopY(1)">▼ +1</button>
+                                <button onclick="adjustTopY(5)">▼ +5</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>top_x: <span id="top-x-value">190</span></label>
+                            <div class="control-buttons">
+                                <button onclick="adjustTopX(-5)">◀ -5</button>
+                                <button onclick="adjustTopX(-1)">◀ -1</button>
+                                <button onclick="adjustTopX(1)">▶ +1</button>
+                                <button onclick="adjustTopX(5)">▶ +5</button>
+                            </div>
+                        </div>
+                        <button id="save-layout-btn" class="save-btn" onclick="saveLayoutConfig()">💾 保存配置</button>
+                    </div>
+                    <div id="opponent-layout-controls" class="layout-controls" style="display: none;">
+                        <div class="control-group">
+                            <label>top_y: <span id="opponent-top-y-value">265</span></label>
+                            <div class="control-buttons">
+                                <button onclick="adjustOpponentTopY(-5)">▲ -5</button>
+                                <button onclick="adjustOpponentTopY(-1)">▲ -1</button>
+                                <button onclick="adjustOpponentTopY(1)">▼ +1</button>
+                                <button onclick="adjustOpponentTopY(5)">▼ +5</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>top_x: <span id="opponent-top-x-value">190</span></label>
+                            <div class="control-buttons">
+                                <button onclick="adjustOpponentTopX(-5)">◀ -5</button>
+                                <button onclick="adjustOpponentTopX(-1)">◀ -1</button>
+                                <button onclick="adjustOpponentTopX(1)">▶ +1</button>
+                                <button onclick="adjustOpponentTopX(5)">▶ +5</button>
+                            </div>
+                        </div>
+                        <button id="save-opponent-layout-btn" class="save-btn" onclick="saveOpponentLayoutConfig()">💾 保存配置</button>
+                    </div>
                 </div>
                 <div class="status-panel">
                     <div id="speed-axis-container">
@@ -165,7 +212,9 @@
         <div id="move-damage-content" class="move-damage-content"></div>
     </div>
 
+    <script src="config.js"></script>
     <script src="script.js"></script>
     <script src="team.js"></script>
+    <script src="layout-overlay.js"></script>
 </body>
 </html>

@@ -1,13 +1,3 @@
-"""
-队伍配置解析工具 —— 本地 OCR
-
-用法:
-    python -m pokepilot.detect_team.parse_team \\
-        --moves screenshots/team/frame_20260410_220344.png \\
-        --stats screenshots/team/frame_20260410_220347.png \\
-        --out   data/my_team.json
-"""
-
 import argparse
 import json
 from pathlib import Path
@@ -23,80 +13,59 @@ logger = setup_logger(__name__)
 from pokepilot.common.pokemon_builder import PokemonBuilder
 from pokepilot.tools.ocr_engine import read_region
 from pokepilot.common.pokemon_detect import PokemonDetector
-from .layout_detect import detect_card_layout
 
-
+debug_dir = "debug_output/my_team"
 # ─────────────────────────────────────────────────────────────────────────────
-# Pokemon 识别配置
+# Load configuration from JSON
 # ─────────────────────────────────────────────────────────────────────────────
-# 三个矩形的相对坐标（基于卡牌框）
-_SPRITE_REGION = {"rx": 0.0226, "ry": -0.0876, "size": 66}
-_TYPE1_REGION = {"rx": 0.4699, "ry": 0.0567, "size": 31}
-_TYPE2_REGION = {"rx": 0.5259, "ry": 0.0567, "size": 31}
+def _load_card_config():
+    """Load card layout configuration from JSON file"""
+    config_path = Path(__file__).parent.parent.parent / "config" / "card_layout.json"
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+    logger.debug(f"Loaded card config from: {config_path}")
+    return config
 
-# 根据行数调整 type 的 y 坐标（临时修复）
-# 布局：第一行 (1,4)，第二行 (2,5)，第三行 (3,6)
-_TYPE_Y_OFFSETS = {
-    1: 0.0,    # 第一行
-    2: 0.02,   # 第二行
-    3: 0.04,   # 第三行
-}
+_CARD_CONFIG = _load_card_config()
 
-# 多色背景颜色（RGB → BGR）
-_BG_COLORS_MULTI = [(221, 237, 245), (200, 95, 115)]
+# 从配置中提取参数
+_SPRITE_REGION = _CARD_CONFIG['regions']['sprite']
+_TYPE1_REGION = _CARD_CONFIG['regions']['type1']
+_TYPE2_REGION = _CARD_CONFIG['regions']['type2']
+_BG_COLORS_MULTI = _CARD_CONFIG['bg_colors_multi']
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stats 页 - 属性值框（基于卡片内的相对坐标，兼容不同分辨率）
-# ─────────────────────────────────────────────────────────────────────────────
-_STAT_BOX_W = 0.189
-_STAT_BOX_H = 0.198
+# Stats 页配置
+_STAT_BOXES_CONFIG = _CARD_CONFIG['stat_boxes']
+_STAT_BOX_W = _STAT_BOXES_CONFIG['box_w']
+_STAT_BOX_H = _STAT_BOXES_CONFIG['box_h']
+_STAT_LEFT_X = _STAT_BOXES_CONFIG['left_x']
+_STAT_RIGHT_X = _STAT_BOXES_CONFIG['right_x']
+_STAT_Y_TOPS = _STAT_BOXES_CONFIG['y_tops']
 
-_STAT_LEFT_X = 0.287
-_STAT_LEFT_Y_TOPS = [0.2708, 0.5000, 0.7292]
+# 性格箭头位置从配置加载
+_STAT_ARROWS = [(a['name'], a['x'], a['y'], a['size']) for a in _CARD_CONFIG['stat_arrows']]
 
-_STAT_RIGHT_X = 0.762
-_STAT_RIGHT_Y_TOPS = [0.2708, 0.5000, 0.7292]
-
-# 性格箭头位置（中文版本更新）
-_STAT_ARROWS = [
-    ("hp",      0.167, 0.307, 0.203, 0.442),
-    ("attack",  0.187, 0.531, 0.221, 0.667),
-    ("defense", 0.188, 0.781, 0.221, 0.906),
-    ("sp_atk",  0.653, 0.302, 0.691, 0.438),
-    ("sp_def",  0.656, 0.552, 0.689, 0.667),
-    ("speed",   0.656, 0.776, 0.692, 0.906),
-]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 工具函数
-# ─────────────────────────────────────────────────────────────────────────────
 
 _pokemon_detector = None  # 全局单例
 
 
 def _get_detector() -> PokemonDetector:
-    """获取 PokemonDetector 单例，支持 debug 参数"""
+    """获取 PokemonDetector 单例"""
     global _pokemon_detector
     if _pokemon_detector is None:
         _pokemon_detector = PokemonDetector()
     return _pokemon_detector
 
 
-def _extract_regions(img: np.ndarray, card_info: dict, slot_idx: int) -> dict:
-    """从卡牌框提取三个矩形（sprite、type1、type2）"""
+def _extract_regions(img: np.ndarray, card_info: dict) -> dict:
+    """从卡牌框提取三个矩形（sprite、type1、type2），可能超出卡片框边界"""
     x, y, w, h = card_info['x'], card_info['y'], card_info['w'], card_info['h']
     regions = {}
 
-    # 根据行数调整 type 的 y 坐标
-    row = (slot_idx - 1) % 3 + 1
-    type_y_offset = _TYPE_Y_OFFSETS.get(row, 0)
-
-    # 提取三个矩形
     for label, region_cfg in [
         ('sprite', _SPRITE_REGION),
-        ('type1', {**_TYPE1_REGION, 'ry': _TYPE1_REGION['ry'] + type_y_offset}),
-        ('type2', {**_TYPE2_REGION, 'ry': _TYPE2_REGION['ry'] + type_y_offset}),
+        ('type1', _TYPE1_REGION),
+        ('type2', _TYPE2_REGION),
     ]:
         rx = region_cfg['rx']
         ry = region_cfg['ry']
@@ -107,50 +76,26 @@ def _extract_regions(img: np.ndarray, card_info: dict, slot_idx: int) -> dict:
         rx1 = rx0 + size
         ry1 = ry0 + size
 
-        # 提取矩形（超出边界的部分用白色填充）
-        extracted = np.full((size, size, 3), 255, dtype=np.uint8)
-
-        # 计算在原图和提取矩形中的有效范围
-        src_x0 = max(0, rx0)
-        src_y0 = max(0, ry0)
-        src_x1 = min(img.shape[1], rx1)
-        src_y1 = min(img.shape[0], ry1)
-
-        dst_x0 = src_x0 - rx0
-        dst_y0 = src_y0 - ry0
-        dst_x1 = dst_x0 + (src_x1 - src_x0)
-        dst_y1 = dst_y0 + (src_y1 - src_y0)
-
-        if src_x1 > src_x0 and src_y1 > src_y0:
-            extracted[dst_y0:dst_y1, dst_x0:dst_x1] = img[src_y0:src_y1, src_x0:src_x1]
-
+        extracted = img[ry0:ry1, rx0:rx1]
         regions[label] = extracted
 
     return regions
 
 
-def _identify_pokemon(img: np.ndarray, card_info: dict, slot_idx: int, debug: bool = False, debug_dir: str = "debug_output/my_team") -> dict:
+def _identify_pokemon(img: np.ndarray, card_info: dict, slot_idx: int, debug=False) -> dict:
     """识别卡牌中的 Pokemon"""
+    regions = _extract_regions(img, card_info)
 
-    # 提取三个矩形
-    regions = _extract_regions(img, card_info, slot_idx)
-
-    # 识别 Pokemon
     detector = _get_detector()
     result = detector.detect(
         regions['sprite'],
         regions['type1'],
         regions['type2'],
         bg_removal="multi",
-        debug=debug,
         bg_colors=_BG_COLORS_MULTI,
-        remove_type_bg=True,
     )
-
-    # 保存三个 region 图片用于调试
-    if debug:
-        from pokepilot.common.pokemon_detect import _remove_bg_multi, _remove_bg, _TYPE_ICON_BG_COLOR, _TYPE_ICON_BG_TOLERANCE
-
+    if debug == True:
+        from pokepilot.common.pokemon_detect import _remove_bg_multi
         pokemon_dir = Path(debug_dir) / "pokemon"
         pokemon_dir.mkdir(parents=True, exist_ok=True)
 
@@ -161,31 +106,105 @@ def _identify_pokemon(img: np.ndarray, card_info: dict, slot_idx: int, debug: bo
 
         # 去除背景后的图片
         sprite_clean = _remove_bg_multi(regions['sprite'], _BG_COLORS_MULTI, tolerance=40)
-        type1_clean = _remove_bg(regions['type1'], bg_color=_TYPE_ICON_BG_COLOR, tolerance=_TYPE_ICON_BG_TOLERANCE)
-        type2_clean = _remove_bg(regions['type2'], bg_color=_TYPE_ICON_BG_COLOR, tolerance=_TYPE_ICON_BG_TOLERANCE)
 
         cv2.imwrite(str(pokemon_dir / f"slot_{slot_idx}_sprite_clean.png"), sprite_clean)
-        cv2.imwrite(str(pokemon_dir / f"slot_{slot_idx}_type1_clean.png"), type1_clean)
-        cv2.imwrite(str(pokemon_dir / f"slot_{slot_idx}_type2_clean.png"), type2_clean)
-
         logger.debug(f"三个 region 已保存：{pokemon_dir}/slot_{slot_idx}_*.png (原始和去背景版)")
 
     return result
 
 
-def _get_card_coords(image_path: str) -> dict:
+def _get_card_coords() -> dict:
     """
-    用新的布局检测方法获取6个卡片的坐标
+    获取6个卡片的坐标（从配置文件）
     返回格式：{'left_cards': [...], 'right_cards': [...]}
     """
-    layout_result = detect_card_layout(image_path, debug=False)
-    if layout_result is None:
-        raise RuntimeError(f"无法检测布局: {image_path}")
-    return layout_result
+    layout = _CARD_CONFIG['layout']
+    top_x = layout['top_x']
+    top_y = layout['top_y']
+    rect_w = layout['rect_w']
+    rect_h = layout['rect_h']
+    v_gap = layout['vertical_gap']
+    h_gap = layout['horizontal_gap']
+
+    cards = {'left_cards': [], 'right_cards': []}
+
+    # 左边3个卡片
+    for i in range(3):
+        y = top_y + i * (rect_h + v_gap)
+        cards['left_cards'].append({
+            'x': top_x,
+            'y': y,
+            'w': rect_w,
+            'h': rect_h
+        })
+
+    # 右边3个卡片
+    right_x = top_x + rect_w + h_gap
+    for i in range(3):
+        y = top_y + i * (rect_h + v_gap)
+        cards['right_cards'].append({
+            'x': right_x,
+            'y': y,
+            'w': rect_w,
+            'h': rect_h
+        })
+
+    return cards
 
 
-def _detect_stat_color(card: np.ndarray, rx0: float, ry0: float, rx1: float, ry1: float) -> tuple[str, dict]:
-    """检测箭头区域的颜色 —— 返回 ("red"/"blue"/"neutral", debug_info)"""
+def _parse_pokemons(image_path: str, debug: bool = False) -> list[dict]:
+    """
+    从图片中识别所有 Pokemon
+
+    返回: (pokemon_infos列表, layout字典)
+    """
+    img = cv2.imread(image_path)
+    layout = _get_card_coords()
+    all_cards = layout['left_cards'] + layout['right_cards']
+
+    pokemon_infos = []
+    for slot_idx, card_info in enumerate(all_cards):
+        pokemon_info = _identify_pokemon(img, card_info, slot_idx, debug=debug)
+        pokemon_infos.append(pokemon_info)
+        logger.info(f"[Slot {slot_idx + 1}] {pokemon_info['slug']:25s} score={pokemon_info['score']:.1f} 属性={pokemon_info['types']}")
+
+    return pokemon_infos
+
+
+def _group_by_y(items: list, y_threshold: float = 20) -> list[list]:
+    """按 y 坐标分组，同一行的词汇合并"""
+    if not items:
+        return []
+
+    sorted_items = sorted(items, key=lambda r: r[0][0][1])
+    groups = []
+    current_group = [sorted_items[0]]
+
+    for item in sorted_items[1:]:
+        y_curr = item[0][0][1]
+        y_prev = current_group[-1][0][0][1]
+        if abs(y_curr - y_prev) < y_threshold:
+            current_group.append(item)
+        else:
+            groups.append(current_group)
+            current_group = [item]
+    groups.append(current_group)
+    return groups
+
+
+def _extract_text_from_group(group: list) -> str:
+    """从一组词汇中按 x 坐标排序后拼接"""
+    if not group:
+        return ""
+    sorted_group = sorted(group, key=lambda r: r[0][0][0])
+    return " ".join(t for _, t, _ in sorted_group)
+
+
+def _detect_stat_color(card: np.ndarray, rx0: float, ry0: float, rx1: float, ry1: float) -> str:
+    """
+    检测箭头区域的颜色 —— 去除背景后判断箭头颜色
+    返回: "red" (增加↑) / "blue" (减少↓) / "neutral" (无箭头)
+    """
     H, W = card.shape[:2]
 
     x0 = int(rx0 * W)
@@ -194,7 +213,7 @@ def _detect_stat_color(card: np.ndarray, rx0: float, ry0: float, rx1: float, ry1
     y1 = int(ry1 * H)
 
     if x0 >= W or y0 >= H or x1 <= x0 or y1 <= y0:
-        return "neutral", {}
+        return "neutral"
 
     x0 = max(0, x0)
     x1 = min(x1, W)
@@ -203,39 +222,53 @@ def _detect_stat_color(card: np.ndarray, rx0: float, ry0: float, rx1: float, ry1
 
     region = card[y0:y1, x0:x1]
     if region.size == 0:
-        return "neutral", {}
+        return "neutral"
 
-    b_mean = np.mean(region[:, :, 0])
-    g_mean = np.mean(region[:, :, 1])
-    r_mean = np.mean(region[:, :, 2])
+    # 背景色范围：RGB (138-147, 121-128, 210-222) → BGR
+    # 计算中间值，然后取 ±40 的范围
+    b_mid = (210 + 222) / 2  # 216
+    g_mid = (121 + 128) / 2  # 124.5
+    r_mid = (138 + 147) / 2  # 142.5
+    tolerance = 40
 
-    return "color", {
-        "b_mean": b_mean,
-        "g_mean": g_mean,
-        "r_mean": r_mean,
-    }
+    b, g, r = region[:, :, 0], region[:, :, 1], region[:, :, 2]
+
+    # 去除背景色像素
+    is_background = (np.abs(b.astype(float) - b_mid) <= tolerance) & \
+                    (np.abs(g.astype(float) - g_mid) <= tolerance) & \
+                    (np.abs(r.astype(float) - r_mid) <= tolerance)
+
+    foreground_mask = ~is_background
+    if np.sum(foreground_mask) < 10:
+        return "neutral"
+
+    fg_pixels = region[foreground_mask]
+    avg_color = np.mean(fg_pixels, axis=0)
+    b_mean, g_mean, r_mean = avg_color[0], avg_color[1], avg_color[2]
+
+    if r_mean > g_mean and r_mean > b_mean:
+        return "red"
+    elif b_mean > g_mean and b_mean > r_mean:
+        return "blue"
+    else:
+        return "neutral"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Moves & More 页解析
-# ─────────────────────────────────────────────────────────────────────────────
+def _parse_moves_screen(image_path: str, debug: bool = False) -> list[dict]:
+    """
+    从 Moves & More 页识别昵称、特性、道具、招式
 
-def _parse_moves_screen(image_path: str, debug: bool = False) -> tuple[list[dict], list[dict]]:
-    """提取 Moves & More 页数据"""
-    setup_logger(__name__, debug=debug)
-
-    # 初始化调试输出目录
-    moves_output_dir = None
-    if debug:
-        moves_output_dir = Path("debug_output/my_team/moves_cards")
-        moves_output_dir.mkdir(parents=True, exist_ok=True)
-
+    返回: (cards列表, layout字典)
+    """
     img = cv2.imread(image_path)
     cards = []
-    pokemon_infos = []
-    # 获取动态布局坐标
-    layout = _get_card_coords(image_path)
-    all_cards = layout['left_cards'] + layout['right_cards']  # 左3个 + 右3个
+    layout = _get_card_coords()
+    all_cards = layout['left_cards'] + layout['right_cards']
+
+    moves_output_dir = None
+    if debug:
+        moves_output_dir = Path(debug_dir) / "moves_cards"
+        moves_output_dir.mkdir(parents=True, exist_ok=True)
 
     for slot_idx, card_info in enumerate(all_cards):
         x0, y0 = card_info['x'], card_info['y']
@@ -243,24 +276,15 @@ def _parse_moves_screen(image_path: str, debug: bool = False) -> tuple[list[dict
         x1, y1 = x0 + w, y0 + h
 
         card = img[y0:y1, x0:x1]
-        cH, cW = card.shape[:2]
+        cW, cH = card.shape[1], card.shape[0]
 
-        # 整张卡片 OCR
         results = read_region(card, min_conf=0.1)
-        # 按 y 坐标分组，提取前3行（名字、特性、道具）和后4行（招式）
         split_x = cW // 2
-        split_y = cH // 2  # 大概中线分左右
 
-        # 按 y 坐标排序，然后按行分组
-        results_sorted = sorted(results, key=lambda r: r[0][0][1])
-
-        # 估计高度分组：前3个词汇应该是名字、特性、道具；后面应该是招式
-        # 更简单的方法：按x坐标分左右列，但对同一行的词汇合并
         results_left = []
         results_right = []
 
         for box, text, conf in results:
-            # 取框的中点x坐标判断属于左还是右
             center_x = sum(p[0] for p in box) / len(box)
             if center_x < split_x:
                 results_left.append((box, text, conf))
@@ -269,69 +293,24 @@ def _parse_moves_screen(image_path: str, debug: bool = False) -> tuple[list[dict
 
         slot_num = slot_idx + 1
         logger.info(f"[Slot {slot_num}] OCR 识别 {len(results)} 个区域，左列 {len(results_left)}，右列 {len(results_right)}")
-        logger.debug(f"OCR 详细结果:")
-        for i, (box, text, conf) in enumerate(results):
-            center_x = sum(p[0] for p in box) / len(box)
-            logger.debug(f"  {i}: x={center_x:.0f} y={box[0][1]:.0f} '{text}' (conf={conf:.2f})")
 
-        # 按 y 坐标分组提取（同一行的词汇合并）
-        def group_by_y(items, y_threshold=20):
-            """按 y 坐标分组，同一行的词汇合并"""
-            if not items:
-                return []
+        left_groups = _group_by_y(results_left)
+        right_groups = _group_by_y(results_right)
 
-            sorted_items = sorted(items, key=lambda r: r[0][0][1])  # 按 y 排序
-            groups = []
-            current_group = [sorted_items[0]]
-
-            for item in sorted_items[1:]:
-                y_curr = item[0][0][1]
-                y_prev = current_group[-1][0][0][1]
-                if abs(y_curr - y_prev) < y_threshold:
-                    current_group.append(item)
-                else:
-                    groups.append(current_group)
-                    current_group = [item]
-            groups.append(current_group)
-            return groups
-
-        # 分组
-        left_groups = group_by_y(results_left)
-        right_groups = group_by_y(results_right)
-
-        logger.debug(f"左列 {len(left_groups)} 组，右列 {len(right_groups)} 组")
-        for i, group in enumerate(right_groups):
-            logger.debug(f"右组{i}: {[t for _, t, _ in group]}")
-
-        # 提取数据（每组内按 x 排序后拼接）
-        def extract_text_from_group(group):
-            """从一组词汇中按 x 坐标排序后拼接"""
-            if not group:
-                return ""
-            sorted_group = sorted(group, key=lambda r: r[0][0][0])  # 按 x 排序
-            return " ".join(t for _, t, _ in sorted_group)
-
-        nickname = extract_text_from_group(left_groups[0]) if len(left_groups) > 0 else ""
-        ability = extract_text_from_group(left_groups[1]) if len(left_groups) > 1 else ""
-        held_item = extract_text_from_group(left_groups[2]) if len(left_groups) > 2 else ""
+        nickname = _extract_text_from_group(left_groups[0]) if len(left_groups) > 0 else ""
+        ability = _extract_text_from_group(left_groups[1]) if len(left_groups) > 1 else ""
+        held_item = _extract_text_from_group(left_groups[2]) if len(left_groups) > 2 else ""
 
         moves = []
         for group in right_groups:
-            move_text = extract_text_from_group(group)
+            move_text = _extract_text_from_group(group)
             if move_text:
                 moves.append(move_text)
 
-        # 识别 Pokemon
-        pokemon_info = _identify_pokemon(img, card_info, slot_idx + 1, debug=debug, debug_dir="debug_output/my_team")
-
-        # 保存标注图片
-        if moves_output_dir and results:
+        if debug and results:
             card_debug = card.copy()
-
-            # 使用 PIL 绘制中文文字
             pil_img = Image.fromarray(cv2.cvtColor(card_debug, cv2.COLOR_BGR2RGB))
             draw = ImageDraw.Draw(pil_img)
-            # 尝试加载中文字体
             try:
                 font = ImageFont.truetype("C:/Windows/Fonts/simhei.ttf", 12)
             except:
@@ -339,60 +318,49 @@ def _parse_moves_screen(image_path: str, debug: bool = False) -> tuple[list[dict
 
             for box, text, conf in results:
                 pts = np.int32(box)
-                cv2.polylines(card_debug, [pts], True, (0, 255, 0), 1)  # 绿色框
-
-                # 用 PIL 绘制中文文字
+                cv2.polylines(card_debug, [pts], True, (0, 255, 0), 1)
                 x, y = int(box[0][0]), int(box[0][1]) - 15
                 text_label = f"{text} {conf:.2f}"
                 draw.text((x, y), text_label, fill=(0, 255, 255), font=font)
 
-            # 转换回 OpenCV 格式
             card_debug = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-
-            slot_num = slot_idx + 1
             card_path = moves_output_dir / f"slot_{slot_num}_ocr.png"
             cv2.imwrite(str(card_path), card_debug)
             logger.debug(f"OCR 标注图已保存：{card_path}")
 
         cards.append({
             "slot": slot_idx + 1,
-            "nickname": nickname,  # OCR 识别的昵称/标注
+            "nickname": nickname,
             "ability": ability,
             "held_item": held_item,
             "moves": moves,
         })
-        pokemon_infos.append(pokemon_info)
-        slot_num = slot_idx + 1
-        logger.info(f"槽{slot_num}: {pokemon_info['name']} (score={pokemon_info['score']}) | {nickname} | {ability} | {held_item}")
+        logger.info(f"槽{slot_num}: {nickname} | {ability} | {held_item}")
 
-    return pokemon_infos, cards, layout
+    return cards
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stats 页解析
-# ─────────────────────────────────────────────────────────────────────────────
+def _parse_stats_screen(image_path: str, debug: bool = False) -> list[dict]:
+    """
+    从 Stats 页识别属性值和性格
 
-def _parse_stats_screen(image_path: str, layout: dict = None, debug: bool = False) -> list[dict]:
-    """提取 Stats 页数据"""
-    setup_logger(__name__, debug=debug)
+    返回: cards列表
+    """
+    import re
 
     img = cv2.imread(image_path)
     cards = []
 
-    bg_color = np.array([204, 114, 137], dtype=np.float32)
-    arrow_map = {key: (rx0, ry0, rx1, ry1) for key, rx0, ry0, rx1, ry1 in _STAT_ARROWS}
+    arrow_map = {key: (x, y, x + size_px / 738, y + size_px / 186) for key, x, y, size_px in _STAT_ARROWS}
     stat_names = ["hp", "attack", "defense", "sp_atk", "sp_def", "speed"]
 
-    # 保存卡片图片用于标注
-    card_output_dir = None
+    stats_output_dir = None
     if debug:
-        card_output_dir = Path("debug_output/my_team/stats_cards")
-        card_output_dir.mkdir(parents=True, exist_ok=True)
+        stats_output_dir = Path(debug_dir) / "stats_cards"
+        stats_output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 获取动态布局坐标（如果没有传入，则自己检测）
-    if layout is None:
-        layout = _get_card_coords(image_path)
-    all_cards = layout['left_cards'] + layout['right_cards']  # 左3个 + 右3个
+    layout = _get_card_coords()
+    all_cards = layout['left_cards'] + layout['right_cards']
 
     for slot_idx, card_info in enumerate(all_cards):
         x0, y0 = card_info['x'], card_info['y']
@@ -402,85 +370,25 @@ def _parse_stats_screen(image_path: str, layout: dict = None, debug: bool = Fals
         card = img[y0:y1, x0:x1]
         cH, cW = card.shape[:2]
 
-        # 保存卡片图片（带属性框和箭头框标注）
         slot_num = slot_idx + 1
-        card_debug = card.copy()
 
-        # 画属性框
-        stat_names_row = ["hp", "attack", "defense", "sp_atk", "sp_def", "speed"]
-        colors = {
-            "hp": (0, 255, 0),        # 绿
-            "attack": (255, 0, 0),   # 蓝
-            "defense": (0, 255, 255),# 青
-            "sp_atk": (0, 0, 255),   # 红
-            "sp_def": (255, 255, 0), # 黄
-            "speed": (255, 0, 255),  # 紫
-        }
-
-        # 左列属性框
-        for i, y_top in enumerate(_STAT_LEFT_Y_TOPS):
-            x0 = int(_STAT_LEFT_X * cW)
-            y0 = int(y_top * cH)
-            x1 = int((_STAT_LEFT_X + _STAT_BOX_W) * cW)
-            y1 = int((y_top + _STAT_BOX_H) * cH)
-            color = colors.get(stat_names_row[i], (255, 255, 255))
-            cv2.rectangle(card_debug, (x0, y0), (x1, y1), color, 2)
-            cv2.putText(card_debug, f"val_{stat_names_row[i]}", (x0, y0-5),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
-
-        # 右列属性框
-        for i, y_top in enumerate(_STAT_RIGHT_Y_TOPS):
-            x0 = int(_STAT_RIGHT_X * cW)
-            y0 = int(y_top * cH)
-            x1 = int((_STAT_RIGHT_X + _STAT_BOX_W) * cW)
-            y1 = int((y_top + _STAT_BOX_H) * cH)
-            color = colors.get(stat_names_row[i+3], (255, 255, 255))
-            cv2.rectangle(card_debug, (x0, y0), (x1, y1), color, 2)
-            cv2.putText(card_debug, f"val_{stat_names_row[i+3]}", (x0, y0-5),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
-
-        # 画箭头框（虚线）
-        arrow_map = {key: (rx0, ry0, rx1, ry1) for key, rx0, ry0, rx1, ry1 in _STAT_ARROWS}
-        for key, (rx0, ry0, rx1, ry1) in arrow_map.items():
-            x0 = int(rx0 * cW)
-            y0 = int(ry0 * cH)
-            x1 = int(rx1 * cW)
-            y1 = int(ry1 * cH)
-            color = colors.get(key, (128, 128, 128))
-            cv2.rectangle(card_debug, (x0, y0), (x1, y1), color, 1, cv2.LINE_AA)  # 细虚线
-            cv2.putText(card_debug, f"arrow_{key}", (x0, y1+15),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1)
-
-        if debug:
-            card_path = card_output_dir / f"slot_{slot_num}.png"
-            cv2.imwrite(str(card_path), card_debug)
-            logger.debug(f"卡片标注图已保存：{card_path}")
-
-        # OCR 卡片左右两部分（避免左右列框混淆）
         card_w = card.shape[1]
         card_mid = card_w // 2
 
-        # 左部分（HP, Attack, Defense）
         card_left = card[:, :card_mid]
         results_left = read_region(card_left)
 
-        # 右部分（Sp.Atk, Sp.Def, Speed）
         card_right = card[:, card_mid:]
         results_right = read_region(card_right)
-        # 调整右部分的 x 坐标
         results_right = [(box, text, conf) if isinstance(box, str) else
                         ([[p[0] + card_mid, p[1]] for p in box], text, conf)
                         for box, text, conf in results_right]
 
-        # 合并结果
         results = results_left + results_right
 
-        # 提取名字
         nickname = results[0][1] if len(results) > 0 else ""
 
-        # 从框中提取属性值
-        def extract_from_box(box_x0, box_x1, box_y0, box_y1, stat_name=""):
-            import re
+        def extract_from_box(box_x0, box_x1, box_y0, box_y1):
             nums = []
             for box, text, conf in results:
                 xs = [p[0] / cW for p in box]
@@ -489,7 +397,6 @@ def _parse_stats_screen(image_path: str, layout: dict = None, debug: bool = Fals
                 by_min, by_max = min(ys), max(ys)
 
                 if bx_max >= box_x0 and bx_min <= box_x1 and by_max >= box_y0 and by_min <= box_y1:
-                    # 从文本中提取数字
                     match = re.search(r'\d+', text)
                     if match:
                         center_x = (bx_min + bx_max) / 2
@@ -499,56 +406,29 @@ def _parse_stats_screen(image_path: str, layout: dict = None, debug: bool = Fals
 
         stats = {}
 
-        # 左列 3 个属性
-        for i, y_top in enumerate(_STAT_LEFT_Y_TOPS):
+        for i, y_top in enumerate(_STAT_Y_TOPS):
             nums = extract_from_box(_STAT_LEFT_X, _STAT_LEFT_X + _STAT_BOX_W,
                                    y_top, y_top + _STAT_BOX_H)
             if len(nums) >= 1:
                 stats[stat_names[i]] = nums[0]
 
-        # 右列 3 个属性
-        for i, y_top in enumerate(_STAT_RIGHT_Y_TOPS):
+        for i, y_top in enumerate(_STAT_Y_TOPS):
             nums = extract_from_box(_STAT_RIGHT_X, _STAT_RIGHT_X + _STAT_BOX_W,
                                    y_top, y_top + _STAT_BOX_H)
             if len(nums) >= 1:
                 stats[stat_names[3 + i]] = nums[0]
 
-        # 检测性格
         nature_inc = None
         nature_dec = None
-        distance_threshold = 20
 
-        arrow_colors = {}
         for key, (rx0, ry0, rx1, ry1) in arrow_map.items():
-            _, debug_info = _detect_stat_color(card, rx0, ry0, rx1, ry1)
-            arrow_colors[key] = debug_info
+            color = _detect_stat_color(card, rx0, ry0, rx1, ry1)
 
-        for key, color_info in arrow_colors.items():
-            if not color_info:
-                continue
-
-            b = color_info.get('b_mean', 0)
-            g = color_info.get('g_mean', 0)
-            r = color_info.get('r_mean', 0)
-            current_color = np.array([b, g, r], dtype=np.float32)
-            distance = np.linalg.norm(current_color - bg_color)
-
-            if distance < distance_threshold:
-                continue
-
-            b_delta = b - bg_color[0]
-            g_delta = g - bg_color[1]
-            r_delta = r - bg_color[2]
-
-            g_abs = abs(g_delta)
-            r_abs = abs(r_delta)
-
-            if g_abs > r_abs:
-                nature_dec = key
-            else:
+            if color == "red":
                 nature_inc = key
+            elif color == "blue":
+                nature_dec = key
 
-        # 生成性格字符串
         nature = None
         if nature_inc and nature_dec:
             nature = f"{nature_inc}↑/{nature_dec}↓"
@@ -557,36 +437,74 @@ def _parse_stats_screen(image_path: str, layout: dict = None, debug: bool = Fals
         elif nature_dec:
             nature = f"{nature_dec}↓"
 
+        if debug:
+            card_debug = card.copy()
+            colors = {
+                "hp": (0, 255, 0),
+                "attack": (255, 0, 0),
+                "defense": (0, 255, 255),
+                "sp_atk": (0, 0, 255),
+                "sp_def": (255, 255, 0),
+                "speed": (255, 0, 255),
+            }
+            stat_names_row = ["hp", "attack", "defense", "sp_atk", "sp_def", "speed"]
+
+            for i, y_top in enumerate(_STAT_Y_TOPS):
+                x0 = int(_STAT_LEFT_X * cW)
+                y0 = int(y_top * cH)
+                x1 = int((_STAT_LEFT_X + _STAT_BOX_W) * cW)
+                y1 = int((y_top + _STAT_BOX_H) * cH)
+                color = colors.get(stat_names_row[i], (255, 255, 255))
+                cv2.rectangle(card_debug, (x0, y0), (x1, y1), color, 2)
+
+            for i, y_top in enumerate(_STAT_Y_TOPS):
+                x0 = int(_STAT_RIGHT_X * cW)
+                y0 = int(y_top * cH)
+                x1 = int((_STAT_RIGHT_X + _STAT_BOX_W) * cW)
+                y1 = int((y_top + _STAT_BOX_H) * cH)
+                color = colors.get(stat_names_row[i+3], (255, 255, 255))
+                cv2.rectangle(card_debug, (x0, y0), (x1, y1), color, 2)
+
+            # 画箭头框（虚线）
+            for key, (rx0, ry0, rx1, ry1) in arrow_map.items():
+                x0 = int(rx0 * cW)
+                y0 = int(ry0 * cH)
+                x1 = int(rx1 * cW)
+                y1 = int(ry1 * cH)
+                color = colors.get(key, (128, 128, 128))
+                cv2.rectangle(card_debug, (x0, y0), (x1, y1), color, 1, cv2.LINE_AA)
+                cv2.putText(card_debug, f"arrow_{key}", (x0, y1+15),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1)
+
+            card_path = stats_output_dir / f"slot_{slot_num}.png"
+            cv2.imwrite(str(card_path), card_debug)
+            logger.debug(f"Stats 卡片标注图已保存：{card_path}")
+
         cards.append({
             "slot": slot_idx + 1,
             "nickname": nickname,
             "stats": stats,
             "nature": nature,
         })
-
         logger.info(f"槽{slot_num}: {nickname} | {stats} | 性格: {nature}")
-
 
     return cards
 
-def parse_team_init(moves_screenshot: str, stats_screenshot: str, debug: bool = False) -> dict:
-    detect_cards, moves_cards, layout = _parse_moves_screen(moves_screenshot, debug=debug)
 
-    # 从 moves 获取布局，传递给 stats（避免 stats 重复检测）
-    stats_cards = _parse_stats_screen(stats_screenshot, layout=layout, debug=debug)
-    return detect_cards, moves_cards, stats_cards
 def parse_team(moves_screenshot: str, stats_screenshot: str, debug: bool = False) -> dict:
-    detect_cards, moves_cards, layout = _parse_moves_screen(moves_screenshot, debug=debug)
+    """
+    从两张截图识别并构建完整队伍
 
-    # 从 moves 获取布局，传递给 stats（避免 stats 重复检测）
-    stats_cards = _parse_stats_screen(stats_screenshot, layout=layout, debug=debug)
-
+    返回: { 'trainer_name': '', 'roster': [...] }
+    """
+    detect_cards = _parse_pokemons(moves_screenshot, debug=debug)
+    moves_cards = _parse_moves_screen(moves_screenshot, debug=debug)
+    stats_cards = _parse_stats_screen(stats_screenshot, debug=debug)
 
     builder = PokemonBuilder()
     roster = []
 
     for i, (detect_card, move_card, stat_card) in enumerate(zip(detect_cards, moves_cards, stats_cards), 1):
-
         pokemon = builder.build_pokemon(
             detect_data=detect_card,
             moves_data=move_card,
@@ -601,25 +519,12 @@ def parse_team(moves_screenshot: str, stats_screenshot: str, debug: bool = False
     }
     return team
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="从游戏截图生成 my_team.json")
-    parser.add_argument("--moves",  required=True)
-    parser.add_argument("--stats",  required=True)
-    parser.add_argument("--debug", action="store_true", help="启用调试模式")
-    args = parser.parse_args()
-
-    setup_logger(__name__, debug=args.debug)
-
-    logger.info("── Moves & More ──")
-    moves_cards = _parse_moves_screen(args.moves, debug=args.debug)
-
-    logger.info("── Stats ──")
-    stats_cards = _parse_stats_screen(args.stats, debug=args.debug)
-    logger.debug(f"Moves 卡片: {moves_cards}")
-    logger.debug(f"Stats 卡片: {stats_cards}")
-
-    
 
 
-if __name__ == "__main__":
-    main()
+
+def parse_team_init(moves_screenshot: str, stats_screenshot: str, debug: bool = False) -> dict:
+    detect_cards = _parse_pokemons(moves_screenshot, debug=debug)
+    moves_cards = _parse_moves_screen(moves_screenshot, debug=debug)
+    stats_cards = _parse_stats_screen(stats_screenshot, debug=debug)
+
+    return detect_cards, moves_cards, stats_cards
