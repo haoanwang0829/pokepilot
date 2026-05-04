@@ -218,7 +218,7 @@ class PokemonDetector:
                 if key in self.sprite_refs:
                     variant.sprite_shiny = self.sprite_refs[key]
 
-    def _match_type(self, icon: np.ndarray, size: int = 32, threshold: float = 60.0, min_std: float = 30.0) -> int | None:
+    def _match_type(self, icon: np.ndarray, size: int = 32, threshold: float = 60.0, min_std: float = 10.0) -> int | None:
         """识别属性图标，返回 type_id 或 None
 
         Args:
