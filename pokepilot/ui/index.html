@@ -137,6 +137,13 @@
                         <div class="speed-axis-controls">
                             <button id="btn-tailwind-my" class="speed-axis-toggle" onclick="toggleTailwind('my')">我方顺风</button>
                             <button id="btn-tailwind-opp" class="speed-axis-toggle" onclick="toggleTailwind('opp')">对方顺风</button>
+                            <span style="width: 10px;"></span>
+                            <button id="btn-speed-x2" class="speed-axis-toggle" onclick="toggleSpeedModifier('x2')">×2</button>
+                            <button id="btn-speed-div2" class="speed-axis-toggle" onclick="toggleSpeedModifier('div2')">÷2</button>
+                            <span style="width: 8px;"></span>
+                            <button id="btn-speed-up" class="speed-axis-toggle" onclick="adjustSpeedLevel(1)">速度+1</button>
+                            <button id="btn-speed-down" class="speed-axis-toggle" onclick="adjustSpeedLevel(-1)">速度-1</button>
+                            <button id="btn-speed-reset" class="speed-axis-toggle" onclick="resetSpeedModifiers()">重置</button>
                         </div>
                         <div id="speed-opp-top" class="speed-opp-section"></div>
                         <div id="speed-axis-main">
@@ -190,15 +197,15 @@
             <div class="effect-table-container">
                 <!-- 左侧我方6行宝可梦 -->
                 <div class="effect-side my-side">
-                    <div class="effect-side-header" id="my-effect-header"></div>
-                    <div class="effect-side-content" id="my-effect-content"></div>
+                    <!-- <div class="effect-side-title">我方队伍</div> -->
+                    <div id="my-effect-rows"></div>
                 </div>
                 <!-- 中间分隔 -->
                 <div class="effect-divider"></div>
                 <!-- 右侧对方6行宝可梦 -->
                 <div class="effect-side opp-side">
-                    <div class="effect-side-header" id="opp-effect-header"></div>
-                    <div class="effect-side-content" id="opp-effect-content"></div>
+                    <!-- <div class="effect-side-title">对方队伍</div> -->
+                    <div id="opp-effect-rows"></div>
                 </div>
             </div>
         </div>

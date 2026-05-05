@@ -840,6 +840,19 @@ video {
     padding: 0 4px;
 }
 
+.speed-opp-text.speed-opp-min-text,
+.speed-opp-text.speed-opp-max-text {
+    pointer-events: auto;
+    cursor: ew-resize;
+    background: rgba(244, 135, 113, 0.2);
+    border-radius: 3px;
+}
+
+.speed-opp-text.speed-opp-min-text:hover,
+.speed-opp-text.speed-opp-max-text:hover {
+    background: rgba(244, 135, 113, 0.5);
+}
+
 .speed-opp-bar {
     position: absolute;
     height: 3px;
@@ -1103,14 +1116,12 @@ video {
     background: #2d2d2d;
     border: 1px solid #444;
     border-radius: 8px;
-    padding: 0 20px 20px;
+    padding: 20px;
     max-width: 98vw;
     min-width: 1200px;
     max-height: 90vh;
-    overflow: visible;
+    overflow: auto;
     position: relative;
-    display: flex;
-    flex-direction: column;
 }
 
 .effect-close-btn {
@@ -1139,53 +1150,11 @@ video {
     display: flex;
     gap: 30px;
     margin-top: 10px;
-    flex: 1;
-    overflow: hidden;
 }
 
 .effect-side {
     flex: 1;
     min-width: 400px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.effect-side-header {
-    flex-shrink: 0;
-    background: #2d2d2d;
-    padding: 8px 8px 10px 8px;
-    border-bottom: 2px solid #444;
-    z-index: 5;
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-}
-
-.effect-side-content {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    padding-right: 5px;
-}
-
-/* 美化滚动条 */
-.effect-side-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.effect-side-content::-webkit-scrollbar-track {
-    background: #333;
-    border-radius: 3px;
-}
-
-.effect-side-content::-webkit-scrollbar-thumb {
-    background: #666;
-    border-radius: 3px;
-}
-
-.effect-side-content::-webkit-scrollbar-thumb:hover {
-    background: #888;
 }
 
 .effect-side-title {

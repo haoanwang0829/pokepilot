@@ -27,6 +27,9 @@ let fadedElements = { my: new Set(), opp: new Set() };
 // 对方速度图标拖拽位置（0~1，表示在范围内的相对位置）
 let oppSpeedMarkerRatio = {};
 let oppSpeedDragState = null;
+let oppEdgeDragState = null;  // 拖拽min/max端点的状态
+// 敌方速度范围自定义（key=globalIndex, value={min: number, max: number}）
+let oppCustomSpeedRange = {};
 // 速度轴配置
 const MIN_SPEED = 50;
 const BASE_MAX_SPEED = 200;
@@ -37,14 +40,51 @@ let speedFieldState = {
     my_tailwind: false,
     opp_tailwind: false
 };
+let speedModifierState = {
+    active: null,  // null | 'x2' | 'div2'
+    targetSide: null,
+    targetIndex: null
+};
+// 速度等级（key = "side-index", value = 等级数）
+let speedLevels = {};
 let moveDamageDragState = null;
 let battleMode = 'double';
 let activeDamageQuery = null;
 
 
-function getEffectiveSpeed(speed, hasTailwind) {
-    const value = Number(speed) || 0;
-    return hasTailwind ? value * 2 : value;
+function getEffectiveSpeed(speed, hasTailwind, pokemon) {
+    let value = Number(speed) || 0;
+    if (hasTailwind) value *= 2;
+    if (pokemon?._speedModifiers) {
+        for (const mod of pokemon._speedModifiers) {
+            if (mod === 'x2') value *= 2;
+            else if (mod === 'div2') value *= 0.5;
+        }
+    }
+    // 速度等级修正
+    const levelKey = pokemon?._levelKey;
+    if (levelKey && speedLevels[levelKey] !== undefined) {
+        const level = speedLevels[levelKey];
+        value *= (1 + level * 0.5);
+    }
+    return value;
+}
+
+
+function getSpeedLevelMultiplier(level) {
+    return 1 + level * 0.5;
+}
+
+
+function adjustSpeedLevel(delta) {
+    speedModifierState.active = null;
+
+    // 临时状态，用于点击时应用
+    speedModifierState._pendingLevelDelta = delta;
+    speedModifierState._pendingLevelMode = true;
+
+    updateSpeedModifierButtons();
+    logMsg(`速度等级调整模式: ${delta > 0 ? '+1' : '-1'}，请点击宝可梦`);
 }
 
 
@@ -53,16 +93,16 @@ function getDynamicMaxSpeed() {
 
     (currentTeams['my-team'] || []).forEach((pokemon) => {
         const speed = pokemon?.stats?.speed;
-        maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.my_tailwind));
+        maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.my_tailwind, pokemon));
     });
 
     (currentTeams['opp-team'] || []).forEach((pokemon) => {
         const speed = pokemon?.stats?.speed;
         if (Array.isArray(speed)) {
-            maxCandidates.push(getEffectiveSpeed(speed[0], speedFieldState.opp_tailwind));
-            maxCandidates.push(getEffectiveSpeed(speed[1], speedFieldState.opp_tailwind));
+            maxCandidates.push(getEffectiveSpeed(speed[0], speedFieldState.opp_tailwind, pokemon));
+            maxCandidates.push(getEffectiveSpeed(speed[1], speedFieldState.opp_tailwind, pokemon));
         } else {
-            maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.opp_tailwind));
+            maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.opp_tailwind, pokemon));
         }
     });
 
@@ -83,6 +123,104 @@ function updateTailwindButtons() {
     const oppTailwindButton = document.getElementById('btn-tailwind-opp');
     if (myTailwindButton) myTailwindButton.classList.toggle('active', speedFieldState.my_tailwind);
     if (oppTailwindButton) oppTailwindButton.classList.toggle('active', speedFieldState.opp_tailwind);
+}
+
+
+function toggleSpeedModifier(mode) {
+    speedModifierState.active = mode;
+    updateSpeedModifierButtons();
+    logMsg(`速度修正模式: ${mode === 'x2' ? '×2' : '÷2'}，请点击宝可梦`);
+}
+
+
+function updateSpeedModifierButtons() {
+    const x2Btn = document.getElementById('btn-speed-x2');
+    const div2Btn = document.getElementById('btn-speed-div2');
+    const upBtn = document.getElementById('btn-speed-up');
+    const downBtn = document.getElementById('btn-speed-down');
+    if (x2Btn) x2Btn.classList.toggle('active', speedModifierState.active === 'x2');
+    if (div2Btn) div2Btn.classList.toggle('active', speedModifierState.active === 'div2');
+    const isLevelMode = speedModifierState._pendingLevelMode === true;
+    if (upBtn) upBtn.classList.toggle('active', isLevelMode && speedModifierState._pendingLevelDelta > 0);
+    if (downBtn) downBtn.classList.toggle('active', isLevelMode && speedModifierState._pendingLevelDelta < 0);
+}
+
+
+function applySpeedModifierToPokemon(side, index) {
+    const pokemon = currentTeams[side]?.[index];
+    if (!pokemon) return;
+
+    // 速度等级调整模式
+    if (speedModifierState._pendingLevelMode && speedModifierState._pendingLevelDelta !== undefined) {
+        const levelKey = `${side}-${index}`;
+        pokemon._levelKey = levelKey;
+        if (speedLevels[levelKey] === undefined) {
+            speedLevels[levelKey] = 0;
+        }
+        speedLevels[levelKey] = Math.max(-6, Math.min(6, speedLevels[levelKey] + speedModifierState._pendingLevelDelta));
+        speedModifierState._pendingLevelDelta = undefined;
+        speedModifierState._pendingLevelMode = false;
+        updateSpeedModifierButtons();
+        renderSpeedAxis();
+        console.log('速度等级调整完成:', levelKey, '=', speedLevels[levelKey], 'pokemon._levelKey:', pokemon._levelKey);
+        logMsg(`${pokemon.name_zh || pokemon.name} 速度等级: ${speedLevels[levelKey] > 0 ? '+' : ''}${speedLevels[levelKey]}`);
+        return;
+    }
+
+    if (!speedModifierState.active) return;
+
+    if (!pokemon._speedModifiers) {
+        pokemon._speedModifiers = [];
+    }
+
+    const mod = speedModifierState.active;
+    pokemon._speedModifiers.push(mod);
+
+    const activeMode = speedModifierState.active;
+    speedModifierState.active = null;
+    updateSpeedModifierButtons();
+    renderSpeedAxis();
+
+    const modifierStr = activeMode === 'x2' ? '×2' : '÷2';
+    logMsg(`${pokemon.name_zh || pokemon.name} 速度修正: ${modifierStr}`);
+}
+
+
+function resetSpeedModifiers() {
+    speedModifierState.active = null;
+    speedModifierState._pendingLevelDelta = undefined;
+    speedModifierState._pendingLevelMode = false;
+
+    // 清除所有宝可梦的速度修正
+    ['my-team', 'opp-team'].forEach(side => {
+        (currentTeams[side] || []).forEach(p => {
+            if (p._speedModifiers) p._speedModifiers = [];
+            if (p._levelKey) delete p._levelKey;
+        });
+    });
+
+    // 清除速度等级
+    speedLevels = {};
+
+    // 清除敌方速度范围自定义
+    oppCustomSpeedRange = {};
+
+    // 清除精灵图标位置
+    oppSpeedMarkerRatio = {};
+    stopOppSpeedDrag();
+
+    // 重置顺风
+    speedFieldState.my_tailwind = false;
+    speedFieldState.opp_tailwind = false;
+
+    // 更新按钮状态
+    updateTailwindButtons();
+    updateSpeedModifierButtons();
+
+    // 重新渲染
+    renderSpeedAxis();
+
+    logMsg('速度已重置');
 }
 
 
@@ -187,6 +325,163 @@ function stopOppSpeedDrag() {
 function resetOppSpeedMarkerRatio() {
     oppSpeedMarkerRatio = {};
     stopOppSpeedDrag();
+}
+
+// ==================== 敌方速度范围端点拖拽 ====================
+
+function startOppEdgeDrag(event, globalIndex, edge, rowEl, pctMin, pctMax, baseMin, baseMax) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    oppEdgeDragState = {
+        globalIndex,
+        edge,  // 'min' or 'max'
+        rowEl,
+        pctMin,
+        pctMax,
+        baseMin,
+        baseMax,
+        maxSpeed: getDynamicMaxSpeed()
+    };
+
+    rowEl.classList.add('dragging-edge');
+    document.addEventListener('mousemove', onOppEdgeDragMove);
+    document.addEventListener('mouseup', stopOppEdgeDrag);
+}
+
+
+function onOppEdgeDragMove(event) {
+    if (!oppEdgeDragState) return;
+
+    const { globalIndex, edge, rowEl, baseMin, baseMax, maxSpeed } = oppEdgeDragState;
+    const rowRect = rowEl.getBoundingClientRect();
+    if (!rowRect.width) return;
+
+    const pointerPct = ((event.clientX - rowRect.left) / rowRect.width) * 100;
+    const pointerSpeed = MIN_SPEED + (pointerPct / 100) * (maxSpeed - MIN_SPEED);
+
+    // pointerSpeed是显示值（已包含顺风、×2等），需要转换回原始值进行存储
+    // pointerRaw：去除顺风后的显示值
+    const pointerRaw = speedFieldState.opp_tailwind ? pointerSpeed / 2 : pointerSpeed;
+
+    // 获取速度修正系数（×2/÷2）
+    const speedModifiers = currentTeams['opp-team']?.[globalIndex]?._speedModifiers || [];
+    let modifierMultiplier = 1;
+    for (const mod of speedModifiers) {
+        if (mod === 'x2') modifierMultiplier *= 2;
+        else if (mod === 'div2') modifierMultiplier *= 0.5;
+    }
+
+    // 获取速度等级系数
+    const levelKey = currentTeams['opp-team']?.[globalIndex]?._levelKey;
+    const level = speedLevels[levelKey] ?? 0;
+    const levelMultiplier = 1 + level * 0.5;
+
+    // pointerRaw需要除以速度修正和速度等级，得到"未修正的原始值"
+    // 但要注意：×2/÷2是对原始值的直接修正，速度等级是对显示的修正
+    // ×2时：显示值 = 原始值 × 2，所以原始值 = 显示值 / 2
+    // 速度+1时：显示值 = 原始值 × 1.5，所以原始值 = 显示值 / 1.5
+    const pointerUnmodified = pointerRaw / (modifierMultiplier * levelMultiplier);
+
+    // 获取当前 min/max
+    const custom = oppCustomSpeedRange[globalIndex];
+    let currentMin = custom ? custom.min : baseMin;
+    let currentMax = custom ? custom.max : baseMax;
+
+    let newMin = currentMin;
+    let newMax = currentMax;
+
+    if (edge === 'min') {
+        // 限制：不能低于理论最低值，不能超过当前max（乘以速度和等级系数）
+        const minLimit = baseMin;
+        const maxLimit = baseMax * modifierMultiplier * levelMultiplier;
+        newMin = Math.max(minLimit, Math.min(pointerUnmodified, maxLimit));
+    } else {
+        // 限制：不能超过理论最高值（乘以速度和等级系数），不能低于当前min（乘以速度和等级系数）
+        const minLimit = baseMin * modifierMultiplier * levelMultiplier;
+        const maxLimit = baseMax * modifierMultiplier * levelMultiplier;
+        newMax = Math.max(minLimit, Math.min(pointerUnmodified, maxLimit));
+    }
+
+    oppCustomSpeedRange[globalIndex] = { min: newMin, max: newMax };
+
+    // 将精灵图标重置到中间
+    oppSpeedMarkerRatio[globalIndex] = 0.5;
+
+    // 重新渲染该行的bar和文字
+    updateOppSpeedRowVisual(globalIndex, rowEl, baseMin, baseMax, maxSpeed);
+}
+
+
+function updateOppSpeedRowVisual(globalIndex, rowEl, baseMin, baseMax, maxSpeed) {
+    const speedModifiers = currentTeams['opp-team']?.[globalIndex]?._speedModifiers || [];
+    const hasTailwind = speedFieldState.opp_tailwind;
+
+    // 计算实际使用的min/max
+    let effectiveMin = baseMin;
+    let effectiveMax = baseMax;
+    if (oppCustomSpeedRange[globalIndex]) {
+        effectiveMin = oppCustomSpeedRange[globalIndex].min;
+        effectiveMax = oppCustomSpeedRange[globalIndex].max;
+    }
+    if (hasTailwind) {
+        effectiveMin *= 2;
+        effectiveMax *= 2;
+    }
+    for (const mod of speedModifiers) {
+        if (mod === 'x2') {
+            effectiveMin *= 2;
+            effectiveMax *= 2;
+        } else if (mod === 'div2') {
+            effectiveMin *= 0.5;
+            effectiveMax *= 0.5;
+        }
+    }
+
+    const pctMin = speedToPercent(effectiveMin, maxSpeed);
+    const pctMax = speedToPercent(effectiveMax, maxSpeed);
+
+    // 更新bar
+    const barEl = rowEl.querySelector('.speed-opp-bar');
+    if (barEl) {
+        barEl.style.left = `${pctMin}%`;
+        barEl.style.width = `${Math.max(pctMax - pctMin, 0.5)}%`;
+    }
+
+    // 更新精灵图标位置（居中）
+    const spriteEl = rowEl.querySelector('.speed-opp-sprite');
+    if (spriteEl) {
+        const currentRatio = oppSpeedMarkerRatio[globalIndex] ?? 0.5;
+        const pctMid = pctMin + (pctMax - pctMin) * currentRatio;
+        spriteEl.style.left = `${pctMid}%`;
+    }
+
+    // 更新min/max文字
+    const minEl = rowEl.querySelector('.speed-opp-min-text');
+    const maxEl = rowEl.querySelector('.speed-opp-max-text');
+    if (minEl) {
+        minEl.textContent = Math.round(effectiveMin);
+        minEl.style.left = `${pctMin}%`;
+    }
+    if (maxEl) {
+        maxEl.textContent = Math.round(effectiveMax);
+        maxEl.style.left = `${pctMax}%`;
+    }
+
+    // 更新title
+    const label = currentTeams['opp-team']?.[globalIndex]?.name_zh || '?';
+    rowEl.title = `${label}: ${Math.round(effectiveMin)}–${Math.round(effectiveMax)}`;
+}
+
+
+function stopOppEdgeDrag() {
+    if (oppEdgeDragState && oppEdgeDragState.rowEl) {
+        oppEdgeDragState.rowEl.classList.remove('dragging-edge');
+    }
+
+    oppEdgeDragState = null;
+    document.removeEventListener('mousemove', onOppEdgeDragMove);
+    document.removeEventListener('mouseup', stopOppEdgeDrag);
 }
 
 
@@ -1080,7 +1375,7 @@ function renderSpeedAxis() {
         myContainer.innerHTML = '';
         (currentTeams['my-team'] || []).forEach((p, index) => {
             const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
-            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind);
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, p);
             const pct = speedToPercent(effectiveSpeed, maxSpeed);
             const label = p.name_zh || p.name || '?';
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
@@ -1095,7 +1390,11 @@ function renderSpeedAxis() {
             if (spritePath) spriteEl.style.backgroundImage = `url('/sprites/${spritePath}')`;
             spriteEl.addEventListener('click', (e) => {
                 e.stopPropagation();
-                toggleSpeedFade('my', index);
+                if (speedModifierState.active || speedModifierState._pendingLevelMode) {
+                    applySpeedModifierToPokemon('my-team', index);
+                } else {
+                    toggleSpeedFade('my', index);
+                }
             });
             myContainer.appendChild(spriteEl);
         });
@@ -1107,7 +1406,7 @@ function renderSpeedAxis() {
 
         (currentTeams['my-team'] || []).forEach((p, index) => {
             const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
-            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind);
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, p);
             const pct = speedToPercent(effectiveSpeed, maxSpeed);
 
             const tickEl = document.createElement('div');
@@ -1128,8 +1427,16 @@ function renderSpeedAxis() {
             const globalIndex = startIndex + i;
             const spd = p.stats && p.stats.speed;
             const [baseMin, baseMax] = Array.isArray(spd) ? spd : [spd || 0, spd || 0];
-            const sMin = getEffectiveSpeed(baseMin, speedFieldState.opp_tailwind);
-            const sMax = getEffectiveSpeed(baseMax, speedFieldState.opp_tailwind);
+
+            // 检查 oppCustomSpeedRange
+            const custom = oppCustomSpeedRange[globalIndex];
+
+            // 使用自定义范围（如果有），否则使用基础范围
+            const displayMin = custom ? custom.min : baseMin;
+            const displayMax = custom ? custom.max : baseMax;
+
+            const sMin = getEffectiveSpeed(displayMin, speedFieldState.opp_tailwind, p);
+            const sMax = getEffectiveSpeed(displayMax, speedFieldState.opp_tailwind, p);
             const pctMin = speedToPercent(sMin, maxSpeed);
             const pctMax = speedToPercent(sMax, maxSpeed);
             const label = p.name_zh || p.name || '?';
@@ -1154,37 +1461,58 @@ function renderSpeedAxis() {
             const spriteEl = document.createElement('div');
             spriteEl.className = 'speed-opp-sprite';
             spriteEl.dataset.pokemonIndex = globalIndex;
-            spriteEl.style.left = `${pctMid}%`;
+            spriteEl.style.left = `${Math.min(pctMid, 100)}%`;
             spriteEl.style.transform = 'translate(-50%, -50%)';
             if (spritePath) spriteEl.style.backgroundImage = `url('/sprites/${spritePath}')`;
             spriteEl.style.cursor = 'pointer';
             rowEl.appendChild(spriteEl);
 
-            // min 值（范围条前）
+            // min 端点（可拖拽）
             const minEl = document.createElement('div');
-            minEl.className = 'speed-opp-text';
+            minEl.className = 'speed-opp-text speed-opp-min-text';
             minEl.style.left = `${pctMin}%`;
-            minEl.textContent = sMin;
+            minEl.textContent = Math.round(sMin);
             minEl.style.transform = 'translate(-100%, -50%)';
+            minEl.style.cursor = 'ew-resize';
+            minEl.addEventListener('mousedown', (event) => {
+                event.stopPropagation();
+                startOppEdgeDrag(event, globalIndex, 'min', rowEl, pctMin, pctMax, baseMin, baseMax);
+            });
             rowEl.appendChild(minEl);
 
-            // max 值（范围条后）
+            // max 端点（可拖拽）
             const maxEl = document.createElement('div');
-            maxEl.className = 'speed-opp-text';
+            maxEl.className = 'speed-opp-text speed-opp-max-text';
             maxEl.style.left = `${pctMax}%`;
-            maxEl.textContent = sMax;
+            maxEl.textContent = Math.round(sMax);
             maxEl.style.transform = 'translateY(-50%)';
+            maxEl.style.cursor = 'ew-resize';
+            maxEl.addEventListener('mousedown', (event) => {
+                event.stopPropagation();
+                startOppEdgeDrag(event, globalIndex, 'max', rowEl, pctMin, pctMax, baseMin, baseMax);
+            });
             rowEl.appendChild(maxEl);
 
             // 为 row、sprite、bar 添加点击事件
             const clickHandler = (e) => {
                 e.stopPropagation();
-                toggleSpeedFade('opp', globalIndex);
+                if (speedModifierState.active || speedModifierState._pendingLevelMode) {
+                    applySpeedModifierToPokemon('opp-team', globalIndex);
+                } else {
+                    toggleSpeedFade('opp', globalIndex);
+                }
             };
             rowEl.addEventListener('click', clickHandler);
             barEl.addEventListener('click', clickHandler);
             spriteEl.addEventListener('mousedown', (event) => {
-                startOppSpeedDrag(event, globalIndex, rowEl, pctMin, pctMax);
+                const custom = oppCustomSpeedRange[globalIndex];
+                const effectiveMin = custom ? custom.min : baseMin;
+                const effectiveMax = custom ? custom.max : baseMax;
+                const sMin = getEffectiveSpeed(effectiveMin, speedFieldState.opp_tailwind, p);
+                const sMax = getEffectiveSpeed(effectiveMax, speedFieldState.opp_tailwind, p);
+                const ePctMin = speedToPercent(sMin, maxSpeed);
+                const ePctMax = speedToPercent(sMax, maxSpeed);
+                startOppSpeedDrag(event, globalIndex, rowEl, ePctMin, ePctMax);
             });
             spriteEl.addEventListener('click', (event) => {
                 event.stopPropagation();
@@ -1216,27 +1544,26 @@ function renderSpeedAxis() {
 
 window.addEventListener('load', () => {
     updateTailwindButtons();
+    updateSpeedModifierButtons();
     renderSpeedAxis();
 });
 
 // ===== 查看伤害克制关系=====
 function viewTypeEffectiveness(){
     const overlay = document.getElementById('type-effect-overlay');
-    const myHeader = document.getElementById('my-effect-header');
-    const myContent = document.getElementById('my-effect-content');
-    const oppHeader = document.getElementById('opp-effect-header');
-    const oppContent = document.getElementById('opp-effect-content');
+    const myRows = document.getElementById('my-effect-rows');
+    const oppRows = document.getElementById('opp-effect-rows');
 
     // 清空旧内容
-    myHeader.innerHTML = '';
-    myContent.innerHTML = '';
-    oppHeader.innerHTML = '';
-    oppContent.innerHTML = '';
+    myRows.innerHTML = '';
+    oppRows.innerHTML = '';
 
     const myTeam = currentTeams['my-team'] || [];
     const oppTeam = currentTeams['opp-team'] || [];
 
-    // ===== 我方侧：表头（对方6只宝可梦头像）=====
+    // 我方侧：表头（对方6只宝可梦头像）
+    const myHeader = document.createElement('div');
+    myHeader.className = 'effect-header';
     myHeader.innerHTML = `
         <div class="effect-avatar-placeholder"></div>
         <div class="effect-moves-placeholder"></div>
@@ -1252,25 +1579,9 @@ function viewTypeEffectiveness(){
             }).join('')}
         </div>
     `;
+    myRows.appendChild(myHeader);
 
-    // ===== 对方侧：表头（我方6只宝可梦头像）=====
-    oppHeader.innerHTML = `
-        <div class="effect-damage-header">
-            ${myTeam.map((myPokemon, idx) => {
-                if (!myPokemon) return '<div class="effect-damage-item-header"></div>';
-                const spritePath = myPokemon.sprite ? myPokemon.sprite.replace(/^sprites\//, '') : '';
-                const pokemonName = myPokemon.name_zh || myPokemon.name || '?';
-                return `<div class="effect-damage-item-header" title="${pokemonName}">
-                    <img src="/sprites/${spritePath}" alt="${pokemonName}">
-                    <span>${pokemonName}</span>
-                </div>`;
-            }).join('')}
-        </div>
-        <div class="effect-moves-placeholder"></div>
-        <div class="effect-avatar-placeholder"></div>
-    `;
-
-    // ===== 我方侧：内容（我方6只宝可梦伤害行）=====
+    // 渲染我方6行
     for (let i = 0; i < 6; i++) {
         const myPokemon = myTeam[i];
         const row = document.createElement('div');
@@ -1338,10 +1649,30 @@ function viewTypeEffectiveness(){
             row.innerHTML = avatarHtml + movesHtml + damageHtml;
         }
 
-        myContent.appendChild(row);
+        myRows.appendChild(row);
     }
 
-    // ===== 对方侧：内容（对方6只宝可梦伤害行）=====
+    // 对方侧：表头（我方6只宝可梦头像）
+    const oppHeader = document.createElement('div');
+    oppHeader.className = 'effect-header';
+    oppHeader.innerHTML = `
+        <div class="effect-damage-list effect-damage-header">
+            ${myTeam.map((myPokemon, idx) => {
+                if (!myPokemon) return '<div class="effect-damage-item-header"></div>';
+                const spritePath = myPokemon.sprite ? myPokemon.sprite.replace(/^sprites\//, '') : '';
+                const pokemonName = myPokemon.name_zh || myPokemon.name || '?';
+                return `<div class="effect-damage-item-header" title="${pokemonName}">
+                    <img src="/sprites/${spritePath}" alt="${pokemonName}">
+                    <span>${pokemonName}</span>
+                </div>`;
+            }).join('')}
+        </div>
+        <div class="effect-moves-placeholder"></div>
+        <div class="effect-avatar-placeholder"></div>
+    `;
+    oppRows.appendChild(oppHeader);
+
+    // 渲染对方6行
     for (let i = 0; i < 6; i++) {
         const oppPokemon = oppTeam[i];
         const row = document.createElement('div');
@@ -1409,7 +1740,7 @@ function viewTypeEffectiveness(){
             row.innerHTML = damageHtml + movesHtml + avatarHtml;
         }
 
-        oppContent.appendChild(row);
+        oppRows.appendChild(row);
     }
 
     overlay.classList.add('open');
