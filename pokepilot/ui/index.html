@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>宝可梦冠军对战助手 - PokePilot</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="type-effect.css">
 </head>
 <body>
     <div class="container">
@@ -131,6 +132,17 @@
                         </div>
                         <button id="save-opponent-layout-btn" class="save-btn" onclick="saveOpponentLayoutConfig()">💾 保存配置</button>
                     </div>
+                    <!-- 在界面上展示伤害信息，这个div界面完全覆盖video-container，背景透明 -->
+                    <div id="damage-info">
+                        <div class="damage-info-header">
+                            <!-- <button id="show-damage-info" onclick="showDamageInfo()">></button> -->
+                            <!-- 展示双方宝可梦头像 -->
+                        </div>
+                        <div id="damage-info-detail">
+                            <div id="di-my-damage" class="di-side-panel"></div>
+                            <div id="di-opp-damage" class="di-side-panel"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="status-panel">
                     <div id="speed-axis-container">
@@ -216,5 +228,13 @@
     <script src="script.js"></script>
     <script src="team.js"></script>
     <script src="layout-overlay.js"></script>
+    <!-- 来源: https://github.com/smogon/damage-calc -->
+    <!-- Polyfill: production.min.js uses require("./desc") for display formatting -->
+    <script>
+        function require() { return {}; }
+    </script>
+    <script src="./calc/data.min.js"></script>
+    <script src="./calc/production.min.js"></script>
+    <script src="type-effect.js"></script>
 </body>
 </html>
