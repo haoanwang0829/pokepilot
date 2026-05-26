@@ -384,6 +384,7 @@ const selectedMyIndices = {};
 const selectedOppIndices = {};
 
 function showDamageInfo(){
+    document.getElementById('damage-info').style.display = 'block';
     const myTeam = [...(currentTeams['my-team'] || [])];
     const oppTeam = [...(currentTeams['opp-team'] || [])];
     calcTeamDamage(myTeam,oppTeam);
@@ -439,8 +440,8 @@ function showDamageInfoDetail() {
     const oppPanel = document.getElementById('di-opp-damage');
 
     if (myIdxList.length === 0 || oppIdxList.length === 0) {
-        myPanel.innerHTML = '<div class="di-detail-empty">请选择角色查看伤害</div>';
-        oppPanel.innerHTML = '<div class="di-detail-empty">请选择角色查看伤害</div>';
+        myPanel.innerHTML = '<div class="di-detail-empty"></div>';
+        oppPanel.innerHTML = '<div class="di-detail-empty"></div>';
         return;
     }
 
@@ -470,7 +471,7 @@ function showDamageInfoDetail() {
         if (rows.length === 0) {
             return `
                 <table class="di-detail-table">
-                    <thead><tr><th colspan="4">无伤害数据</th></tr></thead>
+                    <thead><tr><th colspan="4"></th></tr></thead>
                 </table>
             `;
         }
@@ -549,7 +550,7 @@ function showDamageInfoDetail2(){
 
         myRows += `<div class="di-detail-row">${an} → ${dn} ${moveText}: ${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})</div>`;
     }
-    myPanel.innerHTML = myRows || '<div class="di-detail-empty">无伤害数据</div>';
+    myPanel.innerHTML = myRows || '<div class="di-detail-empty"></div>';
 
     let oppRows = '';
     for (const d of oppTeamDamages) {
@@ -563,5 +564,5 @@ function showDamageInfoDetail2(){
 
         oppRows += `<div class="di-detail-row">${an} → ${dn} ${moveText}: ${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})</div>`;
     }
-    oppPanel.innerHTML = oppRows || '<div class="di-detail-empty">无伤害数据</div>';
+    oppPanel.innerHTML = oppRows || '<div class="di-detail-empty"></div>';
 }
