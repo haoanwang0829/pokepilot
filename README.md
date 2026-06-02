@@ -123,6 +123,9 @@ python -m pokepilot.data.download_sprites
 # 构建 Pikalytics 数据
 python -m pokepilot.data.build_pikalytics
 
+# 初始化冠军pokechampDb数据（能力值加点）
+python -m pokepilot.data.build_pokechamdb
+
 # 初始化数据库
 python -m pokepilot.data.pokedb --all
 ```

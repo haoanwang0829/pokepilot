@@ -237,7 +237,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                 if (res) {
                     const [min, max] = res.range();
                     //默认没加HP
-                    const hp = defender.stats?.hp[0] || 1;
+                    const hp = (defender.stats?.hp[0] || 1) + (defender.evs?.hp || 0);
                     if (max > maxDamage.max) {
                         maxDamage.atkIndex=attacker.index,
                         maxDamage.defIndex=defender.index,
@@ -301,7 +301,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                 const res = calcDamage(attacker, defender, move);
                 if (res) {
                     const [min, max] = res.range();
-                    const hp = defender.stats?.hp || 1;
+                    const hp = (defender.stats?.hp || 1) + (defender.evs?.hp || 0);
                     if (max > maxDamage.max) {
                         maxDamage.atkIndex=attacker.index,
                         maxDamage.defIndex=defender.index,
@@ -338,12 +338,27 @@ function calcTeamDamage(myTeam, oppTeam) {
     }
     console.log(myTeamDamages,oppTeamDamages);
 }
+// ======================
+// 外部定义：宝可梦名称映射工具（全局复用）
+// ======================
+function mapName(slug) {
+  // 你的 slug => smogon 英文名称 映射表
+  const nameMap = {
+    'basculegion-male': 'basculegion',    
+    'basculegion-fmale': 'basculegion-F',
+    'floette-eternal-flower':'Floette-Eternal',
+    // 在这里继续加你需要的映射...
+  };
+
+  // 有映射返回映射，没有返回原 slug（自动小写兼容）
+  return nameMap[slug?.toLowerCase()] || slug;
+}
 function calcDamage(attacker, defender, move){
     try {
         const gen = window.calc.Generations.get(9);
         const { calculate, Pokemon, Move } = window.calc;
 
-        const atkPokemon = new Pokemon(gen, attacker.name, {
+        const atkPokemon = new Pokemon(gen, mapName(attacker.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
             evs: {
@@ -354,10 +369,11 @@ function calcDamage(attacker, defender, move){
                 spd: attacker.evs?.sp_def*8-4 || 0,
                 spe: attacker.evs?.speed*8-4 || 0,
             },
-            nature: attacker.nature || 'Hardy',
+            nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
+            ability:attacker.ability[0].name,
         });
 
-        const defPokemon = new Pokemon(gen, defender.name, {
+        const defPokemon = new Pokemon(gen, mapName(defender.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
             evs: {
@@ -368,14 +384,15 @@ function calcDamage(attacker, defender, move){
                 spd: defender.evs?.sp_def*8-4 || 0,
                 spe: defender.evs?.speed*8-4 || 0,
             },
-            nature: defender.nature || 'Hardy',
+            nature: (defender.nature_en && defender.nature_en[0]?.name) || defender.nature || 'Hardy',
+            ability:defender.ability[0].name,
         });
 
         const calcMove = new Move(gen, move.name);
         const res = calculate(gen, atkPokemon, defPokemon, calcMove);
         return res;
     } catch (e) {
-        console.log('calcDamage error:', e);
+        console.log('calcDamage error:', e,attacker,defender,move);
     }
     return null;
 }

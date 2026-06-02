@@ -41,6 +41,19 @@ let moveDamageDragState = null;
 let battleMode = 'double';
 let activeDamageQuery = null;
 
+// 性格对速度的倍率映射
+const SPEED_UP_NATURES = ["timid", "hasty", "jolly", "naive"];
+const SPEED_DOWN_NATURES = ["brave", "relaxed", "quiet", "sassy"];
+
+function getNatureSpeedMultiplier(natureList) {
+    if (!natureList || natureList.length === 0) return 1.0;
+    const top = natureList[0];
+    const name = (top.name || top).toLowerCase();
+    if (SPEED_UP_NATURES.includes(name)) return 1.1;
+    if (SPEED_DOWN_NATURES.includes(name)) return 0.9;
+    return 1.0;
+}
+
 
 function getEffectiveSpeed(speed, hasTailwind) {
     const value = Number(speed) || 0;
@@ -288,6 +301,17 @@ function renderCard(pokemon, side, index) {
         `;
     }).join('');
 
+    const evHtml = statLabels.map(({ key, label }) => {
+        const ev = pokemon.evs?.[key] ?? 0;
+        return `
+            <div class="ev-row">
+                <span class="stat-label">${label}</span>
+                <input type="range" class="ev-slider" min="0" max="32" value="${ev}" oninput="onEvSliderInput(this, '${side}', ${index}, '${key}')">
+                <input type="number" class="ev-number" min="0" max="32" value="${ev}" onchange="onEvNumberChange(this, '${side}', ${index}, '${key}')">
+            </div>
+        `;
+    }).join('');
+
     // 属性相克 - 分类显示
     const effectiveness = pokemon.type_effectiveness;
 
@@ -365,6 +389,13 @@ function renderCard(pokemon, side, index) {
                 </div>
                 <div class="card-stats-section">
                     <div class="card-stats">${statsHtml}</div>
+                    <div class="card-evs" style="display:none">
+                        <div class="ev-header">
+                            <span class="stat-label">EVs</span>
+                            <span class="ev-header-back">← 返回</span>
+                        </div>
+                        ${evHtml}
+                    </div>
                 </div>
             </div>
             <div class="card-info-right">
@@ -380,6 +411,24 @@ function renderCard(pokemon, side, index) {
                 </div>
             </div>
         </div>`;
+
+    // EV editor toggle
+    const statsDiv = inner.querySelector('.card-stats');
+    const evsDiv = inner.querySelector('.card-evs');
+    if (statsDiv && evsDiv) {
+        statsDiv.addEventListener('click', () => {
+            evsDiv.style.display = '';
+            statsDiv.style.display = 'none';
+        });
+        const backBtn = evsDiv.querySelector('.ev-header-back');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                evsDiv.style.display = 'none';
+                statsDiv.style.display = '';
+            });
+        }
+    }
+
     return inner;
 }
 
@@ -390,6 +439,51 @@ function renderTeam(team, side) {
         if (team[i]) card.appendChild(renderCard(team[i], side, i));
     });
     renderSpeedAxis();
+}
+
+
+// EV inline event handlers
+function onEvSliderInput(el, side, index, key) {
+    console.log("onEvSliderInput",el)
+    const v = Math.min(32, Math.max(0, parseInt(el.value) || 0));
+    el.value = v;
+    const row = el.closest('.ev-row');
+    const number = row?.querySelector('.ev-number');
+    if (number) number.value = v;
+    updatePokemonEv(side, index, key, v);
+}
+
+function onEvNumberChange(el, side, index, key) {
+    console.log("onEvNumberChange",el)
+    const v = Math.min(32, Math.max(0, parseInt(el.value) || 0));
+    el.value = v;
+    const row = el.closest('.ev-row');
+    const slider = row?.querySelector('.ev-slider');
+    if (slider) slider.value = v;
+    
+    updatePokemonEv(side, index, key, v);
+}
+
+function updatePokemonEv(side, index, key, v) {
+    try {
+        const pokemon = currentTeams[side]?.[index];
+        if (!pokemon) return;
+        if (!pokemon.evs) pokemon.evs = {};
+        pokemon.evs[key] = v;
+
+        // const typeOverlay = document.getElementById('damage-info');
+        // if (typeOverlay && typeOverlay.classList.contains('open')) {
+            if (typeof showDamageInfo === 'function') showDamageInfo();
+            if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
+        // }
+        // const moveOverlay = document.getElementById('move-damage-overlay');
+        // if (moveOverlay && moveOverlay.classList.contains('open') && activeDamageQuery) {
+        //     if (typeof showMoveDamageRange === 'function')
+        //         showMoveDamageRange(activeDamageQuery.side, activeDamageQuery.pokemonIndex, activeDamageQuery.moveIndex);
+        // }
+    } catch (e) {
+        console.error('updatePokemonEv error:', e);
+    }
 }
 
 
@@ -1036,6 +1130,9 @@ async function generateOpponentTeam() {
         resetOppSpeedMarkerRatio();
         renderTeam(currentTeams['opp-team'], 'opp-team');
         logMsg(`对方队伍已生成`);
+        if (typeof showDamageInfo === 'function') showDamageInfo();
+        if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
+        
     } else {
         logMsg(`生成失败：${data.error}`);
     }
@@ -1141,15 +1238,44 @@ function renderSpeedAxis() {
             rowEl.style.cursor = 'pointer';
             rowEl.title = `${label}: ${sMin}–${sMax}${speedFieldState.opp_tailwind ? ` (${baseMin}-${baseMax}×2)` : ''}`;
 
-            // 范围条
-            const barEl = document.createElement('div');
-            barEl.className = 'speed-opp-bar';
-            barEl.style.left = `${pctMin}%`;
-            barEl.style.width = `${Math.max(pctMax - pctMin, 0.5)}%`;
-            rowEl.appendChild(barEl);
+            // 中性性格(1.0)下的速度分界值
+            const baseSpd = (p.base_stats && p.base_stats.speed) || 0;
+            const neutral0EV = baseSpd + 20;           // (base + 20 + 0) * 1.0
+            const neutral32EV = baseSpd + 20 + 32;     // (base + 20 + 32) * 1.0
+            const sNeutral0EV = getEffectiveSpeed(neutral0EV, speedFieldState.opp_tailwind);
+            const sNeutral32EV = getEffectiveSpeed(neutral32EV, speedFieldState.opp_tailwind);
+            const pctNeutral0EV = speedToPercent(sNeutral0EV, maxSpeed);
+            const pctNeutral32EV = speedToPercent(sNeutral32EV, maxSpeed);
 
-            // 精灵图标（bar 中间）
-            const markerRatio = clamp(oppSpeedMarkerRatio[globalIndex] ?? 0.5, 0, 1);
+            // 三段范围条：红(-10%性格) / 默认(中性性格) / 绿(+10%性格)
+            const barDown = document.createElement('div');
+            barDown.className = 'speed-opp-bar speed-opp-bar-down';
+            barDown.style.left = `${pctMin}%`;
+            barDown.style.width = `${Math.max(pctNeutral0EV - pctMin, 0.5)}%`;
+            rowEl.appendChild(barDown);
+
+            const barMid = document.createElement('div');
+            barMid.className = 'speed-opp-bar speed-opp-bar-mid';
+            barMid.style.left = `${pctNeutral0EV}%`;
+            barMid.style.width = `${Math.max(pctNeutral32EV - pctNeutral0EV, 0.5)}%`;
+            rowEl.appendChild(barMid);
+
+            const barUp = document.createElement('div');
+            barUp.className = 'speed-opp-bar speed-opp-bar-up';
+            barUp.style.left = `${pctNeutral32EV}%`;
+            barUp.style.width = `${Math.max(pctMax - pctNeutral32EV, 0.5)}%`;
+            rowEl.appendChild(barUp);
+
+            // 从 EV + 性格计算实际速度，自动定位精灵图标
+            const ev = p.evs?.speed ?? 0;
+            const natureMult = getNatureSpeedMultiplier(p.nature_en);
+            const actualSpeed = Math.floor((baseSpd + 20 + ev) * natureMult);
+            const sActual = getEffectiveSpeed(actualSpeed, speedFieldState.opp_tailwind);
+            const pctActual = speedToPercent(sActual, maxSpeed);
+            const defaultRatio = baseMax !== baseMin ? (actualSpeed - baseMin) / (baseMax - baseMin) : 0.5;
+            const markerRatio = oppSpeedMarkerRatio[globalIndex] !== undefined
+                ? clamp(oppSpeedMarkerRatio[globalIndex], 0, 1)
+                : clamp(defaultRatio, 0, 1);
             const pctMid = pctMin + (pctMax - pctMin) * markerRatio;
             const spriteEl = document.createElement('div');
             spriteEl.className = 'speed-opp-sprite';
@@ -1168,6 +1294,22 @@ function renderSpeedAxis() {
             minEl.style.transform = 'translate(-100%, -50%)';
             rowEl.appendChild(minEl);
 
+            // 中性性格 0EV 分界值
+            const n0El = document.createElement('div');
+            n0El.className = 'speed-opp-text speed-opp-text-mid';
+            n0El.style.left = `${pctNeutral0EV}%`;
+            n0El.textContent = sNeutral0EV;
+            n0El.style.transform = 'translate(-50%, -50%)';
+            rowEl.appendChild(n0El);
+
+            // 中性性格 32EV 分界值
+            const n32El = document.createElement('div');
+            n32El.className = 'speed-opp-text speed-opp-text-mid';
+            n32El.style.left = `${pctNeutral32EV}%`;
+            n32El.textContent = sNeutral32EV;
+            n32El.style.transform = 'translate(-50%, -50%)';
+            rowEl.appendChild(n32El);
+
             // max 值（范围条后）
             const maxEl = document.createElement('div');
             maxEl.className = 'speed-opp-text';
@@ -1182,7 +1324,9 @@ function renderSpeedAxis() {
                 toggleSpeedFade('opp', globalIndex);
             };
             rowEl.addEventListener('click', clickHandler);
-            barEl.addEventListener('click', clickHandler);
+            barDown.addEventListener('click', clickHandler);
+            barMid.addEventListener('click', clickHandler);
+            barUp.addEventListener('click', clickHandler);
             spriteEl.addEventListener('mousedown', (event) => {
                 startOppSpeedDrag(event, globalIndex, rowEl, pctMin, pctMax);
             });
