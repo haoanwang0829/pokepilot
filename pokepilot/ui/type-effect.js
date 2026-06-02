@@ -384,8 +384,8 @@ function calcDamage(attacker, defender, move){
                 spd: defender.evs?.sp_def*8-4 || 0,
                 spe: defender.evs?.speed*8-4 || 0,
             },
-            nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
-            ability:attacker.ability[0].name,
+            nature: (defender.nature_en && defender.nature_en[0]?.name) || defender.nature || 'Hardy',
+            ability:defender.ability[0].name,
         });
 
         const calcMove = new Move(gen, move.name);

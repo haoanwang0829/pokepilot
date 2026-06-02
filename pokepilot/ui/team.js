@@ -461,7 +461,7 @@ function onEvNumberChange(el, side, index, key) {
     const slider = row?.querySelector('.ev-slider');
     if (slider) slider.value = v;
     
-    (side, index, key, v);
+    updatePokemonEv(side, index, key, v);
 }
 
 function updatePokemonEv(side, index, key, v) {
