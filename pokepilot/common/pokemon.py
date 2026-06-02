@@ -170,9 +170,11 @@ class Pokemon:
         "hp": 0, "attack": 0, "defense": 0,
         "sp_atk": 0, "sp_def": 0, "speed": 0
     })                                  # 种族值
-    evs: dict = field(default_factory=lambda: {})                                  # 努力值
+    evs: dict = field(default_factory=lambda: {})                                  # 努力值（我方队伍）
 
     nature: str = ""                    # 性格 (e.g., "speed↑/attack↓")
+    nature_en: list = field(default_factory=list)  # 对方队伍的 natures 列表
+    evList: list = field(default_factory=list)     # 对方队伍的 EV 分布列表
     types: list = field(default_factory=list)  # 属性类型 (e.g., ["Water", "Flying"])
 
     moves: list = field(default_factory=list)  # 招式列表
@@ -227,6 +229,8 @@ class Pokemon:
             base_stats=data.get("base_stats", {}),
             evs=data.get("evs", {}),
             nature=data.get("nature", ""),
+            nature_en=data.get("nature_en", []),
+            evList=data.get("evList", []),
             types=data.get("types", []),
             moves=moves,
             type_effectiveness=data.get("type_effectiveness", {}),
@@ -255,6 +259,8 @@ class Pokemon:
             "base_stats": self.base_stats,
             "evs": self.evs,
             "nature": self.nature,
+            "nature_en": self.nature_en,
+            "evList": self.evList,
             "types": self.types,
             "type_effectiveness": self.type_effectiveness,
             "moves": [

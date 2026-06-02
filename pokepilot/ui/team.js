@@ -41,6 +41,19 @@ let moveDamageDragState = null;
 let battleMode = 'double';
 let activeDamageQuery = null;
 
+// 性格对速度的倍率映射
+const SPEED_UP_NATURES = ["timid", "hasty", "jolly", "naive"];
+const SPEED_DOWN_NATURES = ["brave", "relaxed", "quiet", "sassy"];
+
+function getNatureSpeedMultiplier(natureList) {
+    if (!natureList || natureList.length === 0) return 1.0;
+    const top = natureList[0];
+    const name = (top.name || top).toLowerCase();
+    if (SPEED_UP_NATURES.includes(name)) return 1.1;
+    if (SPEED_DOWN_NATURES.includes(name)) return 0.9;
+    return 1.0;
+}
+
 
 function getEffectiveSpeed(speed, hasTailwind) {
     const value = Number(speed) || 0;
@@ -1253,8 +1266,16 @@ function renderSpeedAxis() {
             barUp.style.width = `${Math.max(pctMax - pctNeutral32EV, 0.5)}%`;
             rowEl.appendChild(barUp);
 
-            // 精灵图标（bar 中间）
-            const markerRatio = clamp(oppSpeedMarkerRatio[globalIndex] ?? 0.5, 0, 1);
+            // 从 EV + 性格计算实际速度，自动定位精灵图标
+            const ev = p.evs?.speed ?? 0;
+            const natureMult = getNatureSpeedMultiplier(p.nature_en);
+            const actualSpeed = Math.floor((baseSpd + 20 + ev) * natureMult);
+            const sActual = getEffectiveSpeed(actualSpeed, speedFieldState.opp_tailwind);
+            const pctActual = speedToPercent(sActual, maxSpeed);
+            const defaultRatio = baseMax !== baseMin ? (actualSpeed - baseMin) / (baseMax - baseMin) : 0.5;
+            const markerRatio = oppSpeedMarkerRatio[globalIndex] !== undefined
+                ? clamp(oppSpeedMarkerRatio[globalIndex], 0, 1)
+                : clamp(defaultRatio, 0, 1);
             const pctMid = pctMin + (pctMax - pctMin) * markerRatio;
             const spriteEl = document.createElement('div');
             spriteEl.className = 'speed-opp-sprite';

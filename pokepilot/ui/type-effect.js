@@ -369,7 +369,7 @@ function calcDamage(attacker, defender, move){
                 spd: attacker.evs?.sp_def*8-4 || 0,
                 spe: attacker.evs?.speed*8-4 || 0,
             },
-            nature: attacker.nature || 'Hardy',
+            nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
             ability:attacker.ability[0].name,
         });
 
@@ -384,7 +384,7 @@ function calcDamage(attacker, defender, move){
                 spd: defender.evs?.sp_def*8-4 || 0,
                 spe: defender.evs?.speed*8-4 || 0,
             },
-            nature: defender.nature || 'Hardy',
+            nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
             ability:attacker.ability[0].name,
         });
 

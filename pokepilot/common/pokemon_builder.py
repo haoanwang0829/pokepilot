@@ -32,6 +32,7 @@ class PokemonBuilder:
         self.db = PokeDB()
         self.roster = self._load_roster()  # 加载 champions_roster.json
         self.pika_cache = self._load_pikalytics_cache()
+        self.pokechamdb_cache = self._load_pokechamdb_cache()
 
         # 加载 champions_roster.json 用于获取图鉴号
 
@@ -45,6 +46,20 @@ class PokemonBuilder:
             return json.loads(cache_path.read_text(encoding="utf-8"))
         return {}
     
+    def _load_pokechamdb_cache(self) -> dict:
+        """加载 pokechamdb 缓存"""
+        cache_path = Path(__file__).parent.parent.parent / "data" / "pokechamdb_cache.json"
+        if cache_path.exists():
+            return json.loads(cache_path.read_text(encoding="utf-8"))
+        return {}
+
+    def read_pokechamdb(self, slug: str, name: str) -> dict:
+        """从 pokechamdb 缓存读取宝可梦数据"""
+        info = self.pokechamdb_cache.get(slug, {})
+        if not info:
+            info = self.pokechamdb_cache.get(name, {})
+        return info
+
     def _load_type_effectiveness(self) -> dict:
         """从 type_effectiveness.json 加载类型相克表"""
         try:
@@ -70,8 +85,13 @@ class PokemonBuilder:
         return {"pokemon": []}
 
     def read_pikalytics(self, slug: str, name: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]], list[tuple[str, str]]]:
-        pika_info = self.pika_cache.get(slug, {})
-        pika_info = self.pika_cache.get(name, {}) if not pika_info else pika_info
+        pika_info = self.pokechamdb_cache.get(slug, {})
+        if not pika_info:
+            pika_info = self.pokechamdb_cache.get(name, {})
+        if not pika_info:
+            pika_info = self.pika_cache.get(slug, {})
+        if not pika_info:
+            pika_info = self.pika_cache.get(name, {})
 
         # 处理招式 - 合并重复的
         moves_dict = {}
@@ -112,13 +132,14 @@ class PokemonBuilder:
 
         return evo_forms
 
-    def build_evo_form(self, evo_poke: dict, base_pokemon: Pokemon) -> Optional[EvoForm]:
+    def build_evo_form(self, evo_poke: dict, base_pokemon: Pokemon, is_opponent: bool = False) -> Optional[EvoForm]:
         """
         构建进化形态对象（支持我方队伍和对手队伍）
 
         Args:
             evo_poke: 从 roster 中获取的进化形态宝可梦数据
             base_pokemon: 基础宝可梦对象
+            is_opponent: 是否为对手队伍（对方用范围值，我方用 EV/性格计算精确值）
 
         Returns:
             EvoForm 对象，如果构建失败返回 None
@@ -135,10 +156,7 @@ class PokemonBuilder:
         evo_abilities = evo_db.get("abilities", [])
         evo_ability = evo_abilities[0] if evo_abilities else ""
 
-        # 判断是我方队伍还是对手队伍：通过检查是否有 EV 值
-        is_my_team = bool(base_pokemon.evs)
-
-        if is_my_team:
+        if not is_opponent:
             # 我方队伍：计算单个属性值（使用 EV 和性格）
             evo_stats = {}
             natures = self.parse_nature_string(base_pokemon.nature)
@@ -438,6 +456,9 @@ class PokemonBuilder:
         type_effectiveness = self.cal_effectiveness(types)
 
         # 根据是否对手队伍分别构建
+        nature_en = []
+        evList = []
+        evs = {}
         if is_opponent:
             top_moves, top_items, top_abilities = self.read_pikalytics(pokemon_slug, pokemon_name)
             # 构建招式列表（带使用率）
@@ -465,6 +486,19 @@ class PokemonBuilder:
             # 计算对手队伍的属性范围 [min, max]
             stats = self.calc_opponent_stats_range(base_stats)
             nature = ""
+
+            # 从 pokechamdb 读取 natures 和 EVs（对手队伍专用）
+            pokechamdb_info = self.read_pokechamdb(pokemon_slug, pokemon_name)
+            nature_en = pokechamdb_info.get("natures", [])
+            evList = pokechamdb_info.get("evs", [])
+            if evList:
+                first_ev = evList[0]
+                stat_map = {"hp": "hp", "atk": "attack", "def": "defense",
+                            "spA": "sp_atk", "spD": "sp_def", "spe": "speed"}
+                evs = {}
+                for k, v in first_ev.items():
+                    if k in stat_map:
+                        evs[stat_map[k]] = v
 
         else:  # 我方队伍
             nickname = moves_data.get('nickname', '')
@@ -506,6 +540,9 @@ class PokemonBuilder:
             stats=stats,
             base_stats=base_stats,
             nature=nature,
+            nature_en=nature_en,
+            evs=evs,
+            evList=evList,
             types=types,
             moves=moves,
             type_effectiveness=type_effectiveness,
@@ -519,7 +556,7 @@ class PokemonBuilder:
         # 构建进化形态（我方和对手队伍都支持）
         evo_forms_data = self.find_evo_forms(pokemon_name)
         for evo_poke in evo_forms_data:
-            evo_form = self.build_evo_form(evo_poke, pokemon)
+            evo_form = self.build_evo_form(evo_poke, pokemon, is_opponent=is_opponent)
             if evo_form:
                 pokemon.evoforms.append(evo_form)
 
