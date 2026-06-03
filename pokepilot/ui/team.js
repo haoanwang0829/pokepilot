@@ -1087,7 +1087,8 @@ function switchEvoform(side, index, evoIndex) {
             ability: pokemon.ability,
             types: pokemon.types,
             type_effectiveness: pokemon.type_effectiveness,
-            sprite: pokemon.sprite
+            sprite: pokemon.sprite,
+            slug:pokemon.slug
         };
     }
 
@@ -1099,6 +1100,7 @@ function switchEvoform(side, index, evoIndex) {
         pokemon.types = pokemon._originalData.types;
         pokemon.type_effectiveness = pokemon._originalData.type_effectiveness;
         pokemon.sprite = pokemon._originalData.sprite;
+        pokemon.slug = pokemon._originalData.slug;
         pokemon._currentEvoIndex = -1;
     } else {
         // 切换到新的 evoform
@@ -1109,6 +1111,7 @@ function switchEvoform(side, index, evoIndex) {
         pokemon.types = evo.types;
         pokemon.type_effectiveness = evo.type_effectiveness;
         pokemon.sprite = evo.sprite;
+        pokemon.slug = evo.slug_name;
         pokemon._currentEvoIndex = evoIndex;
     }
 
@@ -1117,6 +1120,8 @@ function switchEvoform(side, index, evoIndex) {
     if (overlay && overlay.classList.contains('open') && activeDamageQuery) {
         showMoveDamageRange(activeDamageQuery.side, activeDamageQuery.pokemonIndex, activeDamageQuery.moveIndex);
     }
+    if (typeof showDamageInfo === 'function') showDamageInfo();
+    if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
 }
 
 async function generateOpponentTeam() {
