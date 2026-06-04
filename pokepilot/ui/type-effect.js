@@ -14,7 +14,6 @@ function viewTypeEffectiveness(){
 
     const myTeam = currentTeams['my-team'] || [];
     const oppTeam = currentTeams['opp-team'] || [];
-    console.log(myTeam,oppTeam);
     // ===== 我方侧：表头（对方6只宝可梦头像）=====
     myHeader.innerHTML = `
         <div class="effect-avatar-placeholder"></div>
@@ -208,6 +207,8 @@ function calcTeamDamage(myTeam, oppTeam) {
     // 按速度降序排序
     myTeam.sort((a, b) => (b.stats?.speed || 0) - (a.stats?.speed || 0));
     oppTeam.sort((a, b) => (b.stats?.speed || 0) - (a.stats?.speed || 0));
+    
+    // console.log(myTeam,oppTeam);
     // 计算我方每只宝可梦对对方全队的伤害
     for (const attacker of myTeam) {
         if (!attacker) continue;
@@ -336,7 +337,7 @@ function calcTeamDamage(myTeam, oppTeam) {
             oppTeamDamages.push(...damages);
         }
     }
-    console.log(myTeamDamages,oppTeamDamages);
+    // console.log(myTeamDamages,oppTeamDamages);
 }
 // ======================
 // 外部定义：宝可梦名称映射工具（全局复用）
@@ -345,7 +346,7 @@ function mapName(slug) {
   // 你的 slug => smogon 英文名称 映射表
   const nameMap = {
     'basculegion-male': 'basculegion',    
-    'basculegion-fmale': 'basculegion-F',
+    'basculegion-female': 'basculegion-F',
     'floette-eternal-flower':'Floette-Eternal',
     // 在这里继续加你需要的映射...
   };
