@@ -370,6 +370,10 @@ function renderCard(pokemon, side, index) {
         <span class="effectiveness-label">×2:</span>${superEffectiveX2}
     ` : '';
 
+    const editBtnHtml = (side === 'opp-team')
+        ? `<button class="card-name-edit" onclick="openPokemonSwitcher('${side}', ${index})" title="切换宝可梦">✏️</button>`
+        : '';
+
     inner.innerHTML = `
         <div class="card-bg-sprite" style="background-image: url('/sprites/${spritePath}')"></div>
         <div class="card-info">
@@ -377,7 +381,7 @@ function renderCard(pokemon, side, index) {
                 <div class="card-header-section">
                     <div class="card-header">
                         <div class="card-types">${typeIcons}</div>
-                        <span class="card-name">${pokemon.name_zh || pokemon.name || ''}</span>
+                        <span class="card-name">${pokemon.name_zh || pokemon.name || ''}</span>${editBtnHtml}
                         ${evoButtonsHtml ? `<div class="evo-buttons">${evoButtonsHtml}</div>` : ''}
                     </div>
                     <div class="card-meta">
@@ -394,7 +398,9 @@ function renderCard(pokemon, side, index) {
                             <span class="stat-label">EVs</span>
                             <span class="ev-header-back">← 返回</span>
                         </div>
-                        ${evHtml}
+                        <div class="ev-content">
+                            <div class="ev-sliders-col">${evHtml}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -417,14 +423,19 @@ function renderCard(pokemon, side, index) {
     const evsDiv = inner.querySelector('.card-evs');
     if (statsDiv && evsDiv) {
         statsDiv.addEventListener('click', () => {
+            closeAllOppEvEditors();
             evsDiv.style.display = '';
             statsDiv.style.display = 'none';
+            if (side === 'opp-team' && Array.isArray(pokemon.evList) && pokemon.evList.length > 0) {
+                showEvListPanel(side, index);
+            }
         });
         const backBtn = evsDiv.querySelector('.ev-header-back');
         if (backBtn) {
             backBtn.addEventListener('click', () => {
                 evsDiv.style.display = 'none';
                 statsDiv.style.display = '';
+                closeEvListPanel();
             });
         }
     }
@@ -486,6 +497,87 @@ function updatePokemonEv(side, index, key, v) {
     }
 }
 
+function applyEvListEntry(side, index, el) {
+    const pokemon = currentTeams[side]?.[index];
+    if (!pokemon) return;
+    const entry = pokemon.evList?.[parseInt(el.dataset.idx)];
+    if (!entry) return;
+    const statMap = { hp: 'hp', atk: 'attack', def: 'defense', spA: 'sp_atk', spD: 'sp_def', spe: 'speed' };
+    if (!pokemon.evs) pokemon.evs = {};
+    for (const [k, v] of Object.entries(entry)) {
+        if (k === 'pct') continue;
+        const key = statMap[k];
+        if (key !== undefined) pokemon.evs[key] = v;
+    }
+    // 通过 side/index 精确定位卡片中的滑杆和数字输入
+    const card = document.querySelector(`.team-col.${side} .pokemon-card:nth-child(${index + 1})`);
+    if (card) {
+        card.querySelectorAll('.ev-slider').forEach((sl, i) => {
+            sl.value = pokemon.evs[['hp', 'attack', 'defense', 'sp_atk', 'sp_def', 'speed'][i]] ?? 0;
+        });
+        card.querySelectorAll('.ev-number').forEach((num, i) => {
+            num.value = pokemon.evs[['hp', 'attack', 'defense', 'sp_atk', 'sp_def', 'speed'][i]] ?? 0;
+        });
+    }
+    // 高亮当前选中的条目
+    const panel = document.getElementById('evlist-panel');
+    if (panel) panel.querySelectorAll('.evlist-entry').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    if (typeof showDamageInfo === 'function') showDamageInfo();
+    if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
+}
+
+function showEvListPanel(side, index) {
+    closeEvListPanel();
+    const pokemon = currentTeams[side]?.[index];
+    if (!pokemon || !Array.isArray(pokemon.evList) || pokemon.evList.length === 0) return;
+    const panel = document.createElement('div');
+    panel.className = 'evlist-panel';
+    panel.id = 'evlist-panel';
+    panel.innerHTML = `
+        <div class="evlist-header">
+            <span>常用努力值</span>
+            <button onclick="closeEvListPanel()">✕</button>
+        </div>
+        <div class="evlist-body">
+            <div class="evlist-tr evlist-header-row">
+                <span class="evlist-th">HP</span>
+                <span class="evlist-th">A</span>
+                <span class="evlist-th">D</span>
+                <span class="evlist-th">SA</span>
+                <span class="evlist-th">SD</span>
+                <span class="evlist-th">S</span>
+                <span class="evlist-th">%</span>
+            </div>
+            ${pokemon.evList.map((entry, i) => `
+                <div class="evlist-tr evlist-entry ${i === 0 ? 'active' : ''}" data-idx="${i}" onclick="applyEvListEntry('${side}', ${index}, this)">
+                    <span class="evlist-td">${entry.hp}</span>
+                    <span class="evlist-td">${entry.atk}</span>
+                    <span class="evlist-td">${entry.def}</span>
+                    <span class="evlist-td">${entry.spA}</span>
+                    <span class="evlist-td">${entry.spD}</span>
+                    <span class="evlist-td">${entry.spe}</span>
+                    <span class="evlist-td evlist-td-pct">${entry.pct}%</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    document.body.appendChild(panel);
+}
+
+function closeEvListPanel() {
+    const panel = document.getElementById('evlist-panel');
+    if (panel) panel.remove();
+}
+
+function closeAllOppEvEditors() {
+    document.querySelectorAll('.team-col.opp-team .pokemon-card').forEach(card => {
+        const evs = card.querySelector('.card-evs');
+        const stats = card.querySelector('.card-stats');
+        if (evs) evs.style.display = 'none';
+        if (stats) stats.style.display = '';
+    });
+}
 
 function closeMoveDamageOverlay() {
     const overlay = document.getElementById('move-damage-overlay');
@@ -1140,6 +1232,136 @@ async function generateOpponentTeam() {
         
     } else {
         logMsg(`生成失败：${data.error}`);
+    }
+}
+
+function openPokemonSwitcher(side, index) {
+    let overlay = document.getElementById('pokemon-switcher-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'pokemon-switcher-overlay';
+        overlay.className = 'pokemon-switcher-overlay';
+        document.body.appendChild(overlay);
+    }
+
+    overlay.dataset.side = side;
+    overlay.dataset.index = index;
+
+    const currentPoke = currentTeams[side]?.[index];
+    const currentSlug = currentPoke?.slug || '';
+    const currentNameZh = currentPoke?.name_zh || '';
+
+    overlay.innerHTML = `
+        <div class="pokemon-switcher-box">
+            <div class="pokemon-switcher-header">
+                <span>切换宝可梦 — ${currentNameZh} (位置 ${index + 1})</span>
+                <button class="pokemon-switcher-close" onclick="closePokemonSwitcher()">×</button>
+            </div>
+            <div class="pokemon-switcher-body">
+                <div class="pokemon-switcher-field">
+                    <label>中文名</label>
+                    <div style="display:flex;gap:4px">
+                        <input type="text" id="ps-name-zh" placeholder="输入中文名..." value="${currentNameZh}" />
+                        <button id="ps-search-btn" class="ps-btn">查询</button>
+                    </div>
+                </div>
+                <div class="pokemon-switcher-field">
+                    <label>形态</label>
+                    <select id="ps-form">
+                        <option value="">-- 选择 --</option>
+                    </select>
+                </div>
+                <div class="pokemon-switcher-field">
+                    <label>Slug</label>
+                    <input type="text" id="ps-slug" value="${currentSlug}" readonly />
+                </div>
+                <div class="pokemon-switcher-info" id="ps-info"></div>
+            </div>
+            <div class="pokemon-switcher-footer">
+                <button class="ps-btn ps-btn-cancel" onclick="closePokemonSwitcher()">取消</button>
+                <button class="ps-btn ps-btn-confirm" id="ps-confirm-btn">确认更新</button>
+            </div>
+        </div>
+    `;
+
+    // Enter key triggers search
+    document.getElementById('ps-name-zh').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('ps-search-btn').click();
+    });
+
+    document.getElementById('ps-search-btn').onclick = async () => {
+        const nameZh = document.getElementById('ps-name-zh').value.trim();
+        if (!nameZh) { document.getElementById('ps-info').textContent = '请输入中文名'; return; }
+        try {
+            const res = await fetch(`/api/pokemon/by-name-zh/${encodeURIComponent(nameZh)}`);
+            const data = await res.json();
+            if (data.success) {
+                const formSelect = document.getElementById('ps-form');
+                formSelect.innerHTML = '<option value="">-- 选择形态 --</option>';
+                data.variants.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.slug;
+                    opt.textContent = v.form || '(默认)';
+                    formSelect.appendChild(opt);
+                });
+                if (data.variants.length > 0) {
+                    formSelect.value = data.variants[0].slug;
+                    document.getElementById('ps-slug').value = data.variants[0].slug;
+                }
+                document.getElementById('ps-info').textContent = `找到 ${data.variants.length} 个形态`;
+            } else {
+                document.getElementById('ps-info').textContent = `未找到: ${nameZh}`;
+            }
+        } catch (err) {
+            document.getElementById('ps-info').textContent = `查询失败: ${err.message}`;
+        }
+    };
+
+    document.getElementById('ps-form').onchange = () => {
+        const slug = document.getElementById('ps-form').value;
+        document.getElementById('ps-slug').value = slug;
+    };
+
+    document.getElementById('ps-confirm-btn').onclick = async () => {
+        const slug = document.getElementById('ps-slug').value;
+        if (!slug) { document.getElementById('ps-info').textContent = '请先查询并选择宝可梦'; return; }
+        document.getElementById('ps-confirm-btn').disabled = true;
+        document.getElementById('ps-confirm-btn').textContent = '更新中...';
+        await rebuildPokemon(side, index, slug);
+        closePokemonSwitcher();
+    };
+
+    overlay.classList.add('open');
+}
+
+function closePokemonSwitcher() {
+    const overlay = document.getElementById('pokemon-switcher-overlay');
+    if (overlay) overlay.classList.remove('open');
+}
+
+async function rebuildPokemon(side, index, slug) {
+    try {
+        const res = await fetch('/api/pokemon/rebuild', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug })
+        });
+        const data = await res.json();
+        if (data.success) {
+            currentTeams[side][index] = data.pokemon;
+            renderTeam(currentTeams[side], side);
+            logMsg(`已更新 ${data.pokemon.name_zh || data.pokemon.name}`);
+            if (typeof showDamageInfo === 'function') showDamageInfo();
+            if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
+            const overlay = document.getElementById('move-damage-overlay');
+            if (overlay && overlay.classList.contains('open') && activeDamageQuery) {
+                showMoveDamageRange(activeDamageQuery.side, activeDamageQuery.pokemonIndex, activeDamageQuery.moveIndex);
+            }
+        } else {
+            logMsg(`更新失败：${data.error}`);
+        }
+    } catch (err) {
+        logMsg(`更新错误: ${err.message}`);
     }
 }
 

@@ -475,11 +475,15 @@
 }
 
 .di-detail-row {
-    padding: 3px 6px;
     line-height: 1.5;
+}
+.di-text-bg {
     background: rgba(45, 45, 45, 0.5);
+    padding: 2px 6px;
     border-radius: 3px;
-    margin-bottom: 2px;
+}
+tr.atk-group-end td {
+    border-bottom: 1px solid #555 !important;
 }
 
 .di-side-panel {
@@ -509,7 +513,7 @@
 .di-detail-table th,
 .di-detail-table td {
     border: 0px solid #ddd;
-    padding: 6px 8px;
+    padding: 0px 0px;
     text-align: left;
 }
 .di-detail-table th {
@@ -531,7 +535,6 @@
 /* ====================== */
 .atk-merge {
     border-right: none !important;
-    border-bottom: none !important;
     border-left: none !important;
     background-color: transparent !important;
     font-weight: 500;
