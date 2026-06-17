@@ -490,6 +490,30 @@ def create_app():
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
+    @app.route("/api/pokemon/rebuild", methods=["POST"])
+    def rebuild_pokemon():
+        """根据 slug 重建宝可梦完整数据（对手队伍场景）"""
+        try:
+            data = request.get_json() or {}
+            slug = data.get("slug", "").strip()
+            if not slug:
+                return jsonify({"success": False, "error": "缺少 slug"}), 400
+
+            detector = get_detector()
+            card = detector.get_detect_card_by_slug(slug)
+            if not card:
+                return jsonify({"success": False, "error": f"slug '{slug}' 不存在"}), 404
+
+            builder = PokemonBuilder()
+            pokemon = builder.build_pokemon(detect_data=card)
+
+            return jsonify({
+                "success": True,
+                "pokemon": pokemon.to_dict()
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
     @app.route("/api/teams/generate-opponent", methods=["POST"])
     def generate_opponent_team():
         """从对方队伍截图生成队伍，保存到 data/opp_team/temp.json"""

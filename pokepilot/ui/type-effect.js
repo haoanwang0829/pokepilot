@@ -239,7 +239,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                     const [min, max] = res.range();
                     //默认没加HP
                     const hp = (defender.stats?.hp[0] || 1) + (defender.evs?.hp || 0);
-                    if (max > maxDamage.max) {
+                    if (max > maxDamage.max && move.priority<=0) {
                         maxDamage.atkIndex=attacker.index,
                         maxDamage.defIndex=defender.index,
                         maxDamage.moveName=move.name_zh,
@@ -251,15 +251,17 @@ function calcTeamDamage(myTeam, oppTeam) {
                         maxDamage.effectiveness = res.effectiveness || 1;
                     }  
                     if(move.priority>0){
-                        pdamage.atkIndex=attacker.index,
-                        pdamage.defIndex=defender.index,
-                        pdamage.moveName=move.name_zh,
-                        pdamage.priority=move.priority,
-                        pdamage.min = min;
-                        pdamage.max = max;
-                        pdamage.pctLow = +(min / hp * 100).toFixed(1);
-                        pdamage.pctHigh = +(max / hp * 100).toFixed(1);
-                        pdamage.effectiveness = res.effectiveness || 1;
+                        const pdamage = {
+                            atkIndex:attacker.index,
+                            defIndex:defender.index,
+                            moveName:move.name_zh,
+                            priority:move.priority,
+                            min,
+                            max,
+                            pctLow: +(min / hp * 100).toFixed(1),
+                            pctHigh: +(max / hp * 100).toFixed(1),
+                            effectiveness: res.effectiveness || 1,
+                        };
 
                         damages.push(pdamage);
                     }                   
@@ -300,10 +302,11 @@ function calcTeamDamage(myTeam, oppTeam) {
                     continue;
                 }
                 const res = calcDamage(attacker, defender, move);
+                // console.log(attacker.name_zh,defender.name_zh,move.name_zh,res);
                 if (res) {
                     const [min, max] = res.range();
                     const hp = (defender.stats?.hp || 1) + (defender.evs?.hp || 0);
-                    if (max > maxDamage.max) {
+                    if (max > maxDamage.max && move.priority<=0) {
                         maxDamage.atkIndex=attacker.index,
                         maxDamage.defIndex=defender.index,
                         maxDamage.moveName=move.name_zh,
@@ -315,17 +318,20 @@ function calcTeamDamage(myTeam, oppTeam) {
                         maxDamage.effectiveness = res.effectiveness || 1;
                     }
                     if(move.priority>0){
-                        pdamage.atkIndex=attacker.index,
-                        pdamage.defIndex=defender.index,
-                        pdamage.moveName=move.name_zh,
-                        pdamage.priority=move.priority,
-                        pdamage.min = min;
-                        pdamage.max = max;
-                        pdamage.pctLow = +(min / hp * 100).toFixed(1);
-                        pdamage.pctHigh = +(max / hp * 100).toFixed(1);
-                        pdamage.effectiveness = res.effectiveness || 1;
-
+                        // 每次先制都新建全新对象，不再复用引用
+                        const pdamage = {
+                            atkIndex:attacker.index,
+                            defIndex:defender.index,
+                            moveName:move.name_zh,
+                            priority:move.priority,
+                            min,
+                            max,
+                            pctLow: +(min / hp * 100).toFixed(1),
+                            pctHigh: +(max / hp * 100).toFixed(1),
+                            effectiveness: res.effectiveness || 1,
+                        };
                         damages.push(pdamage);
+                        // console.log(pdamage,damages);
                     }  
                 } else {
                     // damages.push(null);
@@ -357,18 +363,18 @@ function mapName(slug) {
 function calcDamage(attacker, defender, move){
     try {
         const gen = window.calc.Generations.get(9);
-        const { calculate, Pokemon, Move } = window.calc;
+        const { calculate, Pokemon, Move,Field } = window.calc;
 
         const atkPokemon = new Pokemon(gen, mapName(attacker.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
             evs: {
-                hp: attacker.evs?.hp*8-4 || 0,
-                atk: attacker.evs?.attack *8-4|| 0,
-                def: attacker.evs?.defense*8-4 || 0,
-                spa: attacker.evs?.sp_atk*8-4 || 0,
-                spd: attacker.evs?.sp_def*8-4 || 0,
-                spe: attacker.evs?.speed*8-4 || 0,
+                hp: attacker.evs?.hp > 0 ? attacker.evs.hp * 8 - 4 : 0,
+                atk: attacker.evs?.attack > 0 ? attacker.evs.attack * 8 - 4 : 0,
+                def: attacker.evs?.defense > 0 ? attacker.evs.defense * 8 - 4 : 0,
+                spa: attacker.evs?.sp_atk > 0 ? attacker.evs.sp_atk * 8 - 4 : 0,
+                spd: attacker.evs?.sp_def > 0 ? attacker.evs.sp_def * 8 - 4 : 0,
+                spe: attacker.evs?.speed > 0 ? attacker.evs.speed * 8 - 4 : 0,
             },
             nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
             ability:attacker.ability[0].name,
@@ -378,24 +384,72 @@ function calcDamage(attacker, defender, move){
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
             evs: {
-                hp: defender.evs?.hp*8-4 || 0,
-                atk: defender.evs?.attack*8-4 || 0,
-                def: defender.evs?.defense*8-4 || 0,
-                spa: defender.evs?.sp_atk*8-4 || 0,
-                spd: defender.evs?.sp_def*8-4 || 0,
-                spe: defender.evs?.speed*8-4 || 0,
+                hp: defender.evs?.hp > 0 ? defender.evs.hp * 8 - 4 : 0,
+                atk: defender.evs?.attack > 0 ? defender.evs.attack * 8 - 4 : 0,
+                def: defender.evs?.defense > 0 ? defender.evs.defense * 8 - 4 : 0,
+                spa: defender.evs?.sp_atk > 0 ? defender.evs.sp_atk * 8 - 4 : 0,
+                spd: defender.evs?.sp_def > 0 ? defender.evs.sp_def * 8 - 4 : 0,
+                spe: defender.evs?.speed > 0 ? defender.evs.speed * 8 - 4 : 0,
             },
             nature: (defender.nature_en && defender.nature_en[0]?.name) || defender.nature || 'Hardy',
             ability:defender.ability[0].name,
         });
 
         const calcMove = new Move(gen, move.name);
-        const res = calculate(gen, atkPokemon, defPokemon, calcMove);
+        // ==========构建Field战场对象【核心新增】==========
+        const field = new Field(gen);
+        // 1. 天气 weather: 'Sun'|'Rain'|'Sand'|'Hail'|'HarshSun'|'HeavyRain'|'StrongWinds'|undefined
+        // if(fieldConfig.weather) field.weather = fieldConfig.weather;
+        // 2. 四大场地 terrain: 'Electric'|'Grassy'|'Misty'|'Psychic'|undefined
+        // if(fieldConfig.terrain) field.terrain = fieldConfig.terrain;
+        // 3. 对战模式：单打/双打 isDoubles(双打技能威力修正)
+        field.isDoubles = battleMode === 'double' || battleMode === 'doubles' || battleMode === 2;
+
+        // 4. 墙壁：反射壁Reflect、光墙Light Screen
+        // if(fieldConfig.screens) {
+        //     if(fieldConfig.screens.reflect) field.reflect = fieldConfig.screens.reflect; // true=存在反射壁
+        //     if(fieldConfig.screens.lightScreen) field.lightScreen = fieldConfig.screens.lightScreen; // true=光墙
+        // }
+
+        // 5. 场地钉子：隐形岩、钉子、毒钉、黏黏网
+        // if(fieldConfig.hazards) {
+        //     // 我方场地钉子
+        //     field.attackerSide.stealthRock = !!fieldConfig.hazards.atkStealthRock; // 隐形岩
+        //     field.attackerSide.spikes = fieldConfig.hazards.atkSpikes ?? 0; // 钉子层数0~3
+        //     field.attackerSide.toxicSpikes = fieldConfig.hazards.atkToxicSpikes ?? 0; //毒钉0~2
+        //     field.attackerSide.stickyWeb = !!fieldConfig.hazards.atkStickyWeb; //黏黏网
+        //     // 防守方场地钉子
+        //     field.defenderSide.stealthRock = !!fieldConfig.hazards.defStealthRock;
+        //     field.defenderSide.spikes = fieldConfig.hazards.defSpikes ?? 0;
+        //     field.defenderSide.toxicSpikes = fieldConfig.hazards.defToxicSpikes ?? 0;
+        //     field.defenderSide.stickyWeb = !!fieldConfig.hazards.defStickyWeb;
+        // }
+
+        // 6. 灾祸（命玉四圣器：剑/玉/钵/鼎）Sword/Vessel/Bead/Tablet
+        // if(fieldConfig.ruin) {
+        //     field.ruinSword = !!fieldConfig.ruin.sword;
+        //     field.ruinVessel = !!fieldConfig.ruin.vessel;
+        //     field.ruinBeads = !!fieldConfig.ruin.bead;
+        //     field.ruinTablets = !!fieldConfig.ruin.tablet;
+        // }
+
+        // 7. 其他全局：重力、戏法空间等按需扩展 field.gravity = true;
+
+        // 第五参数传入field
+        const res = calculate(gen, atkPokemon, defPokemon, calcMove, field);
         return res;
     } catch (e) {
         console.log('calcDamage error:', e,attacker,defender,move);
     }
     return null;
+}
+
+function getDamageLabel(pctLow, pctHigh) {
+  if (pctLow >= 100 && pctHigh >= 100) return { label: '确一', color: '#e74c3c' };
+  if (pctHigh >= 100) return { label: '乱一', color: '#e74c3c' };
+  if (pctLow >= 50 && pctHigh >= 50) return { label: '确二', color: '#f0c000' };
+  if (pctHigh >= 50) return { label: '乱二', color: '#f0c000' };
+  return { label: '', color: '' };
 }
 
 const selectedMyIndices = {};
@@ -480,10 +534,17 @@ function showDamageInfoDetail() {
             const def = defTeam.find(p => p.index === d.defIndex);
             const atkName = atk?.name_zh || atk?.name || '?';
             const defName = def?.name_zh || def?.name || '?';
+            const baseSpd = atk?.base_stats?.speed ?? 0;
+            const ev = atk?.evs?.speed ?? 0;
+            const natureMult = typeof getNatureSpeedMultiplier === 'function' ? getNatureSpeedMultiplier(atk.nature_en) : 1.0;
+            const speed = Math.floor((baseSpd + 20 + ev) * natureMult);
+            const atkLabel = `${atkName} (速${speed})`;
             const moveName = d.priority > 0 ? `+${d.priority} ${d.moveName}` : d.moveName;
-            const damageInfo = `${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})`;
+            const { label, color } = getDamageLabel(d.pctLow, d.pctHigh);
+            const labelHtml = label ? `<span style="color:${color};font-weight:bold;margin-right:4px">${label}</span>` : '';
+            const damageInfo = `${labelHtml}${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})`;
 
-            rows.push({ atkName, defName, moveName, damageInfo });
+            rows.push({ atkName, atkLabel, defName, moveName, damageInfo });
         }
 
         if (rows.length === 0) {
@@ -507,23 +568,28 @@ function showDamageInfoDetail() {
             }
 
             // 第一条：添加 rowspan，其余不渲染攻击方
+            const isLastGroup = i + span >= rows.length;
             for (let j = 0; j < span; j++) {
                 const item = rows[i + j];
+                const isLastInGroup = j === span - 1;
+                const rowClass = isLastInGroup && !isLastGroup
+                    ? 'di-detail-row atk-group-end'
+                    : 'di-detail-row';
                 if (j === 0) {
                     renderRows.push(`
-                        <tr class="di-detail-row">
-                            <td class="atk-merge" rowspan="${span}">${item.atkName}</td>
-                            <td>${item.defName}</td>
-                            <td>${item.moveName}</td>
-                            <td class="di-damage-info">${item.damageInfo}</td>
+                        <tr class="${rowClass}">
+                            <td class="atk-merge" rowspan="${span}"><span class="di-text-bg">${item.atkLabel}</span></td>
+                            <td><span class="di-text-bg">${item.defName}</span></td>
+                            <td><span class="di-text-bg">${item.moveName}</span></td>
+                            <td class="di-damage-info"><span class="di-text-bg">${item.damageInfo}</span></td>
                         </tr>
                     `);
                 } else {
                     renderRows.push(`
-                        <tr class="di-detail-row">
-                            <td>${item.defName}</td>
-                            <td>${item.moveName}</td>
-                            <td class="di-damage-info">${item.damageInfo}</td>
+                        <tr class="${rowClass}">
+                            <td><span class="di-text-bg">${item.defName}</span></td>
+                            <td><span class="di-text-bg">${item.moveName}</span></td>
+                            <td class="di-damage-info"><span class="di-text-bg">${item.damageInfo}</span></td>
                         </tr>
                     `);
                 }
