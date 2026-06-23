@@ -423,13 +423,14 @@ function calcDamage(attacker, defender, move){
         const { calculate, Pokemon, Move,Field } = window.calc;
         // ====== 处理攻击者道具：是mega石则丢弃item字段 ======
         let atkItemOpt;
-        if (attacker.item) {
-        const itemLower = attacker.item.toLowerCase();
-        // 不在mega石列表才赋值，mega石不传入item
-        if (!MEGA_STONES.includes(itemLower)) {
-            atkItemOpt = attacker.item;
+        var aitem = defender.item || defender.held_item[0].name
+        if (aitem) {
+            const itemLower = aitem.toLowerCase();
+            if (!MEGA_STONES.includes(itemLower)) {
+                atkItemOpt = aitem;
+            }
         }
-        }
+        
         parseAndRewriteNature(attacker);
         const atkPokemon = new Pokemon(gen, mapName(attacker.slug), {
             level: 50,
@@ -449,11 +450,12 @@ function calcDamage(attacker, defender, move){
         });
         // ====== 处理防御者道具，逻辑完全一致 ======
         let defItemOpt;
-        if (defender.item) {
-        const itemLower = defender.item.toLowerCase();
-        if (!MEGA_STONES.includes(itemLower)) {
-            defItemOpt = defender.item;
-        }
+        var item = defender.item || defender.held_item[0].name
+        if (item) {
+            const itemLower = item.toLowerCase();
+            if (!MEGA_STONES.includes(itemLower)) {
+                defItemOpt = item;
+            }
         }
         parseAndRewriteNature(defender);
         const defPokemon = new Pokemon(gen, mapName(defender.slug), {
