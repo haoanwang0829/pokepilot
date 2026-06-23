@@ -31,7 +31,7 @@ from bs4 import BeautifulSoup
 _ROOT         = Path(__file__).parent.parent.parent
 _ROSTER_PATH  = _ROOT / "data" / "champions_roster.json"
 _OUT_PATH     = _ROOT / "data" / "pikalytics_cache.json"
-_BASE_URL     = "https://www.pikalytics.com/pokedex/championstournaments"
+_BASE_URL     = "https://www.pikalytics.com/pokedex/battledataregmbs3"
 _HEADERS      = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     "Accept-Language": "en-US,en;q=0.9",
