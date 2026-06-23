@@ -354,17 +354,34 @@ function mapName(slug) {
     'basculegion-male': 'basculegion',    
     'basculegion-female': 'basculegion-F',
     'floette-eternal-flower':'Floette-Eternal',
+    "aegislash":"Aegislash-Shield",
+    "aegislash-blade-forme":"Aegislash-Blade",
     // 在这里继续加你需要的映射...
   };
 
   // 有映射返回映射，没有返回原 slug（自动小写兼容）
   return nameMap[slug?.toLowerCase()] || slug;
 }
+// 1. 全局 Mega 石列表（全部小写，匹配时统一转小写对比）
+const MEGA_STONES = [
+  "gengarite","gardevoirite","ampharosite","venusaurite","charizardite x","blastoisinite","mewtwonite x","mewtwonite y","blazikenite","medichamite","houndoominite","aggronite","banettite","tyranitarite","scizorite","pinsirite","aerodactylite","lucarionite","abomasite","kangaskhanite","gyaradosite","absolite","charizardite y","alakazite","heracronite","mawilite","manectite","garchompite","latiasite","latiosite","swampertite","sceptilite","sablenite","altarianite","galladite","audinite","metagrossite","sharpedonite","slowbronite","steelixite","pidgeotite","glalitite","diancite","cameruptite","lopunnite","salamencite","beedrillite","clefablite","victreebelite","starminite","dragoninite","meganiumite","feraligite","skarmorite","froslassite","heatranite","darkranite","emboarite","excadrite","scolipite","scraftinite","eelektrossite","chandelurite","chesnaughtite","delphoxite","greninjite","pyroarite","floettite","malamarite","barbaracite","dragalgite","hawluchanite","zygardite","drampanite","zeraorite","falinksite","raichunite x","raichunite y","chimechite","absolite z","staraptite","staraptornite","garchompite z","lucarionite z","golurkite","meowsticite","crabominite","golisopite","magearnite","scovillainite","baxcalibrite","tatsugirinite"
+  ,"drampite","starmiite","dragonitite","feraligatrite","hawluchite","greninjaite","skarmoryite"
+  // 在这里追加你所有用到的mega石小写名称
+];
+
 function calcDamage(attacker, defender, move){
     try {
         const gen = window.calc.Generations.get(9);
         const { calculate, Pokemon, Move,Field } = window.calc;
-
+        // ====== 处理攻击者道具：是mega石则丢弃item字段 ======
+            let atkItemOpt;
+            if (attacker.item) {
+            const itemLower = attacker.item.toLowerCase();
+            // 不在mega石列表才赋值，mega石不传入item
+            if (!MEGA_STONES.includes(itemLower)) {
+                atkItemOpt = attacker.item;
+            }
+            }
         const atkPokemon = new Pokemon(gen, mapName(attacker.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
@@ -378,8 +395,17 @@ function calcDamage(attacker, defender, move){
             },
             nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
             ability:attacker.ability[0].name,
+             // 只有非mega石才会存在，mega石该字段直接不写
+            ...(atkItemOpt ? { item: atkItemOpt } : {}),
         });
-
+        // ====== 处理防御者道具，逻辑完全一致 ======
+            let defItemOpt;
+            if (defender.item) {
+            const itemLower = defender.item.toLowerCase();
+            if (!MEGA_STONES.includes(itemLower)) {
+                defItemOpt = defender.item;
+            }
+            }
         const defPokemon = new Pokemon(gen, mapName(defender.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
@@ -393,6 +419,8 @@ function calcDamage(attacker, defender, move){
             },
             nature: (defender.nature_en && defender.nature_en[0]?.name) || defender.nature || 'Hardy',
             ability:defender.ability[0].name,
+            ...(defItemOpt ? { item: defItemOpt } : {}),
+            ignoreItemErrors: true, // 核心：关闭道具匹配校验，消除megaStone报错
         });
 
         const calcMove = new Move(gen, move.name);
