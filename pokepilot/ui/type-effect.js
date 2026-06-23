@@ -368,20 +368,69 @@ const MEGA_STONES = [
   ,"drampite","starmiite","dragonitite","feraligatrite","hawluchite","greninjaite","skarmoryite"
   // 在这里追加你所有用到的mega石小写名称
 ];
+// 25种固定性格映射：[sp_atk↑/attack↓] => 英文名
+const NATURE_STR_MAP = {
+    // ========== 攻击attack↑ 组 ==========
+    "attack↑/defense↓": "Lonely",     //怕寂寞：攻↑防↓
+    "attack↑/sp_atk↓": "Adamant",     //固执：攻↑特攻↓
+    "attack↑/sp_def↓": "Naughty",     //顽皮：攻↑特防↓
+    "attack↑/speed↓": "Brave",         //勇敢：攻↑速度↓
+
+    // ========== 防御defense↑ 组 ==========
+    "defense↑/attack↓": "Bold",       //大胆：防↑攻↓
+    "defense↑/sp_atk↓": "Impish",     //淘气：防↑特攻↓
+    "defense↑/sp_def↓": "Lax",        //乐天：防↑特防↓
+    "defense↑/speed↓": "Relaxed",     //悠闲：防↑速度↓
+
+    // ========== 特攻sp_atk↑ 组 ==========
+    "sp_atk↑/attack↓": "Modest",      //内敛：特攻↑攻↓
+    "sp_atk↑/defense↓": "Mild",       //慢吞吞：特攻↑防↓
+    "sp_atk↑/sp_def↓": "Rash",        //马虎：特攻↑特防↓
+    "sp_atk↑/speed↓": "Quiet",        //冷静：特攻↑速度↓
+
+    // ========== 特防sp_def↑ 组 ==========
+    "sp_def↑/attack↓": "Calm",        //温和：特防↑攻↓
+    "sp_def↑/defense↓": "Gentle",     //温顺：特防↑防↓
+    "sp_def↑/sp_atk↓": "Careful",     //慎重：特防↑特攻↓
+    "sp_def↑/speed↓": "Sassy",        //自大：特防↑速度↓
+
+    // ========== 速度speed↑ 组 ==========
+    "speed↑/attack↓": "Timid",        //胆小：速度↑攻↓
+    "speed↑/defense↓": "Hasty",       //急躁：速度↑防↓
+    "speed↑/sp_def↓": "Jolly",        //爽朗：速度↑特防↓
+    "speed↑/sp_def↓": "Naive",        //天真：速度↑特防↓【之前这里写错】
+
+    // 平衡5种
+    // "hp↑/hp↓": "Hardy",
+};
+/**
+ * 极简处理性格：
+ * 若nature_en是匹配的25种字符串，原地替换为 [{name:英文性格}]
+ * 返回最终性格名用于计算
+ * @param {object} mon attacker/defender对象
+ * @returns {string} 标准英文性格
+ */
+function parseAndRewriteNature(mon) {
+    const raw = mon.nature;
+    if (typeof raw === "string" && NATURE_STR_MAP[raw]) {
+        mon.nature_en = [{ name: NATURE_STR_MAP[raw] }];
+    }
+}
 
 function calcDamage(attacker, defender, move){
     try {
         const gen = window.calc.Generations.get(9);
         const { calculate, Pokemon, Move,Field } = window.calc;
         // ====== 处理攻击者道具：是mega石则丢弃item字段 ======
-            let atkItemOpt;
-            if (attacker.item) {
-            const itemLower = attacker.item.toLowerCase();
-            // 不在mega石列表才赋值，mega石不传入item
-            if (!MEGA_STONES.includes(itemLower)) {
-                atkItemOpt = attacker.item;
-            }
-            }
+        let atkItemOpt;
+        if (attacker.item) {
+        const itemLower = attacker.item.toLowerCase();
+        // 不在mega石列表才赋值，mega石不传入item
+        if (!MEGA_STONES.includes(itemLower)) {
+            atkItemOpt = attacker.item;
+        }
+        }
+        parseAndRewriteNature(attacker);
         const atkPokemon = new Pokemon(gen, mapName(attacker.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
@@ -399,13 +448,14 @@ function calcDamage(attacker, defender, move){
             ...(atkItemOpt ? { item: atkItemOpt } : {}),
         });
         // ====== 处理防御者道具，逻辑完全一致 ======
-            let defItemOpt;
-            if (defender.item) {
-            const itemLower = defender.item.toLowerCase();
-            if (!MEGA_STONES.includes(itemLower)) {
-                defItemOpt = defender.item;
-            }
-            }
+        let defItemOpt;
+        if (defender.item) {
+        const itemLower = defender.item.toLowerCase();
+        if (!MEGA_STONES.includes(itemLower)) {
+            defItemOpt = defender.item;
+        }
+        }
+        parseAndRewriteNature(defender);
         const defPokemon = new Pokemon(gen, mapName(defender.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
