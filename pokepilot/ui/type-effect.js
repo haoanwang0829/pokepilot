@@ -397,7 +397,7 @@ const NATURE_STR_MAP = {
     // ========== 速度speed↑ 组 ==========
     "speed↑/attack↓": "Timid",        //胆小：速度↑攻↓
     "speed↑/defense↓": "Hasty",       //急躁：速度↑防↓
-    "speed↑/sp_def↓": "Jolly",        //爽朗：速度↑特防↓
+    "speed↑/sp_atk↓": "Jolly",        //爽朗：速度↑特攻↓
     "speed↑/sp_def↓": "Naive",        //天真：速度↑特防↓【之前这里写错】
 
     // 平衡5种
@@ -423,7 +423,7 @@ function calcDamage(attacker, defender, move){
         const { calculate, Pokemon, Move,Field } = window.calc;
         // ====== 处理攻击者道具：是mega石则丢弃item字段 ======
         let atkItemOpt;
-        var aitem = defender.item || defender.held_item[0].name
+        var aitem = attacker.item || attacker.held_item[0].name
         if (aitem) {
             const itemLower = aitem.toLowerCase();
             if (!MEGA_STONES.includes(itemLower)) {

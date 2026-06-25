@@ -2757,20 +2757,6 @@
       "id": 866,
       "name": "mr. rime",
       "form": null,
-      "slug": "grimmsnarl",
-      "types": [
-        "dark",
-        "fairy"
-      ],
-      "available": true,
-      "version": "1.1.0",
-      "sprite": "Menu CP 0861.png",
-      "sprite_shiny": "Menu CP 0861 shiny.png"
-    },
-    {
-      "id": 866,
-      "name": "mr. rime",
-      "form": null,
       "slug": "mr. rime",
       "types": [
         "ice",
@@ -3623,20 +3609,6 @@
       "sprite_shiny": "Menu CP 0254-Mega shiny.png"
     },
     {
-      "id": 257,
-      "name": "blaziken",
-      "form": "mega",
-      "slug": "blaziken-mega",
-      "types": [
-        "fire",
-        "fighting"
-      ],
-      "available": true,
-      "version": "1.1.0",
-      "sprite": "Menu CP 0257-Mega.png",
-      "sprite_shiny": "Menu CP 0257-Mega shiny.png"
-    },
-    {
       "id": 260,
       "name": "swampert",
       "form": "mega",
@@ -3826,20 +3798,6 @@
       "version": "1.0.2",
       "sprite": "Menu CP 0362-Mega.png",
       "sprite_shiny": "Menu CP 0362-Mega shiny.png"
-    },
-    {
-      "id": 376,
-      "name": "metagross",
-      "form": "mega",
-      "slug": "metagross-mega",
-      "types": [
-        "steel",
-        "psychic"
-      ],
-      "available": true,
-      "version": "1.1.0",
-      "sprite": "Menu CP 0376-Mega.png",
-      "sprite_shiny": "Menu CP 0376-Mega shiny.png"
     },
     {
       "id": 398,
