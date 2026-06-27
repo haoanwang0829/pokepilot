@@ -37,7 +37,7 @@ _ROOT         = Path(__file__).resolve().parent.parent.parent
 _ROSTER_PATH  = _ROOT / "data" / "champions_roster.json"
 _OUT_PATH     = _ROOT / "data" / "pokechamdb_cache.json"
 _BASE_URL     = "https://pokechamdb.com/en/pokemon"
-_RANKING_URL  = "https://pokechamdb.com/zh-Hans?format=double&season=M-2&view=pokemon"
+_RANKING_URL  = "https://pokechamdb.com/en?format=double&season=M-3&view=pokemon"
 _DELAY        = 1.5
 
 _RSC_HEADERS = {
@@ -63,14 +63,14 @@ _HTML_HEADERS = {
 
 # ── 排名列表解析 ──────────────────────────────────────────────────────────
 
-_RANKING_CACHE: dict[str, int] = {}
+_RANKING_CACHE: list[tuple[str, int]] = []
 
 
-def _fetch_ranking_list() -> dict[str, int]:
-    """从 pokechamdb.com 排名页面抓取所有宝可梦的使用率排名。
+def _fetch_ranking_list() -> list[tuple[str, int]]:
+    """从 pokechamdb.com 排名页面抓取所有宝可梦的使用率排名（按排名顺序）。
 
     Returns:
-        dict[str, int]: slug -> rank 的映射（rank 从 1 开始）。
+        list[tuple[str, int]]: 按排名排序的 (slug, rank) 列表（rank 从 1 开始）。
     """
     global _RANKING_CACHE
     if _RANKING_CACHE:
@@ -81,21 +81,62 @@ def _fetch_ranking_list() -> dict[str, int]:
         r = scraper.get(_RANKING_URL, headers=_HTML_HEADERS, timeout=30)
     except Exception as e:
         print(f"  排名页网络错误: {e}")
-        return {}
+        return _build_fallback_ranking()
 
     if r.status_code != 200:
         print(f"  排名页 HTTP {r.status_code}")
-        return {}
+        return _build_fallback_ranking()
 
     result = _parse_ranking_list(r.text)
+    if not result:
+        print("  排名页解析结果为空，使用本地回退")
+        return _build_fallback_ranking()
+
     _RANKING_CACHE = result
     print(f"  排名列表: {len(result)} 只宝可梦")
     return result
 
 
-def _parse_ranking_list(html: str) -> dict[str, int]:
-    """从排名页 HTML 中解析 slug -> rank 的映射。"""
-    result: dict[str, int] = {}
+def _build_fallback_ranking() -> list[tuple[str, int]]:
+    """当排名页面不可用时，从本地缓存 + roster 构建排名列表。"""
+    seen: set[str] = set()
+    ranking: list[tuple[str, int]] = []
+
+    cache: dict[str, dict] = {}
+    if _OUT_PATH.exists():
+        try:
+            cache = json.loads(_OUT_PATH.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pass
+
+    cached_entries = []
+    for slug, entry in cache.items():
+        rank = entry.get("rank")
+        if rank is not None:
+            cached_entries.append((slug, rank))
+            seen.add(slug)
+
+    cached_entries.sort(key=lambda x: x[1])
+    ranking.extend(cached_entries)
+
+    if _ROSTER_PATH.exists():
+        try:
+            roster = json.loads(_ROSTER_PATH.read_text(encoding="utf-8"))["pokemon"]
+        except (json.JSONDecodeError, KeyError):
+            roster = []
+        for p in roster:
+            slug = p["slug"].replace("-breed", "")
+            if slug not in seen:
+                ranking.append((slug, None))
+                seen.add(slug)
+
+    print(f"  回退排名列表: {len(ranking)} 只宝可梦（缓存 {len(cached_entries)} + roster {len(ranking) - len(cached_entries)}）")
+    return ranking
+
+
+def _parse_ranking_list(html: str) -> list[tuple[str, int]]:
+    """从排名页 HTML 中解析 (slug, rank) 列表，按排名顺序排列。"""
+    result: list[tuple[str, int]] = []
 
     main_m = re.search(r'<main[^>]*>(.*)</main>', html, re.DOTALL)
     if not main_m:
@@ -112,7 +153,7 @@ def _parse_ranking_list(html: str) -> dict[str, int]:
         if 'pokemon/' not in href:
             continue
 
-        slug_m = re.search(r'/zh-Hans/pokemon/([^?/]+)', href)
+        slug_m = re.search(r'/en/pokemon/([^?/]+)', href)
         if not slug_m:
             continue
         slug = slug_m.group(1)
@@ -124,7 +165,7 @@ def _parse_ranking_list(html: str) -> dict[str, int]:
         if not rank_m:
             continue
         rank = int(rank_m.group(1))
-        result[slug] = rank
+        result.append((slug, rank))
 
     return result
 
@@ -355,7 +396,7 @@ def _get_scraper():
 
 
 def fetch_pokemon_rsc(slug: str, rank: int | None = None) -> dict | None:
-    url = f"{_BASE_URL}/{slug}?format=double&season=M-2"
+    url = f"{_BASE_URL}/{slug}?format=double&season=M-3"
     scraper = _get_scraper()
     try:
         r = scraper.get(url, headers=_RSC_HEADERS, timeout=30)
@@ -377,7 +418,13 @@ def fetch_pokemon_rsc(slug: str, rank: int | None = None) -> dict | None:
 
 # ── 主流程 ───────────────────────────────────────────────────────────────────
 
-def build_pokechamdb(slugs: list[str], resume: bool = False) -> dict:
+def build_pokechamdb(ranking: list[tuple[str, int | None]], resume: bool = False) -> dict:
+    """按排名顺序爬取每只宝可梦的详情数据。
+
+    Args:
+        ranking: 按排名排序的 (slug, rank) 列表。
+        resume: 跳过缓存中已有的条目。
+    """
     cache: dict = {}
     if _OUT_PATH.exists():
         try:
@@ -385,19 +432,17 @@ def build_pokechamdb(slugs: list[str], resume: bool = False) -> dict:
         except (json.JSONDecodeError, UnicodeDecodeError):
             pass
 
-    # 只获取排名，不获取全部队伍数据
-    ranking = _fetch_ranking_list()
-    print(f"  排名数据: {len(ranking)} 只宝可梦")
+    slugs = [slug for slug, _ in ranking]
+    rank_map = dict(ranking)
 
     ok = skip = fail = 0
 
-    for i, slug in enumerate(slugs, 1):
+    for i, (slug, rank) in enumerate(ranking, 1):
         if resume and slug in cache:
             skip += 1
             continue
 
         print(f"[{i}/{len(slugs)}] {slug} ...", end=" ", flush=True)
-        rank = ranking.get(slug)
         data = fetch_pokemon_rsc(slug, rank=rank)
 
         if data:
@@ -436,9 +481,10 @@ def add_rank_to_cache() -> None:
         print("无法获取排名数据")
         return
 
+    rank_map = dict(ranking)
     updated = 0
     for slug, entry in cache.items():
-        rank = ranking.get(slug)
+        rank = rank_map.get(slug)
         if rank is not None:
             if entry.get("rank") != rank:
                 entry["rank"] = rank
@@ -457,7 +503,7 @@ def add_rank_to_cache() -> None:
 def main():
     parser = argparse.ArgumentParser(description="抓取 pokechamdb.com Champions 数据（含 EVs）")
     parser.add_argument("--all", action="store_true",
-                        help="抓取 roster 全部宝可梦（包括 available=False）")
+                        help="抓取全部宝可梦（包括 available=False 的 roster 条目）")
     parser.add_argument("--resume", action="store_true",
                         help="跳过缓存中已有的条目，继续未完成的抓取")
     parser.add_argument("--slug", help="只抓取指定的单只宝可梦（如 venusaur）")
@@ -469,22 +515,27 @@ def main():
         add_rank_to_cache()
         return
 
-    if args.slug:
-        slugs = [args.slug]
-    else:
-        roster = json.loads(_ROSTER_PATH.read_text(encoding="utf-8"))["pokemon"]
-        if args.all:
-            slugs = list(set(
-                [p["slug"].replace("-breed", "") for p in roster] +
-                [p["name"] for p in roster if p.get("available")]
-            ))
-        else:
-            slugs = [p["slug"].replace("-breed", "") for p in roster if p.get("available")]
+    # 第1步：获取排名列表（按排名顺序）
+    ranking = _fetch_ranking_list()
+    if not ranking:
+        print("无法获取排名数据，退出")
+        return
 
-    # 去重
-    slugs = list(dict.fromkeys(slugs))
-    print(f"目标: {len(slugs)} 只宝可梦")
-    build_pokechamdb(slugs, resume=args.resume)
+    if args.slug:
+        # 只保留指定的 slug
+        ranking = [(s, r) for s, r in ranking if args.slug in s]
+
+    if args.all:
+        # 添加 roster 中 available=False 但排名列表里没有的条目
+        roster = json.loads(_ROSTER_PATH.read_text(encoding="utf-8"))["pokemon"]
+        roster_slugs = {p["slug"].replace("-breed", "") for p in roster if not p.get("available")}
+        known = {s for s, _ in ranking}
+        for slug in sorted(roster_slugs - known):
+            ranking.append((slug, None))
+
+    slugs = [s for s, _ in ranking]
+    print(f"目标: {len(slugs)} 只宝可梦（按排名顺序）")
+    build_pokechamdb(ranking, resume=args.resume)
 
 
 if __name__ == "__main__":

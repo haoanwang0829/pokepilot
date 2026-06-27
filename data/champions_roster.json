@@ -777,6 +777,19 @@
       "sprite_shiny": "Menu CP 0257 shiny.png"
     },
     {
+      "id": 257,
+      "name": "blaziken",
+      "form": "mega",
+      "slug": "blaziken-mega",
+      "types": [
+         "fire","fighting"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0257-Mega.png",
+      "sprite_shiny": "Menu CP 0257-Mega shiny.png"
+    },
+    {
       "id": 260,
       "name": "swampert",
       "form": null,
@@ -789,6 +802,20 @@
       "version": "1.1.0",
       "sprite": "Menu CP 0260.png",
       "sprite_shiny": "Menu CP 0260 shiny.png"
+    },
+    {
+      "id": 260,
+      "name": "swampert",
+      "form": "mega",
+      "slug": "swampert-mega",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0260-Mega.png",
+      "sprite_shiny": "Menu CP 0260-Mega shiny.png"
     },
     {
       "id": 279,
@@ -845,6 +872,20 @@
       "version": "1.1.0",
       "sprite": "Menu CP 0303.png",
       "sprite_shiny": "Menu CP 0303 shiny.png"
+    },
+    {
+      "id": 303,
+      "name": "mawile",
+      "form": "mega",
+      "slug": "mawile-mega",
+      "types": [
+        "steel",
+        "fairy"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0303-Mega.png",
+      "sprite_shiny": "Menu CP 0303-Mega shiny.png"
     },
     {
       "id": 306,
@@ -1035,6 +1076,19 @@
       "sprite_shiny": "Menu CP 0376 shiny.png"
     },
     {
+      "id": 376,
+      "name": "metagross",
+      "form": "mega",
+      "slug": "metagross-mega",
+      "types": [
+        "steel","psychic"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0376-Mega.png",
+      "sprite_shiny": "Menu CP 0376-Mega shiny.png"
+    },
+    {
       "id": 389,
       "name": "torterra",
       "form": null,
@@ -1089,6 +1143,20 @@
       "version": "1.1.0",
       "sprite": "Menu CP 0398.png",
       "sprite_shiny": "Menu CP 0398 shiny.png"
+    },
+    {
+      "id": 398,
+      "name": "staraptor",
+      "form": "mega",
+      "slug": "staraptor-mega",
+      "types": [
+        "fighting",
+        "flying"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0398-Mega.png",
+      "sprite_shiny": "Menu CP 0398-Mega shiny.png"
     },
     {
       "id": 405,
@@ -1551,6 +1619,20 @@
       "sprite_shiny": "Menu CP 0545 shiny.png"
     },
     {
+      "id": 545,
+      "name": "scolipede",
+      "form": "mega",
+      "slug": "scolipede-mega",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0545-Mega.png",
+      "sprite_shiny": "Menu CP 0545-Mega shiny.png"
+    },
+    {
       "id": 547,
       "name": "whimsicott",
       "form": null,
@@ -1591,6 +1673,19 @@
       "version": "1.1.0",
       "sprite": "Menu CP 0560.png",
       "sprite_shiny": "Menu CP 0560 shiny.png"
+    },
+    {
+      "id": 560,
+      "name": "scrafty",
+      "form": "mega",
+      "slug": "scrafty-mega",
+      "types": [
+        "dark","fighting"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0560-Mega.png",
+      "sprite_shiny": "Menu CP 0560-Mega shiny.png"
     },
     {
       "id": 563,
@@ -1697,6 +1792,19 @@
       "version": "1.1.0",
       "sprite": "Menu CP 0604.png",
       "sprite_shiny": "Menu CP 0604 shiny.png"
+    },
+    {
+      "id": 604,
+      "name": "eelektross",
+      "form": "mega",
+      "slug": "eelektross-mega",
+      "types": [
+        "electric"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0604-Mega.png",
+      "sprite_shiny": "Menu CP 0604-Mega shiny.png"
     },
     {
       "id": 609,
@@ -1880,10 +1988,10 @@
       "sprite_shiny": "Menu CP 0666-High Plains shiny.png"
     },
     {
-      "id": 678,
+      "id": 668,
       "name": "pyroar",
-      "form": "male",
-      "slug": "pyroar-male",
+      "form": null,
+      "slug": "pyroar",
       "types": [
         "fire",
         "normal"
@@ -1894,28 +2002,42 @@
       "sprite_shiny": "Menu CP 0668 shiny.png"
     },
     {
-      "id": 678,
+      "id": 668,
       "name": "pyroar",
-      "form": "female",
-      "slug": "pyroar-female",
+      "form": null,
+      "slug": "pyroar-famale",
       "types": [
         "fire",
         "normal"
       ],
       "available": true,
-      "version": "1.1.0",
-      "sprite": "Menu CP 0668-Female.png",
-      "sprite_shiny": "Menu CP 0668-Female shiny.png"
+      "version": "1.0.2",
+      "sprite": "Menu CP 0668-famale.png",
+      "sprite_shiny": "Menu CP 0668-famale shiny.png"
+    },
+    {
+      "id": 668,
+      "name": "pyroar",
+      "form": "mega",
+      "slug": "pyroar-mega",
+      "types": [
+        "fire",
+        "normal"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0668-Mega.png",
+      "sprite_shiny": "Menu CP 0668-Mega shiny.png"
     },
     {
       "id": 670,
       "name": "floette",
       "form": "eternal-flower",
-      "slug": "floette-eternal-flower",
+      "slug": "floette",
       "types": [
         "fairy"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0670-Eternal.png",
       "sprite_shiny": "Menu CP 0670-Eternal shiny.png"
@@ -1964,7 +2086,7 @@
       "id": 678,
       "name": "meowstic",
       "form": "male",
-      "slug": "meowstic-male",
+      "slug": "meowstic",
       "types": [
         "psychic"
       ],
@@ -2028,6 +2150,20 @@
       "sprite_shiny": "Menu CP 0687 shiny.png"
     },
     {
+      "id": 687,
+      "name": "malamar",
+      "form": "mega",
+      "slug": "malamar-mega",
+      "types": [
+        "dark","psychic"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0687-Mega.png",
+      "sprite_shiny": "Menu CP 0687-Mega shiny.png"
+    },
+    
+    {
       "id": 689,
       "name": "barbaracle",
       "form": null,
@@ -2042,6 +2178,19 @@
       "sprite_shiny": "Menu CP 0689 shiny.png"
     },
     {
+      "id": 687,
+      "name": "barbaracle",
+      "form": "mega",
+      "slug": "barbaracle-mega",
+      "types": [
+        "rock","water"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0689-Mega.png",
+      "sprite_shiny": "Menu CP 0689-Mega shiny.png"
+    },
+    {
       "id": 691,
       "name": "dragalge",
       "form": null,
@@ -2054,6 +2203,19 @@
       "version": "1.1.0",
       "sprite": "Menu CP 0691.png",
       "sprite_shiny": "Menu CP 0691 shiny.png"
+    },
+    {
+      "id": 691,
+      "name": "dragalge",
+      "form": "mega",
+      "slug": "dragalge-mega",
+      "types": [
+        "poison","dragon"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0691-Mega.png",
+      "sprite_shiny": "Menu CP 0691-Mega shiny.png"
     },
     {
       "id": 693,
@@ -2587,7 +2749,7 @@
         "fairy"
       ],
       "available": true,
-      "version": "1.1.0",
+      "version": "1.0.2",
       "sprite": "Menu CP 0861.png",
       "sprite_shiny": "Menu CP 0861 shiny.png"
     },
@@ -2705,7 +2867,7 @@
       "id": 902,
       "name": "basculegion",
       "form": "male",
-      "slug": "basculegion-male",
+      "slug": "basculegion",
       "types": [
         "water",
         "ghost"
@@ -3447,20 +3609,6 @@
       "sprite_shiny": "Menu CP 0254-Mega shiny.png"
     },
     {
-      "id": 257,
-      "name": "blaziken",
-      "form": "mega",
-      "slug": "blaziken-mega",
-      "types": [
-        "fire",
-        "fighting"
-      ],
-      "available": true,
-      "version": "1.1.0",
-      "sprite": "Menu CP 0257-Mega.png",
-      "sprite_shiny": "Menu CP 0257-Mega shiny.png"
-    },
-    {
       "id": 260,
       "name": "swampert",
       "form": "mega",
@@ -3650,20 +3798,6 @@
       "version": "1.0.2",
       "sprite": "Menu CP 0362-Mega.png",
       "sprite_shiny": "Menu CP 0362-Mega shiny.png"
-    },
-    {
-      "id": 376,
-      "name": "metagross",
-      "form": "mega",
-      "slug": "metagross-mega",
-      "types": [
-        "steel",
-        "psychic"
-      ],
-      "available": true,
-      "version": "1.1.0",
-      "sprite": "Menu CP 0376-Mega.png",
-      "sprite_shiny": "Menu CP 0376-Mega shiny.png"
     },
     {
       "id": 398,
@@ -3938,7 +4072,7 @@
       "types": [
         "fairy"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0670-Mega.png",
       "sprite_shiny": "Menu CP 0670-Mega shiny.png"
@@ -4173,7 +4307,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Icy Snow.png",
       "sprite_shiny": "Menu CP 0666-Icy Snow shiny.png"
@@ -4187,7 +4321,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Polar.png",
       "sprite_shiny": "Menu CP 0666-Polar shiny.png"
@@ -4201,7 +4335,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Tundra.png",
       "sprite_shiny": "Menu CP 0666-Tundra shiny.png"
@@ -4215,7 +4349,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Continental.png",
       "sprite_shiny": "Menu CP 0666-Continental shiny.png"
@@ -4229,7 +4363,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Garden.png",
       "sprite_shiny": "Menu CP 0666-Garden shiny.png"
@@ -4243,7 +4377,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Elegant.png",
       "sprite_shiny": "Menu CP 0666-Elegant shiny.png"
@@ -4257,7 +4391,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666.png",
       "sprite_shiny": "Menu CP 0666 shiny.png"
@@ -4271,7 +4405,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Modern.png",
       "sprite_shiny": "Menu CP 0666-Modern shiny.png"
@@ -4285,7 +4419,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Marine.png",
       "sprite_shiny": "Menu CP 0666-Marine shiny.png"
@@ -4299,7 +4433,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Archipelago.png",
       "sprite_shiny": "Menu CP 0666-Archipelago shiny.png"
@@ -4313,7 +4447,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Sandstorm.png",
       "sprite_shiny": "Menu CP 0666-Sandstorm shiny.png"
@@ -4327,7 +4461,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-River.png",
       "sprite_shiny": "Menu CP 0666-River shiny.png"
@@ -4341,7 +4475,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Monsoon.png",
       "sprite_shiny": "Menu CP 0666-Monsoon shiny.png"
@@ -4355,7 +4489,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Savanna.png",
       "sprite_shiny": "Menu CP 0666-Savanna shiny.png"
@@ -4369,7 +4503,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Sun.png",
       "sprite_shiny": "Menu CP 0666-Sun shiny.png"
@@ -4383,7 +4517,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Ocean.png",
       "sprite_shiny": "Menu CP 0666-Ocean shiny.png"
@@ -4397,7 +4531,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0666-Jungle.png",
       "sprite_shiny": "Menu CP 0666-Jungle shiny.png"
@@ -4425,7 +4559,7 @@
         "bug",
         "flying"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": null,
       "sprite_shiny": null
@@ -4451,7 +4585,7 @@
       "types": [
         "normal"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0676-Heart.png",
       "sprite_shiny": "Menu CP 0676-Heart shiny.png"
@@ -4539,6 +4673,33 @@
       "sprite_shiny": "Menu CP 0869-Ruby Cream shiny.png"
     },
     {
+      "id": 870,
+      "name": "falinks",
+      "form": null,
+      "slug": "falinks",
+      "types": [
+        "fighting"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0870.png",
+      "sprite_shiny": "Menu CP 0870 shiny.png"
+    },
+    
+    {
+      "id": 870,
+      "name": "falinks",
+      "form": "mega",
+      "slug": "falinks-mega",
+      "types": [
+        "fighting"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0870-Mega.png",
+      "sprite_shiny": "Menu CP 0870-Mega shiny.png"
+    },
+    {
       "id": 877,
       "name": "morpeko",
       "form": "hangry-mode",
@@ -4579,6 +4740,19 @@
       "sprite_shiny": "Menu CP 0964-Hero shiny.png"
     },
     {
+      "id": 979,
+      "name": "annihilape",
+      "form": null,
+      "slug": "annihilape",
+      "types": [
+        "fighting","ghost"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 0979.png",
+      "sprite_shiny": "Menu CP 0979.png"
+    },
+    {
       "id": 923,
       "name": "pawmot",
       "form": null,
@@ -4587,10 +4761,24 @@
         "electric",
         "fighting"
       ],
-      "available": false,
+      "available": true,
       "version": "1.0.2",
       "sprite": "Menu CP 0923.png",
       "sprite_shiny": "Menu CP 0923 shiny.png"
+    },
+    {
+      "id": 1000,
+      "name": "gholdengo",
+      "form": null,
+      "slug": "gholdengo",
+      "types": [
+        "steel",
+        "ghost"
+      ],
+      "available": true,
+      "version": "1.0.2",
+      "sprite": "Menu CP 1000.png",
+      "sprite_shiny": "Menu CP 1000 shiny.png"
     }
   ]
 }
