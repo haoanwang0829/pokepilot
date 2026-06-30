@@ -730,3 +730,47 @@ function showDamageInfoDetail2(){
     }
     oppPanel.innerHTML = oppRows || '<div class="di-detail-empty"></div>';
 }
+
+// ===== 前端计算用辅助函数 =====
+function getPokemonHP(pokemon) {
+    const raw = pokemon.stats?.hp;
+    let base = 1;
+    if (Array.isArray(raw)) {
+        base = raw[0] || 1;
+    } else if (typeof raw === 'number') {
+        base = raw;
+    }
+    return base + (pokemon.evs?.hp || 0);
+}
+
+function isSpreadMove(move) {
+    const name = (move.name || '').toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+    const spreadNames = new Set([
+        'heat-wave', 'rock-slide', 'blizzard', 'earthquake', 'surf',
+        'discharge', 'dazzling-gleam', 'muddy-water', 'snarl', 'icy-wind',
+        'electroweb', 'eruption', 'water-spout', 'hyper-voice', 'boomburst',
+        'sludge-wave', 'brutal-swing', 'lava-plume', 'bulldoze', 'breaking-swipe',
+    ]);
+    if (spreadNames.has(name)) return true;
+    const eff = (move.short_effect || '').toLowerCase();
+    const effZh = move.short_effect_zh || '';
+    if (/all adjacent foes|all adjacent pokemon|hits both opponents|all other pokemon/.test(eff)) return true;
+    if (/全体|所有|双方|除自己以外/.test(effZh)) return true;
+    return false;
+}
+
+function isGuaranteedCriticalMove(move) {
+    const name = (move.name || '').toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+    const critNames = new Set([
+        'frost-breath', 'storm-throw', 'wicked-blow', 'surging-strikes', 'flower-trick',
+    ]);
+    if (critNames.has(name)) return true;
+    const eff = (move.short_effect || '').toLowerCase();
+    if (/always results in a critical hit|always scores a critical hit/.test(eff)) return true;
+    return (move.short_effect_zh || '').indexOf('必定会击中要害') !== -1;
+}
+
+function isMultiHitMove(move) {
+    const eff = (move.short_effect || '').toLowerCase();
+    return /2 to 5 times|hits 2 times|hits twice|two to five times/.test(eff);
+}

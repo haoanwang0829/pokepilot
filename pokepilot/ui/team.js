@@ -676,7 +676,7 @@ function renderMoveDamageRows(rows) {
 }
 
 
-async function showMoveDamageRange(side, pokemonIndex, moveIndex) {
+function showMoveDamageRange(side, pokemonIndex, moveIndex) {
     activeDamageQuery = { side: side, pokemonIndex: pokemonIndex, moveIndex: moveIndex };
     const myTeam = currentTeams['my-team'] || [];
     const oppTeam = currentTeams['opp-team'] || [];
@@ -702,42 +702,63 @@ async function showMoveDamageRange(side, pokemonIndex, moveIndex) {
     content.textContent = '计算中...';
     overlay.classList.add('open');
 
+    if (!move || move.category === 'status' || move.power == null) {
+        content.textContent = '该技能非伤害技能';
+        return;
+    }
+
     try {
-        const response = await fetch('/api/damage/range', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                attacker: attacker,
-                move_index: moveIndex,
-                opp_team: targetTeam,
-                battle_mode: battleMode
-            })
+        const rows = [];
+        for (const defender of targetTeam) {
+            if (!defender) continue;
+            const res = calcDamage(attacker, defender, move);
+            if (!res) continue;
+            const [dmgMin, dmgMax] = res.range();
+            const effectiveness = res.effectiveness || 1;
+            const hp = getPokemonHP(defender);
+            if (hp <= 0) continue;
+            rows.push({
+                opp_name: defender.name || '',
+                opp_name_zh: defender.name_zh || '',
+                opp_types: defender.types || [],
+                opp_hp_min: hp,
+                opp_hp_max: hp,
+                range: {
+                    damage_min: dmgMin,
+                    damage_max: dmgMax,
+                    hp_pct_min: +(dmgMin / hp * 100).toFixed(2),
+                    hp_pct_max: +(dmgMax / hp * 100).toFixed(2),
+                    type_multiplier: effectiveness,
+                },
+            });
+        }
+
+        if (rows.length === 0) {
+            content.textContent = '没有可展示的目标。';
+            return;
+        }
+
+        rows.sort((a, b) => {
+            if (b.range.hp_pct_max !== a.range.hp_pct_max) return b.range.hp_pct_max - a.range.hp_pct_max;
+            return b.range.hp_pct_min - a.range.hp_pct_min;
         });
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) {
-            const text = await response.text();
-            content.textContent = `接口返回非JSON（HTTP ${response.status}）：${text.slice(0, 120)}`;
-            return;
-        }
-        const data = await response.json();
-        if (!data.success) {
-            content.textContent = `计算失败：${data.error || 'unknown'}`;
-            return;
-        }
-        if (Number(data.move_priority || 0) !== 0) {
-            const p = Number(data.move_priority);
+
+        if (Number(move.priority || 0) !== 0) {
+            const p = Number(move.priority);
             title.textContent += `（先制度 ${p >= 0 ? '+' : ''}${p}）`;
         }
-        if (data.battle_mode === 'double' && data.is_spread_move) {
+        const isDouble = battleMode === 'double' || battleMode === 'doubles' || battleMode === 2;
+        if (isDouble && isSpreadMove(move)) {
             title.textContent += '（双打范围修正）';
         }
-        if (data.is_guaranteed_critical) {
+        if (isGuaranteedCriticalMove(move)) {
             title.textContent += '（必定要害修正）';
         }
-        if (data.is_multi_hit) {
+        if (isMultiHitMove(move)) {
             title.textContent += '（多段技能，当前为单段伤害）';
         }
-        renderMoveDamageRows(data.rows || []);
+
+        renderMoveDamageRows(rows);
     } catch (err) {
         content.textContent = `计算错误：${err.message}`;
     }
