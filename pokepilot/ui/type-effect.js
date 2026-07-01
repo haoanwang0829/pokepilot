@@ -366,7 +366,7 @@ function mapName(slug) {
 const MEGA_STONES = [
   "gengarite","gardevoirite","ampharosite","venusaurite","charizardite x","blastoisinite","mewtwonite x","mewtwonite y","blazikenite","medichamite","houndoominite","aggronite","banettite","tyranitarite","scizorite","pinsirite","aerodactylite","lucarionite","abomasite","kangaskhanite","gyaradosite","absolite","charizardite y","alakazite","heracronite","mawilite","manectite","garchompite","latiasite","latiosite","swampertite","sceptilite","sablenite","altarianite","galladite","audinite","metagrossite","sharpedonite","slowbronite","steelixite","pidgeotite","glalitite","diancite","cameruptite","lopunnite","salamencite","beedrillite","clefablite","victreebelite","starminite","dragoninite","meganiumite","feraligite","skarmorite","froslassite","heatranite","darkranite","emboarite","excadrite","scolipite","scraftinite","eelektrossite","chandelurite","chesnaughtite","delphoxite","greninjite","pyroarite","floettite","malamarite","barbaracite","dragalgite","hawluchanite","zygardite","drampanite","zeraorite","falinksite","raichunite x","raichunite y","chimechite","absolite z","staraptite","staraptornite","garchompite z","lucarionite z","golurkite","meowsticite","crabominite","golisopite","magearnite","scovillainite","baxcalibrite","tatsugirinite"
   ,"drampite","starmiite","dragonitite","feraligatrite","hawluchite","greninjaite","skarmoryite"
-  // 在这里追加你所有用到的mega石小写名称
+  ,"scraftite","barbaraclite","scolipedite"// 在这里追加你所有用到的mega石小写名称
 ];
 // 25种固定性格映射：[sp_atk↑/attack↓] => 英文名
 const NATURE_STR_MAP = {
@@ -729,4 +729,48 @@ function showDamageInfoDetail2(){
         oppRows += `<div class="di-detail-row">${an} → ${dn} ${moveText}: ${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})</div>`;
     }
     oppPanel.innerHTML = oppRows || '<div class="di-detail-empty"></div>';
+}
+
+// ===== 前端计算用辅助函数 =====
+function getPokemonHP(pokemon) {
+    const raw = pokemon.stats?.hp;
+    let base = 1;
+    if (Array.isArray(raw)) {
+        base = raw[0] || 1;
+    } else if (typeof raw === 'number') {
+        base = raw;
+    }
+    return base + (pokemon.evs?.hp || 0);
+}
+
+function isSpreadMove(move) {
+    const name = (move.name || '').toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+    const spreadNames = new Set([
+        'heat-wave', 'rock-slide', 'blizzard', 'earthquake', 'surf',
+        'discharge', 'dazzling-gleam', 'muddy-water', 'snarl', 'icy-wind',
+        'electroweb', 'eruption', 'water-spout', 'hyper-voice', 'boomburst',
+        'sludge-wave', 'brutal-swing', 'lava-plume', 'bulldoze', 'breaking-swipe',
+    ]);
+    if (spreadNames.has(name)) return true;
+    const eff = (move.short_effect || '').toLowerCase();
+    const effZh = move.short_effect_zh || '';
+    if (/all adjacent foes|all adjacent pokemon|hits both opponents|all other pokemon/.test(eff)) return true;
+    if (/全体|所有|双方|除自己以外/.test(effZh)) return true;
+    return false;
+}
+
+function isGuaranteedCriticalMove(move) {
+    const name = (move.name || '').toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+    const critNames = new Set([
+        'frost-breath', 'storm-throw', 'wicked-blow', 'surging-strikes', 'flower-trick',
+    ]);
+    if (critNames.has(name)) return true;
+    const eff = (move.short_effect || '').toLowerCase();
+    if (/always results in a critical hit|always scores a critical hit/.test(eff)) return true;
+    return (move.short_effect_zh || '').indexOf('必定会击中要害') !== -1;
+}
+
+function isMultiHitMove(move) {
+    const eff = (move.short_effect || '').toLowerCase();
+    return /2 to 5 times|hits 2 times|hits twice|two to five times/.test(eff);
 }

@@ -1046,7 +1046,7 @@
         "sp_def": 95,
         "speed": 110
       },
-      "abilities": [],
+      "abilities": ["electric-surge"],
       "name_zh": "雷丘"
     },
     "raichu-mega-y": {
@@ -1061,7 +1061,7 @@
         "sp_def": 80,
         "speed": 130
       },
-      "abilities": [],
+      "abilities": ["no-guard"],
       "name_zh": "雷丘"
     },
     "sandshrew": {
@@ -10042,7 +10042,7 @@
         "sp_def": 90,
         "speed": 110
       },
-      "abilities": [],
+      "abilities": ["Contrary"],
       "name_zh": "姆克鹰"
     },
     "bidoof": {
@@ -13333,7 +13333,7 @@
         "sp_def": 99,
         "speed": 62
       },
-      "abilities": [],
+      "abilities": ["Shell-armor"],
       "name_zh": "蜈蚣王"
     },
     "cottonee": {
@@ -13810,7 +13810,7 @@
         "sp_def": 135,
         "speed": 68
       },
-      "abilities": [],
+      "abilities": ["Intimidate"],
       "name_zh": "头巾混混"
     },
     "sigilyph": {
@@ -14769,7 +14769,7 @@
         "sp_def": 90,
         "speed": 80
       },
-      "abilities": [],
+      "abilities": ["eelevate"],
       "name_zh": "麻麻鳗鱼王"
     },
     "elgyem": {
@@ -16377,7 +16377,7 @@
         "sp_def": 86,
         "speed": 126
       },
-      "abilities": [],
+      "abilities": ["fire mane"],
       "name_zh": "火炎狮"
     },
     "pyroar": {
@@ -16889,7 +16889,7 @@
         "sp_def": 120,
         "speed": 88
       },
-      "abilities": [],
+      "abilities": ["Contrary"],
       "name_zh": "乌贼王"
     },
     "binacle": {
@@ -16945,7 +16945,7 @@
         "sp_def": 106,
         "speed": 88
       },
-      "abilities": [],
+      "abilities": ["Tough-claws"],
       "name_zh": "龟足巨铠"
     },
     "skrelp": {
@@ -17001,7 +17001,7 @@
         "sp_def": 163,
         "speed": 44
       },
-      "abilities": [],
+      "abilities": ["Regenerator"],
       "name_zh": "毒藻龙"
     },
     "clauncher": {
@@ -19183,7 +19183,7 @@
         "sp_def": 120,
         "speed": 40
       },
-      "abilities": [],
+      "abilities": ["Emergency-exit"],
       "name_zh": "具甲武者"
     },
     "sandygast": {
@@ -21999,7 +21999,7 @@
         "sp_def": 65,
         "speed": 100
       },
-      "abilities": [],
+      "abilities": ["Defiant"],
       "name_zh": "列阵兵"
     },
     "pincurchin": {
