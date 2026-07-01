@@ -3486,8 +3486,8 @@
     {
       "id": 154,
       "name": "meganium",
-      "form": "mega-nium",
-      "slug": "meganium-mega-nium",
+      "form": "mega",
+      "slug": "meganium-mega",
       "types": [
         "grass",
         "fairy"
