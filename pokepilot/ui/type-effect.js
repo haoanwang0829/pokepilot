@@ -426,7 +426,7 @@ function calcDamage(attacker, defender, move){
         var aitem = attacker.item || attacker.held_item[0].name
         if (aitem) {
             const itemLower = aitem.toLowerCase();
-            if (!MEGA_STONES.includes(itemLower)) {
+            if (!MEGA_STONES.includes(itemLower)&&!itemLower.includes("进化石")) {
                 atkItemOpt = aitem;
             }
         }
@@ -453,11 +453,12 @@ function calcDamage(attacker, defender, move){
         var item = defender.item || defender.held_item[0].name
         if (item) {
             const itemLower = item.toLowerCase();
-            if (!MEGA_STONES.includes(itemLower)) {
+            if (!MEGA_STONES.includes(itemLower)&&!itemLower.includes("进化石")) {
                 defItemOpt = item;
             }
         }
         parseAndRewriteNature(defender);
+        
         const defPokemon = new Pokemon(gen, mapName(defender.slug), {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
