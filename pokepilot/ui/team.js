@@ -55,9 +55,22 @@ function getNatureSpeedMultiplier(natureList) {
 }
 
 
-function getEffectiveSpeed(speed, hasTailwind) {
-    const value = Number(speed) || 0;
-    return hasTailwind ? value * 2 : value;
+function isChoiceScarf(pokemon) {
+    if (pokemon?.item && pokemon.item.toLowerCase().includes('choice-scarf')) return true;
+    const first = Array.isArray(pokemon?.held_item) ? pokemon.held_item[0] : pokemon?.held_item;
+    if (first && typeof first === 'object') {
+        const name = (first.name || '').toLowerCase().replace(/[-\s]/g, '');
+        const nameZh = first.name_zh || '';
+        return name.includes('choicescarf') || nameZh.includes('讲究围巾');
+    }
+    return false;
+}
+
+function getEffectiveSpeed(speed, hasTailwind, isScarf = false) {
+    let value = Number(speed) || 0;
+    if (hasTailwind) value *= 2;
+    if (isScarf) value *= 1.5;
+    return Math.floor(value);
 }
 
 
@@ -66,16 +79,16 @@ function getDynamicMaxSpeed() {
 
     (currentTeams['my-team'] || []).forEach((pokemon) => {
         const speed = pokemon?.stats?.speed;
-        maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.my_tailwind));
+        maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.my_tailwind, isChoiceScarf(pokemon)));
     });
 
     (currentTeams['opp-team'] || []).forEach((pokemon) => {
         const speed = pokemon?.stats?.speed;
         if (Array.isArray(speed)) {
-            maxCandidates.push(getEffectiveSpeed(speed[0], speedFieldState.opp_tailwind));
-            maxCandidates.push(getEffectiveSpeed(speed[1], speedFieldState.opp_tailwind));
+            maxCandidates.push(getEffectiveSpeed(speed[0], speedFieldState.opp_tailwind, isChoiceScarf(pokemon)));
+            maxCandidates.push(getEffectiveSpeed(speed[1], speedFieldState.opp_tailwind, isChoiceScarf(pokemon)));
         } else {
-            maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.opp_tailwind));
+            maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.opp_tailwind, isChoiceScarf(pokemon)));
         }
     });
 
@@ -1425,10 +1438,12 @@ function renderSpeedAxis() {
         myContainer.innerHTML = '';
         (currentTeams['my-team'] || []).forEach((p, index) => {
             const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
-            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind);
+            const scarf = isChoiceScarf(p);
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, scarf);
             const pct = speedToPercent(effectiveSpeed, maxSpeed);
             const label = p.name_zh || p.name || '?';
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
+            const speedLabel = scarf ? `围巾${effectiveSpeed}` : `速${effectiveSpeed}`;
 
             // 图标
             const spriteEl = document.createElement('div');
@@ -1436,7 +1451,7 @@ function renderSpeedAxis() {
             spriteEl.dataset.pokemonIndex = index;
             spriteEl.style.left = `${pct}%`;
             spriteEl.style.cursor = 'pointer';
-            spriteEl.title = `${label}: ${effectiveSpeed}${speedFieldState.my_tailwind ? ` (${speed}×2)` : ''}`;
+            spriteEl.title = `${label}: ${speedLabel}`;
             if (spritePath) spriteEl.style.backgroundImage = `url('/sprites/${spritePath}')`;
             spriteEl.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1452,9 +1467,9 @@ function renderSpeedAxis() {
 
         (currentTeams['my-team'] || []).forEach((p, index) => {
             const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
-            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind);
+            const scarf = isChoiceScarf(p);
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, scarf);
             const pct = speedToPercent(effectiveSpeed, maxSpeed);
-
             const tickEl = document.createElement('div');
             tickEl.className = 'speed-tick speed-my-tick';
             tickEl.dataset.pokemonIndex = index;
@@ -1471,27 +1486,29 @@ function renderSpeedAxis() {
         container.innerHTML = '';
         pokemon.forEach((p, i) => {
             const globalIndex = startIndex + i;
+            const scarf = isChoiceScarf(p);
             const spd = p.stats && p.stats.speed;
             const [baseMin, baseMax] = Array.isArray(spd) ? spd : [spd || 0, spd || 0];
-            const sMin = getEffectiveSpeed(baseMin, speedFieldState.opp_tailwind);
-            const sMax = getEffectiveSpeed(baseMax, speedFieldState.opp_tailwind);
+            const sMin = getEffectiveSpeed(baseMin, speedFieldState.opp_tailwind, scarf);
+            const sMax = getEffectiveSpeed(baseMax, speedFieldState.opp_tailwind, scarf);
             const pctMin = speedToPercent(sMin, maxSpeed);
             const pctMax = speedToPercent(sMax, maxSpeed);
             const label = p.name_zh || p.name || '?';
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
+            const rangeLabel = scarf ? `围巾${sMin}–${sMax}` : `速${sMin}–${sMax}`;
 
             const rowEl = document.createElement('div');
             rowEl.className = 'speed-opp-row';
             rowEl.dataset.pokemonIndex = globalIndex;
             rowEl.style.cursor = 'pointer';
-            rowEl.title = `${label}: ${sMin}–${sMax}${speedFieldState.opp_tailwind ? ` (${baseMin}-${baseMax}×2)` : ''}`;
+            rowEl.title = `${label}: ${rangeLabel}`;
 
             // 中性性格(1.0)下的速度分界值
             const baseSpd = (p.base_stats && p.base_stats.speed) || 0;
             const neutral0EV = baseSpd + 20;           // (base + 20 + 0) * 1.0
             const neutral32EV = baseSpd + 20 + 32;     // (base + 20 + 32) * 1.0
-            const sNeutral0EV = getEffectiveSpeed(neutral0EV, speedFieldState.opp_tailwind);
-            const sNeutral32EV = getEffectiveSpeed(neutral32EV, speedFieldState.opp_tailwind);
+            const sNeutral0EV = getEffectiveSpeed(neutral0EV, speedFieldState.opp_tailwind, scarf);
+            const sNeutral32EV = getEffectiveSpeed(neutral32EV, speedFieldState.opp_tailwind, scarf);
             const pctNeutral0EV = speedToPercent(sNeutral0EV, maxSpeed);
             const pctNeutral32EV = speedToPercent(sNeutral32EV, maxSpeed);
 
@@ -1518,7 +1535,7 @@ function renderSpeedAxis() {
             const ev = p.evs?.speed ?? 0;
             const natureMult = getNatureSpeedMultiplier(p.nature_en);
             const actualSpeed = Math.floor((baseSpd + 20 + ev) * natureMult);
-            const sActual = getEffectiveSpeed(actualSpeed, speedFieldState.opp_tailwind);
+            const sActual = getEffectiveSpeed(actualSpeed, speedFieldState.opp_tailwind, scarf);
             const pctActual = speedToPercent(sActual, maxSpeed);
             const defaultRatio = baseMax !== baseMin ? (actualSpeed - baseMin) / (baseMax - baseMin) : 0.5;
             const markerRatio = oppSpeedMarkerRatio[globalIndex] !== undefined

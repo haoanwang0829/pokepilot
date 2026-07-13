@@ -1,3 +1,22 @@
+// ===== 特性对技能属性的修正映射（皮肤类特性）=====
+const PIXILATE_TYPE_MAP = {
+    'pixilate': 'Fairy',      // 妖精皮肤: 一般→妖精
+    'refrigerate': 'Ice',     // 冰冻皮肤: 一般→冰
+    'aerialate': 'Flying',    // 飞行皮肤: 一般→飞行
+    'galvanize': 'Electric',  // 电气皮肤: 一般→电
+    'liquidvoice': 'Water',   // 液体声音: 一般→水
+};
+
+function getEffectiveMoveType(move, attacker) {
+    const originalType = (move.type || '').toLowerCase();
+    if (originalType !== 'normal') return move.type || '';
+
+    const ability = attacker?.ability?.[0]?.name?.toLowerCase();
+    if (!ability) return move.type || '';
+
+    return PIXILATE_TYPE_MAP[ability] || move.type || '';
+}
+
 // ===== 查看伤害克制关系=====
 function viewTypeEffectiveness(){
     const overlay = document.getElementById('type-effect-overlay');
@@ -73,7 +92,7 @@ function viewTypeEffectiveness(){
                 <div class="effect-moves">
                     ${(myPokemon.moves || []).map(m => {
                         const moveName = m.name_zh || m.name || '';
-                        const moveType = m.type || '';
+                        const moveType = getEffectiveMoveType(m, myPokemon);
                         const typeId = TYPE_ID_MAP[moveType] || 1;
                         const power = m.power !== null ? m.power : '-';
                         const accuracy = m.accuracy !== null ? m.accuracy : '-';
@@ -90,7 +109,7 @@ function viewTypeEffectiveness(){
             const damageHtml = `
                 <div class="effect-damage-grid">
                     ${(myPokemon.moves || []).map(m => {
-                        const moveType = (m.type || '').toLowerCase();
+                        const moveType = getEffectiveMoveType(m, myPokemon).toLowerCase();
                         const category = m.category;
                         const moveName = m.name_zh || m.name || '';
                         return `<div class="effect-damage-row" title="${moveName}">
@@ -135,7 +154,7 @@ function viewTypeEffectiveness(){
             const damageHtml = `
                 <div class="effect-damage-grid">
                     ${(oppPokemon.moves || []).map(m => {
-                        const moveType = (m.type || '').toLowerCase();
+                        const moveType = getEffectiveMoveType(m, oppPokemon).toLowerCase();
                         const category = m.category;
                         const moveName = m.name_zh || m.name || '';
                         return `<div class="effect-damage-row" title="${moveName}">
@@ -163,7 +182,7 @@ function viewTypeEffectiveness(){
                 <div class="effect-moves">
                     ${(oppPokemon.moves || []).map(m => {
                         const moveName = m.name_zh || m.name || '';
-                        const moveType = m.type || '';
+                        const moveType = getEffectiveMoveType(m, oppPokemon);
                         const typeId = TYPE_ID_MAP[moveType] || 1;
                         const power = m.power !== null ? m.power : '-';
                         const accuracy = m.accuracy !== null ? m.accuracy : '-';
@@ -444,7 +463,7 @@ function calcDamage(attacker, defender, move){
                 spe: attacker.evs?.speed > 0 ? attacker.evs.speed * 8 - 4 : 0,
             },
             nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
-            ability:attacker.ability[0].name,
+            ability: capitalize(attacker.ability[0].name),
              // 只有非mega石才会存在，mega石该字段直接不写
             ...(atkItemOpt ? { item: atkItemOpt } : {}),
         });
@@ -471,7 +490,7 @@ function calcDamage(attacker, defender, move){
                 spe: defender.evs?.speed > 0 ? defender.evs.speed * 8 - 4 : 0,
             },
             nature: (defender.nature_en && defender.nature_en[0]?.name) || defender.nature || 'Hardy',
-            ability:defender.ability[0].name,
+            ability: capitalize(defender.ability[0].name),
             ...(defItemOpt ? { item: defItemOpt } : {}),
             ignoreItemErrors: true, // 核心：关闭道具匹配校验，消除megaStone报错
         });
@@ -524,7 +543,11 @@ function calcDamage(attacker, defender, move){
     }
     return null;
 }
-
+// 单词首字母大写，其余小写
+function capitalize(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
 function getDamageLabel(pctLow, pctHigh) {
   if (pctLow >= 100 && pctHigh >= 100) return { label: '确一', color: '#e74c3c' };
   if (pctHigh >= 100) return { label: '乱一', color: '#e74c3c' };
@@ -618,8 +641,11 @@ function showDamageInfoDetail() {
             const baseSpd = atk?.base_stats?.speed ?? 0;
             const ev = atk?.evs?.speed ?? 0;
             const natureMult = typeof getNatureSpeedMultiplier === 'function' ? getNatureSpeedMultiplier(atk.nature_en) : 1.0;
-            const speed = Math.floor((baseSpd + 20 + ev) * natureMult);
-            const atkLabel = `${atkName} (速${speed})`;
+            const scarf = typeof isChoiceScarf === 'function' && isChoiceScarf(atk);
+            const baseSpeed = Math.floor((baseSpd + 20 + ev) * natureMult);
+            const speed = scarf ? Math.floor(baseSpeed * 1.5) : baseSpeed;
+            const speedLabel = scarf ? `围巾${speed}` : `速${speed}`;
+            const atkLabel = `${atkName} (${speedLabel})`;
             const moveName = d.priority > 0 ? `+${d.priority} ${d.moveName}` : d.moveName;
             const { label, color } = getDamageLabel(d.pctLow, d.pctHigh);
             const labelHtml = label ? `<span style="color:${color};font-weight:bold;margin-right:4px">${label}</span>` : '';
