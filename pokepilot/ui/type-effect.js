@@ -217,6 +217,24 @@ function closeTypeEffect(){
     const overlay = document.getElementById('type-effect-overlay');
     overlay.classList.remove('open');
 }
+
+function refreshDamage(){
+    try {
+        const overlay = document.getElementById('type-effect-overlay');
+        if (overlay && overlay.classList.contains('open')) {
+            viewTypeEffectiveness();
+        }
+        const damageInfo = document.getElementById('damage-info');
+        if (damageInfo && damageInfo.style.display !== 'none' && typeof showDamageInfo === 'function') {
+            showDamageInfo();
+            if (typeof showDamageInfoDetail === 'function') {
+                showDamageInfoDetail();
+            }
+        }
+    } catch(e) {
+        console.log('refreshDamage error:', e);
+    }
+}
 let myTeamDamages = [];
 let oppTeamDamages = [];
 
@@ -253,7 +271,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                     // attacker.damageResults.push(null);
                     continue;
                 }
-                const res = calcDamage(attacker, defender, move);
+                const res = calcDamage(attacker, defender, move, { attackerSide: 'my', defenderSide: 'opp' });
                 if (res) {
                     const [min, max] = res.range();
                     //默认没加HP
@@ -320,7 +338,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                 if (!move || move.category=='status') {
                     continue;
                 }
-                const res = calcDamage(attacker, defender, move);
+                const res = calcDamage(attacker, defender, move, { attackerSide: 'opp', defenderSide: 'my' });
                 // console.log(attacker.name_zh,defender.name_zh,move.name_zh,res);
                 if (res) {
                     const [min, max] = res.range();
@@ -436,7 +454,7 @@ function parseAndRewriteNature(mon) {
     }
 }
 
-function calcDamage(attacker, defender, move){
+function calcDamage(attacker, defender, move, sideContext = {}){
     try {
         const gen = window.calc.Generations.get(9);
         const { calculate, Pokemon, Move,Field } = window.calc;
@@ -449,6 +467,12 @@ function calcDamage(attacker, defender, move){
                 atkItemOpt = aitem;
             }
         }
+
+        // 获取能力等级
+        const atkSide = sideContext.attackerSide || null;
+        const defSide = sideContext.defenderSide || null;
+        const atkBoosts = atkSide ? getBoosts(atkSide, attacker.index) : { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+        const defBoosts = defSide ? getBoosts(defSide, defender.index) : { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
         
         parseAndRewriteNature(attacker);
         const atkPokemon = new Pokemon(gen, mapName(attacker.slug), {
@@ -466,6 +490,7 @@ function calcDamage(attacker, defender, move){
             ability: capitalize(attacker.ability[0].name),
              // 只有非mega石才会存在，mega石该字段直接不写
             ...(atkItemOpt ? { item: atkItemOpt } : {}),
+            boosts: atkBoosts,
         });
         // ====== 处理防御者道具，逻辑完全一致 ======
         let defItemOpt;
@@ -493,47 +518,25 @@ function calcDamage(attacker, defender, move){
             ability: capitalize(defender.ability[0].name),
             ...(defItemOpt ? { item: defItemOpt } : {}),
             ignoreItemErrors: true, // 核心：关闭道具匹配校验，消除megaStone报错
+            boosts: defBoosts,
         });
 
         const calcMove = new Move(gen, move.name);
-        // ==========构建Field战场对象【核心新增】==========
+        // ==========构建Field战场对象==========
         const field = new Field(gen);
-        // 1. 天气 weather: 'Sun'|'Rain'|'Sand'|'Hail'|'HarshSun'|'HeavyRain'|'StrongWinds'|undefined
-        // if(fieldConfig.weather) field.weather = fieldConfig.weather;
-        // 2. 四大场地 terrain: 'Electric'|'Grassy'|'Misty'|'Psychic'|undefined
-        // if(fieldConfig.terrain) field.terrain = fieldConfig.terrain;
-        // 3. 对战模式：单打/双打 isDoubles(双打技能威力修正)
+        // 1. 天气
+        if (speedFieldState.weather) field.weather = speedFieldState.weather;
+        // 2. 场地
+        if (speedFieldState.terrain) field.terrain = speedFieldState.terrain;
+        // 3. 双打模式
         field.isDoubles = battleMode === 'double' || battleMode === 'doubles' || battleMode === 2;
-
-        // 4. 墙壁：反射壁Reflect、光墙Light Screen
-        // if(fieldConfig.screens) {
-        //     if(fieldConfig.screens.reflect) field.reflect = fieldConfig.screens.reflect; // true=存在反射壁
-        //     if(fieldConfig.screens.lightScreen) field.lightScreen = fieldConfig.screens.lightScreen; // true=光墙
-        // }
-
-        // 5. 场地钉子：隐形岩、钉子、毒钉、黏黏网
-        // if(fieldConfig.hazards) {
-        //     // 我方场地钉子
-        //     field.attackerSide.stealthRock = !!fieldConfig.hazards.atkStealthRock; // 隐形岩
-        //     field.attackerSide.spikes = fieldConfig.hazards.atkSpikes ?? 0; // 钉子层数0~3
-        //     field.attackerSide.toxicSpikes = fieldConfig.hazards.atkToxicSpikes ?? 0; //毒钉0~2
-        //     field.attackerSide.stickyWeb = !!fieldConfig.hazards.atkStickyWeb; //黏黏网
-        //     // 防守方场地钉子
-        //     field.defenderSide.stealthRock = !!fieldConfig.hazards.defStealthRock;
-        //     field.defenderSide.spikes = fieldConfig.hazards.defSpikes ?? 0;
-        //     field.defenderSide.toxicSpikes = fieldConfig.hazards.defToxicSpikes ?? 0;
-        //     field.defenderSide.stickyWeb = !!fieldConfig.hazards.defStickyWeb;
-        // }
-
-        // 6. 灾祸（命玉四圣器：剑/玉/钵/鼎）Sword/Vessel/Bead/Tablet
-        // if(fieldConfig.ruin) {
-        //     field.ruinSword = !!fieldConfig.ruin.sword;
-        //     field.ruinVessel = !!fieldConfig.ruin.vessel;
-        //     field.ruinBeads = !!fieldConfig.ruin.bead;
-        //     field.ruinTablets = !!fieldConfig.ruin.tablet;
-        // }
-
-        // 7. 其他全局：重力、戏法空间等按需扩展 field.gravity = true;
+        field.gameType = field.isDoubles ? 'Doubles' : 'Singles';
+        // 4. 防守方墙效果（根据sideContext确定哪边是防守方）
+        const fieldDefSide = sideContext.defenderSide || 'opp';
+        field.defenderSide.isReflect = !!speedFieldState[fieldDefSide + '_reflect'];
+        field.defenderSide.isLightScreen = !!speedFieldState[fieldDefSide + '_lightScreen'];
+        field.defenderSide.isAuroraVeil = !!speedFieldState[fieldDefSide + '_auroraVeil'];
+        field.defenderSide.isFriendGuard = !!speedFieldState[fieldDefSide + '_friendGuard'];
 
         // 第五参数传入field
         const res = calculate(gen, atkPokemon, defPokemon, calcMove, field);

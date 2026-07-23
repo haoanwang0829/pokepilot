@@ -71,14 +71,22 @@
 
         <!-- 主体区 -->
         <div class="main-area">
-            <!-- 左：我方队伍 -->
-            <div class="team-col my-team">
-                <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 1</div></div>
-                <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 2</div></div>
-                <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 3</div></div>
-                <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 4</div></div>
-                <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 5</div></div>
-                <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 6</div></div>
+            <!-- 左：我方队伍 + 底部信息 -->
+            <div class="left-col">
+                <div class="team-col my-team">
+                    <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 1</div></div>
+                    <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 2</div></div>
+                    <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 3</div></div>
+                    <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 4</div></div>
+                    <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 5</div></div>
+                    <div class="pokemon-card"><div class="pokemon-placeholder">我方队伍 6</div></div>
+                </div>
+                <div class="bottom-bar">
+                    <div class="info-group">
+                        <div class="info-label">日志</div>
+                        <div class="info-value" id="info-log">就绪</div>
+                    </div>
+                </div>
             </div>
 
             <!-- 中：视频 -->
@@ -147,9 +155,38 @@
                 <div class="status-panel">
                     <div id="speed-axis-container">
                         <div class="speed-axis-controls">
+
+                            <button id="btn-my_friendGuard" class="speed-axis-toggle" onclick="toggleFieldEffect('my_friendGuard')">友情防守</button>
+                            <button id="btn-my_lightScreen" class="speed-axis-toggle" onclick="toggleFieldEffect('my_lightScreen')">光墙</button>
+                            <button id="btn-my_reflect" class="speed-axis-toggle" onclick="toggleFieldEffect('my_reflect')">反射壁</button>
+                            <button id="btn-my_auroraVeil" class="speed-axis-toggle" onclick="toggleFieldEffect('my_auroraVeil')">极光幕</button>
                             <button id="btn-tailwind-my" class="speed-axis-toggle" onclick="toggleTailwind('my')">我方顺风</button>
+                            <div class="speed-dropdown-wrap" id="weather-dropdown">
+                                <button id="btn-weather" class="speed-axis-toggle">天气</button>
+                                <div class="speed-dropdown-menu">
+                                    <div class="speed-dropdown-item" data-value="Sun" onclick="setWeather('Sun')">晴天</div>
+                                    <div class="speed-dropdown-item" data-value="Rain" onclick="setWeather('Rain')">雨天</div>
+                                    <div class="speed-dropdown-item" data-value="Sand" onclick="setWeather('Sand')">沙暴</div>
+                                    <div class="speed-dropdown-item" data-value="Hail" onclick="setWeather('Hail')">雪天</div>
+                                    <div class="speed-dropdown-item" data-value="" onclick="setWeather(null)">无天气</div>
+                                </div>
+                            </div>
+                            <div class="speed-dropdown-wrap" id="terrain-dropdown">
+                                <button id="btn-terrain" class="speed-axis-toggle">场地</button>
+                                <div class="speed-dropdown-menu">
+                                    <div class="speed-dropdown-item" data-value="Electric" onclick="setTerrain('Electric')">电气场地</div>
+                                    <div class="speed-dropdown-item" data-value="Grassy" onclick="setTerrain('Grassy')">青草场地</div>
+                                    <div class="speed-dropdown-item" data-value="Misty" onclick="setTerrain('Misty')">薄雾场地</div>
+                                    <div class="speed-dropdown-item" data-value="Psychic" onclick="setTerrain('Psychic')">超能场地</div>
+                                    <div class="speed-dropdown-item" data-value="" onclick="setTerrain(null)">无场地</div>
+                                </div>
+                            </div>
                             <button id="btn-tailwind-opp" class="speed-axis-toggle" onclick="toggleTailwind('opp')">对方顺风</button>
-                        </div>
+                            <button id="btn-opp_auroraVeil" class="speed-axis-toggle" onclick="toggleFieldEffect('opp_auroraVeil')">极光幕</button>
+                            <button id="btn-opp_reflect" class="speed-axis-toggle" onclick="toggleFieldEffect('opp_reflect')">反射壁</button>
+                            <button id="btn-opp_lightScreen" class="speed-axis-toggle" onclick="toggleFieldEffect('opp_lightScreen')">光墙</button>
+                            <button id="btn-opp_friendGuard" class="speed-axis-toggle" onclick="toggleFieldEffect('opp_friendGuard')">友情防守</button>
+                            </div>
                         <div id="speed-opp-top" class="speed-opp-section"></div>
                         <div id="speed-axis-main">
                             <div id="speed-markers-my"></div>
@@ -170,13 +207,6 @@
             </div>
         </div>
 
-        <!-- 底部信息区 -->
-        <div class="bottom-bar">
-            <div class="info-group">
-                <div class="info-label">日志</div>
-                <div class="info-value" id="info-log">就绪</div>
-            </div>
-        </div>
     </div>
 
     <!-- 草稿编辑器模态框 -->
@@ -236,5 +266,39 @@
     <script src="./calc/data.min.js"></script>
     <script src="./calc/production.min.js"></script>
     <script src="type-effect.js"></script>
+    <script>
+        function positionDropdown(btn, menu) {
+            const rect = btn.getBoundingClientRect();
+            menu.style.left = rect.left + rect.width / 2 + 'px';
+            menu.style.top = (rect.top - 6) + 'px';
+            menu.style.transform = 'translateX(-50%) translateY(-100%)';
+        }
+
+        function closeAllDropdowns(except) {
+            document.querySelectorAll('.speed-dropdown-menu.show').forEach(m => {
+                if (m !== except) m.classList.remove('show');
+            });
+        }
+
+        document.querySelectorAll('.speed-dropdown-wrap').forEach(wrap => {
+            const menu = wrap.querySelector('.speed-dropdown-menu');
+            const btn = wrap.querySelector('.speed-axis-toggle');
+            if (!menu || !btn) return;
+
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isOpen = menu.classList.contains('show');
+                closeAllDropdowns();
+                if (!isOpen) {
+                    positionDropdown(btn, menu);
+                    menu.classList.add('show');
+                }
+            });
+        });
+
+        document.addEventListener('click', function() {
+            closeAllDropdowns();
+        });
+    </script>
 </body>
 </html>

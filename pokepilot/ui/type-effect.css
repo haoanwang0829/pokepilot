@@ -397,6 +397,51 @@
 .type-dark { background: #705848; }
 .type-fairy { background: #EE99AC; }
 
+/* ====================== */
+/* 天气/场地浮动下拉选择器 */
+/* ====================== */
+.speed-dropdown-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.speed-dropdown-menu {
+    display: none;
+    position: fixed;
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    z-index: 2000;
+    min-width: 110px;
+    padding: 4px 0;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
+}
+
+.speed-dropdown-menu.show {
+    display: block;
+}
+
+.speed-dropdown-item {
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    color: #ccc;
+    font-size: 12px;
+    text-align: center;
+    border-radius: 2px;
+    margin: 1px 3px;
+}
+
+.speed-dropdown-item:hover {
+    background: #555;
+    color: #fff;
+}
+
+.speed-dropdown-item.selected {
+    background: #2a6a2a;
+    color: #8fd88f;
+}
+
 /*=====================================
 伤害表格样式start
 =======================================*/

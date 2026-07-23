@@ -8,6 +8,8 @@
 from dataclasses import dataclass
 import json
 import os
+import sys
+import threading
 from pathlib import Path
 
 import cv2
@@ -65,20 +67,18 @@ def _alpha_to_white(img: np.ndarray) -> np.ndarray:
     return img
 
 
+_FEATURE_TRANSFORM = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Resize((224, 224)),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                       std=[0.229, 0.224, 0.225])
+])
+
+
 def _extract_features(img: np.ndarray, model: nn.Module, device: torch.device) -> np.ndarray:
     """用ResNet50提取图片特征向量"""
-    # 转为RGB（opencv是BGR）
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    # 预处理：resize到224x224，归一化
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((224, 224)),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                           std=[0.229, 0.224, 0.225])
-    ])
-
-    img_tensor = transform(img_rgb).unsqueeze(0).to(device)
+    img_tensor = _FEATURE_TRANSFORM(img_rgb).unsqueeze(0).to(device)
 
     with torch.no_grad():
         features = model(img_tensor)
@@ -100,6 +100,25 @@ def _has_icon(img: np.ndarray, min_std: float = 60.0) -> bool:
     channel_stds = np.std(img, axis=(0, 1))  # shape: (3,)
     avg_std = float(np.mean(channel_stds))
     return avg_std >= min_std
+
+
+_SPINNERS = "|/-\\"
+_spinner_idx = 0
+
+
+def _progress(msg: str):
+    """在同一行刷新进度信息（不刷屏）"""
+    global _spinner_idx
+    ch = _SPINNERS[_spinner_idx % len(_SPINNERS)]
+    _spinner_idx += 1
+    sys.stdout.write(f"\r  [{ch}] {msg}")
+    sys.stdout.flush()
+
+
+def _progress_done():
+    """进度完成，换行"""
+    sys.stdout.write("\n")
+    sys.stdout.flush()
 
 
 def _remove_bg_multi(img: np.ndarray, bg_colors: list, tolerance: int = 60) -> np.ndarray:
@@ -136,25 +155,28 @@ class PokemonDetector:
         """初始化，加载库和参考数据"""
         setup_logger(__name__)
 
-        # 设置设备（GPU 或 CPU）
+        # [1/6] 设置设备 + 加载模型
+        _progress("[1/6] 加载模型 ...")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        # 加载预训练的 ResNet50（提取特征，去掉分类层）
         self.feature_model = resnet50(pretrained=True)
         self.feature_model = nn.Sequential(*list(self.feature_model.children())[:-1])
         self.feature_model.to(self.device)
         self.feature_model.eval()
 
-        # 加载数据库
+        # [2/6] 加载数据库
+        _progress("[2/6] 加载数据库 ...")
         self.db = PokeDB()
 
-        # 加载属性图标
+        # [3/6] 加载属性图标
+        _progress("[3/6] 加载属性图标 ...")
         self.type_refs = self._load_type_refs()
 
-        # 加载精灵图
+        # [4/6] 加载精灵图
+        _progress("[4/6] 加载精灵图 ...")
         self.sprite_refs = self._load_sprite_refs()
 
-        # 从 roster 构建 PokemonVariant 字典
+        # [5/6] 构建变体列表
+        _progress("[5/6] 构建变体列表 ...")
         roster = json.loads(_ROSTER_PATH.read_text(encoding="utf-8"))["pokemon"]
         self.variants: dict[str, PokemonVariant] = {}
 
@@ -176,7 +198,12 @@ class PokemonDetector:
         # 加载 sprite 图片到对应的 variant
         self._load_sprites_into_variants()
 
-        logger.info(f"加载: {len(self.sprite_refs)} 精灵图, {len(self.type_refs)} 属性图标, {len(self.variants)} 宝可梦变体")
+        # [6/6] 预计算特征（最耗时）
+        self._ref_features: dict[str, tuple[np.ndarray | None, np.ndarray | None]] = {}
+        self._precompute_ref_features()
+
+        _progress_done()
+        logger.info(f"初始化完成: {len(self.sprite_refs)} 精灵图, {len(self.type_refs)} 属性图标, {len(self.variants)} 宝可梦变体")
 
     def _load_type_refs(self, size: int = 32) -> dict[int, np.ndarray]:
         """加载 18 张属性图标"""
@@ -218,6 +245,33 @@ class PokemonDetector:
                 if key in self.sprite_refs:
                     variant.sprite_shiny = self.sprite_refs[key]
 
+    def _precompute_ref_features(self, target_size: int = 96):
+        """预计算所有参考精灵的特征向量，缓存到 self._ref_features"""
+        total = len(self.variants)
+        bar_width = 20
+        for idx, (slug, variant) in enumerate(self.variants.items(), 1):
+            normal_feat = None
+            shiny_feat = None
+
+            if variant.sprite is not None:
+                ref = cv2.resize(variant.sprite, (target_size, target_size))
+                ref = _alpha_to_white(ref)
+                normal_feat = _extract_features(ref, self.feature_model, self.device)
+
+            if variant.sprite_shiny is not None:
+                ref = cv2.resize(variant.sprite_shiny, (target_size, target_size))
+                ref = _alpha_to_white(ref)
+                shiny_feat = _extract_features(ref, self.feature_model, self.device)
+
+            self._ref_features[slug] = (normal_feat, shiny_feat)
+
+            # 每 5 个迭代更新一次进度（减少 IO 开销）
+            if idx % 5 == 0 or idx == total:
+                pct = idx / total
+                filled = int(bar_width * pct)
+                bar = "█" * filled + "░" * (bar_width - filled)
+                _progress(f"[6/6] 预计算特征 {bar} {idx}/{total} ({int(pct*100)}%)")
+
     def _match_type(self, icon: np.ndarray, size: int = 32, threshold: float = 60.0, min_std: float = 10.0) -> int | None:
         """识别属性图标，返回 type_id 或 None
 
@@ -252,32 +306,28 @@ class PokemonDetector:
         bg_colors: list = None,
         bg_color: np.ndarray | None = None,
     ) -> tuple[PokemonVariant | None, float, bool]:
-        """识别精灵，返回 (variant, score, is_shiny)。用ResNet50特征提取"""
+        """识别精灵，返回 (variant, score, is_shiny)。使用预计算的参考特征，只对目标做 1 次推理"""
         sprite_r = cv2.resize(sprite, (target_size, target_size))
 
-        # 提取目标图片特征
+        # 只对目标图片做 1 次特征提取
         target_features = _extract_features(sprite_r, self.feature_model, self.device)
 
         search = candidates if candidates else list(self.variants.values())
         best_variant, best_score, is_shiny = None, float("inf"), False
 
         for variant in search:
+            normal_feat, shiny_feat = self._ref_features.get(variant.slug, (None, None))
+
             # 比较普通版
-            if variant.sprite is not None:
-                ref = cv2.resize(variant.sprite, (target_size, target_size))
-                ref = self._preprocess_ref_sprite(ref, bg_removal, bg_colors, bg_color)
-                ref_features = _extract_features(ref, self.feature_model, self.device)
-                score = _cosine_similarity(target_features, ref_features)
+            if normal_feat is not None:
+                score = _cosine_similarity(target_features, normal_feat)
                 if score < best_score:
                     best_score, best_variant = score, variant
                     is_shiny = False
 
-            # 也比较闪光版
-            if variant.sprite_shiny is not None:
-                ref = cv2.resize(variant.sprite_shiny, (target_size, target_size))
-                ref = self._preprocess_ref_sprite(ref, bg_removal, bg_colors, bg_color)
-                ref_features = _extract_features(ref, self.feature_model, self.device)
-                score = _cosine_similarity(target_features, ref_features)
+            # 比较闪光版
+            if shiny_feat is not None:
+                score = _cosine_similarity(target_features, shiny_feat)
                 if score < best_score:
                     best_score, best_variant = score, variant
                     is_shiny = True
@@ -291,7 +341,7 @@ class PokemonDetector:
         bg_colors: list | None,
         bg_color: np.ndarray | None,
     ) -> np.ndarray:
-        """为参考精灵预处理背景"""
+        """为参考精灵预处理背景（保留供非缓存场景使用）"""
         if bg_removal == "multi" and bg_colors:
             # 对 RGBA 图使用 _alpha_to_white
             return _alpha_to_white(ref)
@@ -464,3 +514,19 @@ class PokemonDetector:
             "score": 0,
             "candidates_searched": 0,
         }
+
+
+# ── 全局单例 ──────────────────────────────────────────────────────────────────
+
+_instance: PokemonDetector | None = None
+_lock = threading.Lock()
+
+
+def get_detector() -> PokemonDetector:
+    """线程安全的 PokemonDetector 全局单例获取"""
+    global _instance
+    if _instance is None:
+        with _lock:
+            if _instance is None:
+                _instance = PokemonDetector()
+    return _instance

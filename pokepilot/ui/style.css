@@ -157,13 +157,32 @@ html, body {
 }
 
 .team-col {
-    width: 400px;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+}
+
+.left-col {
+    width: 300px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     background: #1e1e1e;
     border-right: 1px solid #3e3e42;
     overflow: hidden;
+}
+
+.left-col .team-col {
+    flex: 1;
+    min-height: 0;
+    background: transparent;
+}
+
+.opp-team {
+    width: 300px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-left: 1px solid #3e3e42;
 }
 
 .video-col {
@@ -283,7 +302,7 @@ video {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 2.5fr;
     gap: 4px;
     padding: 0px 2px;
     width: 100%;
@@ -293,8 +312,8 @@ video {
 }
 
 .card-info-left {
-    display: grid;
-    grid-template-rows: auto 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 1px;
     min-width: 0;
     min-height: 0;
@@ -334,6 +353,27 @@ video {
     min-height: 0;
 }
 
+.card-info-right-top {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-height: 0;
+}
+
+.card-info-right-bottom {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    gap: 4px;
+    min-width: 0;
+    min-height: 0;
+}
+
+.card-info-right-bottom .card-stats-section {
+    flex: 1;
+}
+
 .card-effectiveness-section {
     flex: 0 0 auto;
     display: flex;
@@ -347,7 +387,6 @@ video {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     gap: 1px;
 }
 
@@ -441,31 +480,30 @@ video {
 }
 
 .stat-label {
-    width: 20px;
+    min-width: 20px;
     font-weight: 600;
     color: #ccc;
-}
-
-.stat-bar-container {
-    flex: 1;
-    height: 4px;
-    background: #1a1a1a;
-    border-radius: 1px;
-    overflow: hidden;
-}
-
-.stat-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #4ec9b0, #569cd6);
-    border-radius: 2px;
-    transition: width 0.1s ease;
+    display: flex;
+    align-items: center;
+    gap: 1px;
 }
 
 .stat-value {
-    width: 45px;
-    text-align: right;
+    margin-left: auto;
     color: #888;
+    font-size: 9px;
+}
+
+.stat-boost {
     font-size: 8px;
+    font-weight: 600;
+    margin-left: 2px;
+}
+.stat-boost-up {
+    color: #4caf50;
+}
+.stat-boost-down {
+    color: #f44336;
 }
 
 .card-evs {
@@ -695,6 +733,21 @@ video {
     min-height: 51px;
 }
 
+.effectiveness-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 4px;
+    width: 100%;
+    flex: 1;
+}
+
+.effectiveness-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
 .effectiveness-row {
     display: flex;
     align-items: center;
@@ -708,6 +761,24 @@ video {
     color: #777;
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+.weakness-label {
+    color: #ff6b6b;
+    font-weight: 600;
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+    justify-self: center;
+    align-self: center;
+}
+
+.resist-label {
+    color: #6ba3ff;
+    font-weight: 600;
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+    justify-self: center;
+    align-self: center;
 }
 
 .type-icon-small {
@@ -746,8 +817,8 @@ video {
 }
 
 .card-moves {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 1px;
 }
 
@@ -782,6 +853,8 @@ video {
     font-size: 9px;
     opacity: 0.9;
     flex-shrink: 0;
+    max-width: 55px;
+    text-align: right;
 }
 
 /* 属性颜色 */
@@ -1702,5 +1775,144 @@ video {
 .card-name-edit:hover {
     color: #fff;
     opacity: 1;
+}
+
+/* ==================== 能力等级弹窗 ==================== */
+.boost-editor-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+.boost-editor-overlay.open {
+    display: flex;
+}
+
+.boost-editor-box {
+    background: #2d2d30;
+    border-radius: 8px;
+    padding: 16px 20px;
+    min-width: 380px;
+    max-width: 90vw;
+    color: #e0e0e0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.boost-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+.boost-editor-close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+.boost-editor-close-btn:hover {
+    color: #fff;
+}
+
+.boost-level-labels {
+    display: flex;
+    align-items: center;
+}
+.boost-level-num {
+    font-size: 9px;
+    color: #666;
+    text-align: center;
+    flex: 1;
+}
+
+.boost-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.boost-row {
+    display: flex;
+    align-items: center;
+}
+.boost-stat-label {
+    width: 40px;
+    font-size: 12px;
+    color: #ccc;
+    flex-shrink: 0;
+}
+.boost-arrows {
+    display: flex;
+    flex: 1;
+}
+.boost-arrow-pair {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.boost-arrow {
+    width: 28px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #555;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    user-select: none;
+}
+.boost-arrow:hover {
+    color: #999;
+    background: rgba(255, 255, 255, 0.05);
+}
+.boost-up.active {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.15);
+    font-weight: 700;
+}
+.boost-down.active {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.15);
+    font-weight: 700;
+}
+
+.boost-editor-footer {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+}
+.boost-reset-btn,
+.boost-confirm-btn {
+    padding: 4px 16px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #3c3c3c;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.boost-reset-btn:hover {
+    background: #505050;
+}
+.boost-confirm-btn {
+    background: #0e639c;
+    border-color: #1177bb;
+    color: #fff;
+}
+.boost-confirm-btn:hover {
+    background: #1177bb;
 }
 

@@ -35,8 +35,27 @@ const AXIS_MAJOR_STEP = 50;
 // 场地状态
 let speedFieldState = {
     my_tailwind: false,
-    opp_tailwind: false
+    opp_tailwind: false,
+    my_friendGuard: false,
+    my_lightScreen: false,
+    my_reflect: false,
+    my_auroraVeil: false,
+    opp_friendGuard: false,
+    opp_lightScreen: false,
+    opp_reflect: false,
+    opp_auroraVeil: false,
+    weather: null,
+    terrain: null
 };
+// 能力等级状态：每个宝可梦独立存储，以图鉴编号为key
+let boostState = {
+    my: {},
+    opp: {}
+};
+function getBoosts(side, index) {
+    const key = (side === 'my-team' || side === 'my') ? 'my' : 'opp';
+    return boostState[key][index] || { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+}
 let moveDamageDragState = null;
 let battleMode = 'double';
 let activeDamageQuery = null;
@@ -66,8 +85,15 @@ function isChoiceScarf(pokemon) {
     return false;
 }
 
-function getEffectiveSpeed(speed, hasTailwind, isScarf = false) {
+function getEffectiveSpeed(speed, hasTailwind, isScarf = false, speedBoost = 0) {
     let value = Number(speed) || 0;
+    // 能力等级修正：+1=1.5x, +2=2x, +3=2.5x, +4=3x, +5=3.5x, +6=4x
+    // -1=2/3, -2=0.5, -3=0.4, -4=1/3, -5=2/7, -6=0.25
+    if (speedBoost > 0) {
+        value = Math.floor(value * (2 + speedBoost) / 2);
+    } else if (speedBoost < 0) {
+        value = Math.floor(value * 2 / (2 - speedBoost));
+    }
     if (hasTailwind) value *= 2;
     if (isScarf) value *= 1.5;
     return Math.floor(value);
@@ -77,18 +103,20 @@ function getEffectiveSpeed(speed, hasTailwind, isScarf = false) {
 function getDynamicMaxSpeed() {
     const maxCandidates = [];
 
-    (currentTeams['my-team'] || []).forEach((pokemon) => {
+    (currentTeams['my-team'] || []).forEach((pokemon, i) => {
         const speed = pokemon?.stats?.speed;
-        maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.my_tailwind, isChoiceScarf(pokemon)));
+        const spdBoost = (boostState.my[pokemon.index] || {}).spe || 0;
+        maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.my_tailwind, isChoiceScarf(pokemon), spdBoost));
     });
 
-    (currentTeams['opp-team'] || []).forEach((pokemon) => {
+    (currentTeams['opp-team'] || []).forEach((pokemon, i) => {
         const speed = pokemon?.stats?.speed;
+        const spdBoost = (boostState.opp[pokemon.index] || {}).spe || 0;
         if (Array.isArray(speed)) {
-            maxCandidates.push(getEffectiveSpeed(speed[0], speedFieldState.opp_tailwind, isChoiceScarf(pokemon)));
-            maxCandidates.push(getEffectiveSpeed(speed[1], speedFieldState.opp_tailwind, isChoiceScarf(pokemon)));
+            maxCandidates.push(getEffectiveSpeed(speed[0], speedFieldState.opp_tailwind, isChoiceScarf(pokemon), spdBoost));
+            maxCandidates.push(getEffectiveSpeed(speed[1], speedFieldState.opp_tailwind, isChoiceScarf(pokemon), spdBoost));
         } else {
-            maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.opp_tailwind, isChoiceScarf(pokemon)));
+            maxCandidates.push(getEffectiveSpeed(speed, speedFieldState.opp_tailwind, isChoiceScarf(pokemon), spdBoost));
         }
     });
 
@@ -120,6 +148,214 @@ function toggleTailwind(side) {
     }
     updateTailwindButtons();
     renderSpeedAxis();
+    if (typeof refreshDamage === 'function') refreshDamage();
+}
+
+function toggleFieldEffect(key) {
+    speedFieldState[key] = !speedFieldState[key];
+    const btn = document.getElementById('btn-' + key);
+    if (btn) btn.classList.toggle('active', speedFieldState[key]);
+    if (typeof refreshDamage === 'function') refreshDamage();
+}
+
+function updateAllFieldButtons() {
+    const keys = [
+        'my_friendGuard','my_lightScreen','my_reflect','my_auroraVeil',
+        'opp_friendGuard','opp_lightScreen','opp_reflect','opp_auroraVeil'
+    ];
+    keys.forEach(key => {
+        const btn = document.getElementById('btn-' + key);
+        if (btn) btn.classList.toggle('active', speedFieldState[key]);
+    });
+    updateWeatherButton();
+    updateTerrainButton();
+    updateTailwindButtons();
+}
+
+function setWeather(weather) {
+    speedFieldState.weather = weather;
+    updateWeatherButton();
+    closeAllDropdowns();
+    if (typeof refreshDamage === 'function') refreshDamage();
+}
+
+function setTerrain(terrain) {
+    speedFieldState.terrain = terrain;
+    updateTerrainButton();
+    closeAllDropdowns();
+    if (typeof refreshDamage === 'function') refreshDamage();
+}
+
+function updateWeatherButton() {
+    const btn = document.getElementById('btn-weather');
+    if (!btn) return;
+    const w = speedFieldState.weather;
+    const labels = { Sun:'晴天', Rain:'雨天', Sand:'沙暴', Hail:'雪天' };
+    btn.textContent = w ? labels[w] : '天气';
+    btn.classList.toggle('active', !!w);
+    document.querySelectorAll('#weather-dropdown .speed-dropdown-item').forEach(el => {
+        el.classList.toggle('selected', el.dataset.value === (w || ''));
+    });
+}
+
+function updateTerrainButton() {
+    const btn = document.getElementById('btn-terrain');
+    if (!btn) return;
+    const t = speedFieldState.terrain;
+    const labels = { Electric:'电气', Grassy:'草场', Misty:'薄雾', Psychic:'超场' };
+    btn.textContent = t ? labels[t] : '场地';
+    btn.classList.toggle('active', !!t);
+    document.querySelectorAll('#terrain-dropdown .speed-dropdown-item').forEach(el => {
+        el.classList.toggle('selected', el.dataset.value === (t || ''));
+    });
+}
+
+
+// ==================== 能力等级弹窗 ====================
+
+function openBoostEditor(side, index) {
+    const key = side === 'my-team' ? 'my' : 'opp';
+    const pokemon = (currentTeams[side] || [])[index];
+    if (!pokemon) return;
+    const pokemonIndex = pokemon.index;
+    const name = pokemon.name_zh || pokemon.name || '';
+    if (!boostState[key][pokemonIndex]) {
+        boostState[key][pokemonIndex] = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    }
+    const boosts = boostState[key][pokemonIndex];
+
+    const overlay = document.createElement('div');
+    overlay.id = 'boost-editor-overlay';
+    overlay.className = 'boost-editor-overlay';
+
+    const stats = [
+        { key: 'atk', label: '攻击' },
+        { key: 'def', label: '防御' },
+        { key: 'spa', label: '特攻' },
+        { key: 'spd', label: '特防' },
+        { key: 'spe', label: '速度' }
+    ];
+
+    const levelNumsHtml = [1,2,3,4,5,6].map(n =>
+        `<span class="boost-level-num">+${n}</span>`
+    ).join('');
+
+    const rowsHtml = stats.map(s => {
+        let arrowsHtml = '';
+        const val = boosts[s.key];
+        for (let lv = 1; lv <= 6; lv++) {
+            const upActive = val > 0 && lv <= val ? ' active' : '';
+            const downActive = val < 0 && lv <= -val ? ' active' : '';
+            arrowsHtml += `
+                <div class="boost-arrow-pair">
+                    <div class="boost-arrow boost-up${upActive}" data-stat="${s.key}" data-level="${lv}" data-sign="1">▲</div>
+                    <div class="boost-arrow boost-down${downActive}" data-stat="${s.key}" data-level="${lv}" data-sign="-1">▼</div>
+                </div>`;
+        }
+        return `
+            <div class="boost-row">
+                <span class="boost-stat-label">${s.label}</span>
+                <div class="boost-arrows">${arrowsHtml}</div>
+            </div>`;
+    }).join('');
+
+    overlay.innerHTML = `
+        <div class="boost-editor-box">
+            <div class="boost-editor-header">
+                <span>${name}</span>
+                <button class="boost-editor-close-btn" id="boost-close-btn">×</button>
+            </div>
+            <div class="boost-level-labels">
+                <span class="boost-stat-label"></span>
+                <div class="boost-arrows">${levelNumsHtml}</div>
+            </div>
+            <div class="boost-rows">${rowsHtml}</div>
+            <div class="boost-editor-footer">
+                <button class="boost-reset-btn" id="boost-reset-btn">重置</button>
+                <button class="boost-confirm-btn" id="boost-confirm-btn">确定</button>
+            </div>
+        </div>`;
+
+    overlay._boostSide = side;
+    overlay._boostPokemonIndex = pokemonIndex;
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('open'));
+
+    // 关闭按钮
+    overlay.querySelector('#boost-close-btn').addEventListener('click', () => closeBoostEditor());
+    // 重置按钮
+    overlay.querySelector('#boost-reset-btn').addEventListener('click', () => resetBoosts());
+    // 确认按钮
+    overlay.querySelector('#boost-confirm-btn').addEventListener('click', () => confirmBoosts());
+    // 点击遮罩层关闭
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeBoostEditor();
+    });
+
+    // 箭头点击事件委托
+    overlay.addEventListener('click', (e) => {
+        const arrow = e.target.closest('.boost-arrow');
+        if (!arrow) return;
+        onBoostArrowClick(arrow.dataset.stat, parseInt(arrow.dataset.level), parseInt(arrow.dataset.sign), side, pokemonIndex);
+    });
+}
+
+function onBoostArrowClick(stat, level, sign, side, pokemonIndex) {
+    const key = (side === 'my-team' || side === 'my') ? 'my' : 'opp';
+    if (!boostState[key][pokemonIndex]) {
+        boostState[key][pokemonIndex] = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    }
+    const current = boostState[key][pokemonIndex][stat];
+    boostState[key][pokemonIndex][stat] = (current === level * sign) ? 0 : level * sign;
+    const newVal = boostState[key][pokemonIndex][stat];
+
+    const overlay = document.getElementById('boost-editor-overlay');
+    if (!overlay) return;
+    overlay.querySelectorAll(`.boost-arrow[data-stat="${stat}"]`).forEach(el => {
+        const lv = parseInt(el.dataset.level);
+        const sg = parseInt(el.dataset.sign);
+        const isActive = (newVal > 0 && sg === 1 && lv <= newVal) ||
+                         (newVal < 0 && sg === -1 && lv <= -newVal);
+        el.classList.toggle('active', isActive);
+    });
+}
+
+function resetBoosts() {
+    const overlay = document.getElementById('boost-editor-overlay');
+    if (!overlay) return;
+    const key = overlay._boostSide === 'my-team' ? 'my' : 'opp';
+    boostState[key][overlay._boostPokemonIndex] = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    overlay.querySelectorAll('.boost-arrow').forEach(el => el.classList.remove('active'));
+}
+
+function confirmBoosts() {
+    closeBoostEditor();
+    renderSpeedAxis();
+    updateCardBoostIndicators();
+    if (typeof refreshDamage === 'function') refreshDamage();
+}
+
+function updateCardBoostIndicators() {
+    ['my-team', 'opp-team'].forEach(side => {
+        const cards = document.querySelectorAll(`.team-col.${side} .pokemon-card`);
+        cards.forEach((card, i) => {
+            const pokemon = (currentTeams[side] || [])[i];
+            if (!pokemon) return;
+            const statsDiv = card.querySelector('.card-stats');
+            if (!statsDiv) return;
+            const boosts = boostState[side === 'my-team' ? 'my' : 'opp']?.[pokemon.index];
+            statsDiv.innerHTML = renderStats(pokemon.base_stats, pokemon.stats, pokemon.nature, boosts);
+        });
+    });
+}
+
+function closeBoostEditor() {
+    const overlay = document.getElementById('boost-editor-overlay');
+    if (overlay) {
+        overlay.classList.remove('open');
+        setTimeout(() => overlay.remove(), 200);
+    }
 }
 
 
@@ -216,55 +452,48 @@ function resetOppSpeedMarkerRatio() {
 }
 
 
-function renderCard(pokemon, side, index) {
-    const inner = document.createElement('div');
-    inner.className = 'card-inner';
-    const spritePath = pokemon.sprite.replace(/^sprites\//, '');
+function renderTypeIcon(typeName, className = 'type-icon') {
+    const key = typeName.charAt(0).toUpperCase() + typeName.slice(1);
+    const typeId = TYPE_ID_MAP[key] || 1;
+    return `<div class="${className}" title="${key}" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
+}
 
-    // 属性徽标
-    const typeIcons = pokemon.types.map(t => {
-        const typeId = TYPE_ID_MAP[t] || 1;
-        return `<div class="type-icon" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
+function renderAbility(ability) {
+    if (!ability || !Array.isArray(ability) || !ability.length) return '';
+    return ability.map(a => {
+        const name = a.name_zh || a.name || '';
+        const pctStr = a.pct ? ` (${Math.round(a.pct * 100)}%)` : '';
+        const desc = a.description_zh || a.description || '';
+        const title = `${name}${pctStr}\n${desc}`;
+        return `<span class="card-ability" title="${title.replace(/"/g, '&quot;')}">${name}</span>`;
+    }).join(', ');
+}
+
+function renderItem(heldItem) {
+    if (!heldItem || !Array.isArray(heldItem) || !heldItem.length) return '<span class="card-item" title="">无道具</span>';
+    return heldItem.map(i => {
+        const name = i.name_zh || i.name || '';
+        const pctStr = i.pct ? ` (${Math.round(i.pct * 100)}%)` : '';
+        const desc = i.description_zh || i.description || '';
+        const title = `${name}${pctStr}\n${desc}`;
+        return `<span class="card-item" title="${title.replace(/"/g, '&quot;')}">${name}</span>`;
+    }).join(', ');
+}
+
+function renderEvoButtons(evoforms, currentEvoIndex, side, index) {
+    if (!evoforms || !evoforms.length) return '';
+    return evoforms.map((evo, evoIdx) => {
+        const buttonName = evo.form_name || 'mega';
+        const isActive = currentEvoIndex === evoIdx ? 'active' : '';
+        return `<button class="evo-button ${isActive}" onclick="switchEvoform('${side}', ${index}, ${evoIdx})" title="切换至 ${buttonName}">${buttonName}</button>`;
     }).join('');
+}
 
-    // 处理 ability - 统一为列表格式，每个分别带 hover
-    let abilityHtml = '';
-    if (pokemon.ability && Array.isArray(pokemon.ability) && pokemon.ability.length > 0) {
-        abilityHtml = pokemon.ability.map(a => {
-            const name = a.name_zh || a.name || '';
-            const pctStr = a.pct ? ` (${Math.round(a.pct * 100)}%)` : '';
-            const desc = a.description_zh || a.description || '';
-            const title = `${name}${pctStr}\n${desc}`;
-            return `<span class="card-ability" title="${title.replace(/"/g, '&quot;')}">${name}</span>`;
-        }).join(', ');
-    }
-
-    // 处理 held_item - 统一为列表格式，每个分别带 hover
-    let itemHtml = '';
-    if (pokemon.held_item && Array.isArray(pokemon.held_item) && pokemon.held_item.length > 0) {
-        itemHtml = pokemon.held_item.map(i => {
-            const name = i.name_zh || i.name || '';
-            const pctStr = i.pct ? ` (${Math.round(i.pct * 100)}%)` : '';
-            const desc = i.description_zh || i.description || '';
-            const title = `${name}${pctStr}\n${desc}`;
-            return `<span class="card-item" title="${title.replace(/"/g, '&quot;')}">${name}</span>`;
-        }).join(', ');
-    }
-
-    // 进化形态按钮
-    let evoButtonsHtml = '';
-    if (pokemon.evoforms && pokemon.evoforms.length > 0) {
-        evoButtonsHtml = pokemon.evoforms.map((evo, evoIdx) => {
-            const buttonName = evo.form_name || 'mega';
-            const isActive = pokemon._currentEvoIndex === evoIdx ? 'active' : '';
-            return `<button class="evo-button ${isActive}" onclick="switchEvoform('${side}', ${index}, ${evoIdx})" title="切换至 ${buttonName}">${buttonName}</button>`;
-        }).join('');
-    }
-
-    // 招式（用属性颜色作为背景，显示威力/准确度）
-    const moves = pokemon.moves.map((m, moveIdx) => {
+function renderMoves(moves, side, index) {
+    return moves.map((m, moveIdx) => {
         const powerAccuracy = m.power !== null ? `${m.power}/${m.accuracy ?? '-'}` : '-/-';
-        const priorityText = Number(m.priority || 0) !== 0 ? ` P${Number(m.priority) >= 0 ? '+' : ''}${m.priority}` : '';
+        const prio = Number(m.priority || 0);
+        const priorityPrefix = prio !== 0 ? (prio > 0 ? `+${prio}` : `${prio}`) : '';
         const desc = m.short_effect_zh || m.short_effect || '';
         const pctStr = m.pct ? `使用率: ${Math.round(m.pct * 100)}%` : '';
         const moveTitle = [desc, pctStr].filter(Boolean).join('\n');
@@ -273,13 +502,42 @@ function renderCard(pokemon, side, index) {
         const clickAttr = (side === 'my-team' || side === 'opp-team')
             ? ` onclick="showMoveDamageRange('${side}', ${index}, ${moveIdx})"`
             : '';
-        return `<div class="move-chip type-${m.type.toLowerCase()}${clickableClass}" title="${moveTitle.replace(/"/g, '&quot;')}"${clickAttr}>${moveName}<span class="move-stats">${powerAccuracy}${priorityText}</span></div>`;
+        const nameDisplay = priorityPrefix ? `${priorityPrefix}${moveName}` : moveName;
+        return `<div class="move-chip type-${m.type.toLowerCase()}${clickableClass}" title="${moveTitle.replace(/"/g, '&quot;')}"${clickAttr}>${nameDisplay}<span class="move-stats">${powerAccuracy}</span></div>`;
     }).join('');
+}
 
-    // Stats barplot 显示
-    const stats = pokemon.stats;
-    const baseStats = pokemon.base_stats;
-    const statLabels = [
+function renderStats(baseStats, stats, nature, boosts) {
+    const labels = [
+        { key: 'hp', label: 'HP', boostKey: null },
+        { key: 'attack', label: 'A', boostKey: 'atk' },
+        { key: 'defense', label: 'D', boostKey: 'def' },
+        { key: 'sp_atk', label: 'SA', boostKey: 'spa' },
+        { key: 'sp_def', label: 'SD', boostKey: 'spd' },
+        { key: 'speed', label: 'S', boostKey: 'spe' }
+    ];
+    let upStat = '', downStat = '';
+    if (nature) {
+        const [up, down] = nature.split('/');
+        upStat = up ? up.split('↑')[0] : '';
+        downStat = down ? down.split('↓')[0] : '';
+    }
+    return labels.map(({ key, label, boostKey }) => {
+        const base = baseStats[key];
+        const current = stats[key];
+        let labelClass = '';
+        if (upStat && upStat.toLowerCase() === key.toLowerCase()) labelClass = 'nature-up';
+        else if (downStat && downStat.toLowerCase() === key.toLowerCase()) labelClass = 'nature-down';
+        const boost = boosts && boostKey ? (boosts[boostKey] || 0) : 0;
+        const boostHtml = boost !== 0
+            ? `<span class="stat-boost ${boost > 0 ? 'stat-boost-up' : 'stat-boost-down'}">${boost > 0 ? '+' : ''}${boost}</span>`
+            : '';
+        return `<div class="stat-row"><span class="stat-label ${labelClass}">${label}${boostHtml}</span><span class="stat-value ${labelClass}">${current}</span></div>`;
+    }).join('');
+}
+
+function renderEvEditor(evs, side, index) {
+    const labels = [
         { key: 'hp', label: 'HP' },
         { key: 'attack', label: 'A' },
         { key: 'defense', label: 'D' },
@@ -287,35 +545,8 @@ function renderCard(pokemon, side, index) {
         { key: 'sp_def', label: 'SD' },
         { key: 'speed', label: 'S' }
     ];
-
-    // 解析 nature
-    let upStat = '', downStat = '';
-    if (pokemon.nature) {
-        const [up, down] = pokemon.nature.split('/');
-        upStat = up ? up.split('↑')[0] : '';
-        downStat = down ? down.split('↓')[0] : '';
-    }
-
-    const statsHtml = statLabels.map(({ key, label }) => {
-        const base = baseStats[key];
-        const current = stats[key];
-        const barWidth = Math.round((base / 180) * 100);
-        let labelClass = '';
-        if (upStat && upStat.toLowerCase() === key.toLowerCase()) labelClass = 'nature-up';
-        else if (downStat && downStat.toLowerCase() === key.toLowerCase()) labelClass = 'nature-down';
-        return `
-            <div class="stat-row">
-                <span class="stat-label ${labelClass}">${label}</span>
-                <div class="stat-bar-container">
-                    <div class="stat-bar" style="width: ${barWidth}%"></div>
-                </div>
-                <span class="stat-value ${labelClass}">${base}(${current})</span>
-            </div>
-        `;
-    }).join('');
-
-    const evHtml = statLabels.map(({ key, label }) => {
-        const ev = pokemon.evs?.[key] ?? 0;
+    return labels.map(({ key, label }) => {
+        const ev = evs?.[key] ?? 0;
         return `
             <div class="ev-row">
                 <span class="stat-label">${label}</span>
@@ -324,64 +555,48 @@ function renderCard(pokemon, side, index) {
             </div>
         `;
     }).join('');
+}
 
-    // 属性相克 - 分类显示
-    const effectiveness = pokemon.type_effectiveness;
+function renderEffectiveness(effectiveness) {
+    const groups = {};
+    for (const [type, mult] of Object.entries(effectiveness)) {
+        (groups[mult] = groups[mult] || []).push(type);
+    }
+    const labels = { 4: '×4', 2: '×2', 0.25: '÷4', 0.5: '÷2', 0: '×0' };
+    const weakRows = [];
+    for (const mult of [4, 2]) {
+        if (groups[mult]) {
+            weakRows.push(`<div class="effectiveness-row"><span class="effectiveness-label">${labels[mult]}:</span>${groups[mult].map(t => renderTypeIcon(t, 'type-icon-small')).join('')}</div>`);
+        }
+    }
+    const resistRows = [];
+    for (const mult of [0.25, 0.5, 0]) {
+        if (groups[mult]) {
+            resistRows.push(`<div class="effectiveness-row"><span class="effectiveness-label">${labels[mult]}:</span>${groups[mult].map(t => renderTypeIcon(t, 'type-icon-small')).join('')}</div>`);
+        }
+    }
+    const hasWeak = weakRows.length > 0;
+    const hasResist = resistRows.length > 0;
+    if (!hasWeak && !hasResist) return '';
+    const parts = [];
+    if (hasWeak) {
+        parts.push('<div class="weakness-label">弱点</div>');
+        parts.push(`<div class="effectiveness-rows">${weakRows.join('')}</div>`);
+    }
+    if (hasResist) {
+        parts.push('<div class="resist-label">抵抗</div>');
+        parts.push(`<div class="effectiveness-rows">${resistRows.join('')}</div>`);
+    }
+    return `<div class="effectiveness-grid">${parts.join('')}</div>`;
+}
 
-    const immunity = Object.entries(effectiveness)
-        .filter(([, mult]) => mult === 0.0)
-        .map(([type]) => {
-            const typeId = TYPE_ID_MAP[type.charAt(0).toUpperCase() + type.slice(1)] || 1;
-            const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
-            return `<div class="type-icon-small" title="${typeTitle}" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
-        }).join('');
+function renderCard(pokemon, side, index) {
+    const inner = document.createElement('div');
+    inner.className = 'card-inner';
+    const spritePath = pokemon.sprite.replace(/^sprites\//, '');
 
-    const resistQuarter = Object.entries(effectiveness)
-        .filter(([, mult]) => mult === 0.25)
-        .map(([type]) => {
-            const typeId = TYPE_ID_MAP[type.charAt(0).toUpperCase() + type.slice(1)] || 1;
-            const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
-            return `<div class="type-icon-small" title="${typeTitle}" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
-        }).join('');
-
-    const superEffectiveX4 = Object.entries(effectiveness)
-        .filter(([, mult]) => mult === 4.0)
-        .map(([type]) => {
-            const typeId = TYPE_ID_MAP[type.charAt(0).toUpperCase() + type.slice(1)] || 1;
-            const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
-            return `<div class="type-icon-small" title="${typeTitle}" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
-        }).join('');
-
-    const resistHalf = Object.entries(effectiveness)
-        .filter(([, mult]) => mult === 0.5)
-        .map(([type]) => {
-            const typeId = TYPE_ID_MAP[type.charAt(0).toUpperCase() + type.slice(1)] || 1;
-            const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
-            return `<div class="type-icon-small" title="${typeTitle}" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
-        }).join('');
-
-    const superEffectiveX2 = Object.entries(effectiveness)
-        .filter(([, mult]) => mult === 2.0)
-        .map(([type]) => {
-            const typeId = TYPE_ID_MAP[type.charAt(0).toUpperCase() + type.slice(1)] || 1;
-            const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
-            return `<div class="type-icon-small" title="${typeTitle}" style="background-image: url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId}.png')"></div>`;
-        }).join('');
-
-    // 构建有内容的行
-      const firstRowHtml = superEffectiveX4 || resistQuarter || immunity ? `
-        ${superEffectiveX4 ? `<span class="effectiveness-label">×4:</span>${superEffectiveX4}` : ''}
-        ${resistQuarter ? `<span class="effectiveness-label">÷4:</span>${resistQuarter}` : ''}
-        ${immunity ? `<span class="effectiveness-label">×0:</span>${immunity}` : ''}
-    ` : '';
-
-    const secondRowHtml = resistHalf ? `
-        <span class="effectiveness-label">÷2:</span>${resistHalf}
-    ` : '';
-
-    const thirdRowHtml = superEffectiveX2 ? `
-        <span class="effectiveness-label">×2:</span>${superEffectiveX2}
-    ` : '';
+    const typeIcons = pokemon.types.map(t => renderTypeIcon(t)).join('');
+    const evoButtonsHtml = renderEvoButtons(pokemon.evoforms, pokemon._currentEvoIndex, side, index);
 
     const editBtnHtml = (side === 'opp-team')
         ? `<button class="card-name-edit" onclick="openPokemonSwitcher('${side}', ${index})" title="切换宝可梦">✏️</button>`
@@ -391,42 +606,44 @@ function renderCard(pokemon, side, index) {
         <div class="card-bg-sprite" style="background-image: url('/sprites/${spritePath}')"></div>
         <div class="card-info">
             <div class="card-info-left">
-                <div class="card-header-section">
-                    <div class="card-header">
-                        <div class="card-types">${typeIcons}</div>
-                        <span class="card-name">${pokemon.name_zh || pokemon.name || ''}</span>${editBtnHtml}
-                        ${evoButtonsHtml ? `<div class="evo-buttons">${evoButtonsHtml}</div>` : ''}
-                    </div>
-                    <div class="card-meta">
-                        ${itemHtml || '<span class="card-item" title="">无道具</span>'}
-                    </div>
-                    <div class="card-meta">
-                        ${abilityHtml}
-                    </div>
+                <div class="card-meta">
+                    ${renderItem(pokemon.held_item)}
                 </div>
-                <div class="card-stats-section">
-                    <div class="card-stats">${statsHtml}</div>
-                    <div class="card-evs" style="display:none">
-                        <div class="ev-header">
-                            <span class="stat-label">EVs</span>
-                            <span class="ev-header-back">← 返回</span>
-                        </div>
-                        <div class="ev-content">
-                            <div class="ev-sliders-col">${evHtml}</div>
-                        </div>
-                    </div>
+                <div class="card-meta">
+                    ${renderAbility(pokemon.ability)}
+                </div>
+                <div class="card-moves-section">
+                    <div class="card-moves">${renderMoves(pokemon.moves, side, index)}</div>
                 </div>
             </div>
             <div class="card-info-right">
-                <div class="card-effectiveness-section">
-                    <div class="card-effectiveness">
-                        ${firstRowHtml ? `<div class="effectiveness-row">${firstRowHtml}</div>` : ''}
-                        ${secondRowHtml ? `<div class="effectiveness-row">${secondRowHtml}</div>` : ''}
-                        ${thirdRowHtml ? `<div class="effectiveness-row">${thirdRowHtml}</div>` : ''}
+                <div class="card-info-right-top">
+                    <div class="card-header-section">
+                        <div class="card-header">
+                            <div class="card-types">${typeIcons}</div>
+                            <span class="card-name">${pokemon.name_zh || pokemon.name || ''}</span>${editBtnHtml}
+                            ${evoButtonsHtml ? `<div class="evo-buttons">${evoButtonsHtml}</div>` : ''}
+                        </div>
                     </div>
                 </div>
-                <div class="card-moves-section">
-                    <div class="card-moves">${moves}</div>
+                <div class="card-info-right-bottom">
+                    <div class="card-effectiveness-section">
+                        <div class="card-effectiveness">
+                            ${renderEffectiveness(pokemon.type_effectiveness)}
+                        </div>
+                    </div>
+                    <div class="card-stats-section">
+                        <div class="card-stats">${renderStats(pokemon.base_stats, pokemon.stats, pokemon.nature, boostState[side === 'my-team' ? 'my' : 'opp']?.[pokemon.index])}</div>
+                        <div class="card-evs" style="display:none">
+                            <div class="ev-header">
+                                <span class="stat-label">EVs</span>
+                                <span class="ev-header-back">← 返回</span>
+                            </div>
+                            <div class="ev-content">
+                                <div class="ev-sliders-col">${renderEvEditor(pokemon.evs, side, index)}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -451,6 +668,15 @@ function renderCard(pokemon, side, index) {
                 closeEvListPanel();
             });
         }
+    }
+
+    // 能力等级弹窗：点击 .card-info 空白区域触发
+    const cardInfo = inner.querySelector('.card-info');
+    if (cardInfo) {
+        cardInfo.addEventListener('click', (e) => {
+            if (e.target.closest('.move-chip, .card-stats, .card-name-edit, .evo-button, .ev-slider, .ev-number, .ev-header-back, .card-item, .card-ability')) return;
+            openBoostEditor(side, index);
+        });
     }
 
     return inner;
@@ -724,7 +950,7 @@ function showMoveDamageRange(side, pokemonIndex, moveIndex) {
         const rows = [];
         for (const defender of targetTeam) {
             if (!defender) continue;
-            const res = calcDamage(attacker, defender, move);
+            const res = calcDamage(attacker, defender, move, { attackerSide: isMySide ? 'my' : 'opp', defenderSide: isMySide ? 'opp' : 'my' });
             if (!res) continue;
             const [dmgMin, dmgMax] = res.range();
             const effectiveness = res.effectiveness || 1;
@@ -1439,7 +1665,8 @@ function renderSpeedAxis() {
         (currentTeams['my-team'] || []).forEach((p, index) => {
             const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
             const scarf = isChoiceScarf(p);
-            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, scarf);
+            const spdBoost = (boostState.my[p.index] || {}).spe || 0;
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, scarf, spdBoost);
             const pct = speedToPercent(effectiveSpeed, maxSpeed);
             const label = p.name_zh || p.name || '?';
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
@@ -1468,7 +1695,8 @@ function renderSpeedAxis() {
         (currentTeams['my-team'] || []).forEach((p, index) => {
             const speed = p.stats && p.stats.speed != null ? p.stats.speed : 0;
             const scarf = isChoiceScarf(p);
-            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, scarf);
+            const spdBoost = (boostState.my[p.index] || {}).spe || 0;
+            const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, scarf, spdBoost);
             const pct = speedToPercent(effectiveSpeed, maxSpeed);
             const tickEl = document.createElement('div');
             tickEl.className = 'speed-tick speed-my-tick';
@@ -1487,10 +1715,11 @@ function renderSpeedAxis() {
         pokemon.forEach((p, i) => {
             const globalIndex = startIndex + i;
             const scarf = isChoiceScarf(p);
+            const spdBoost = (boostState.opp[p.index] || {}).spe || 0;
             const spd = p.stats && p.stats.speed;
             const [baseMin, baseMax] = Array.isArray(spd) ? spd : [spd || 0, spd || 0];
-            const sMin = getEffectiveSpeed(baseMin, speedFieldState.opp_tailwind, scarf);
-            const sMax = getEffectiveSpeed(baseMax, speedFieldState.opp_tailwind, scarf);
+            const sMin = getEffectiveSpeed(baseMin, speedFieldState.opp_tailwind, scarf, spdBoost);
+            const sMax = getEffectiveSpeed(baseMax, speedFieldState.opp_tailwind, scarf, spdBoost);
             const pctMin = speedToPercent(sMin, maxSpeed);
             const pctMax = speedToPercent(sMax, maxSpeed);
             const label = p.name_zh || p.name || '?';
@@ -1507,8 +1736,8 @@ function renderSpeedAxis() {
             const baseSpd = (p.base_stats && p.base_stats.speed) || 0;
             const neutral0EV = baseSpd + 20;           // (base + 20 + 0) * 1.0
             const neutral32EV = baseSpd + 20 + 32;     // (base + 20 + 32) * 1.0
-            const sNeutral0EV = getEffectiveSpeed(neutral0EV, speedFieldState.opp_tailwind, scarf);
-            const sNeutral32EV = getEffectiveSpeed(neutral32EV, speedFieldState.opp_tailwind, scarf);
+            const sNeutral0EV = getEffectiveSpeed(neutral0EV, speedFieldState.opp_tailwind, scarf, spdBoost);
+            const sNeutral32EV = getEffectiveSpeed(neutral32EV, speedFieldState.opp_tailwind, scarf, spdBoost);
             const pctNeutral0EV = speedToPercent(sNeutral0EV, maxSpeed);
             const pctNeutral32EV = speedToPercent(sNeutral32EV, maxSpeed);
 
@@ -1535,7 +1764,7 @@ function renderSpeedAxis() {
             const ev = p.evs?.speed ?? 0;
             const natureMult = getNatureSpeedMultiplier(p.nature_en);
             const actualSpeed = Math.floor((baseSpd + 20 + ev) * natureMult);
-            const sActual = getEffectiveSpeed(actualSpeed, speedFieldState.opp_tailwind, scarf);
+            const sActual = getEffectiveSpeed(actualSpeed, speedFieldState.opp_tailwind, scarf, spdBoost);
             const pctActual = speedToPercent(sActual, maxSpeed);
             const defaultRatio = baseMax !== baseMin ? (actualSpeed - baseMin) / (baseMax - baseMin) : 0.5;
             const markerRatio = oppSpeedMarkerRatio[globalIndex] !== undefined

@@ -13,10 +13,21 @@ from pathlib import Path
 import cv2
 
 from pokepilot.common.pokemon_builder import PokemonBuilder
-from pokepilot.common.pokemon_detect import PokemonDetector
+from pokepilot.common.pokemon_detect import get_detector
 from pokepilot.tools.logger_util import setup_logger
 
 logger = setup_logger(__name__)
+
+_builder = None
+
+
+def _get_builder() -> PokemonBuilder:
+    """获取 PokemonBuilder 单例（懒加载）"""
+    global _builder
+    if _builder is None:
+        _builder = PokemonBuilder()
+    return _builder
+
 
 # 加载对手队伍布局配置
 _CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
@@ -55,7 +66,7 @@ def detect_opponents(screenshot: str, debug: bool = False) -> list[dict]:
     if img is None:
         raise FileNotFoundError(screenshot)
 
-    detector = PokemonDetector()
+    detector = get_detector()
 
     if debug:
         dbg_dir = Path("debug_output")
@@ -95,7 +106,7 @@ def detect_opponents(screenshot: str, debug: bool = False) -> list[dict]:
     return results
 
 def detect_opponents_team(screenshot, debug=False) -> dict:
-    builder = PokemonBuilder()
+    builder = _get_builder()
     roster = []
     detect_cards = detect_opponents(screenshot, debug=debug)
     for i, detect_card in enumerate(detect_cards, 1):

@@ -12,7 +12,7 @@ logger = setup_logger(__name__)
 
 from pokepilot.common.pokemon_builder import PokemonBuilder
 from pokepilot.tools.ocr_engine import read_region
-from pokepilot.common.pokemon_detect import PokemonDetector
+from pokepilot.common.pokemon_detect import get_detector
 
 debug_dir = "debug_output/my_team"
 # ─────────────────────────────────────────────────────────────────────────────
@@ -46,17 +46,6 @@ _STAT_Y_TOPS = _STAT_BOXES_CONFIG['y_tops']
 _STAT_ARROWS = [(a['name'], a['x'], a['y'], a['size']) for a in _CARD_CONFIG['stat_arrows']]
 
 
-_pokemon_detector = None  # 全局单例
-
-
-def _get_detector() -> PokemonDetector:
-    """获取 PokemonDetector 单例"""
-    global _pokemon_detector
-    if _pokemon_detector is None:
-        _pokemon_detector = PokemonDetector()
-    return _pokemon_detector
-
-
 def _extract_regions(img: np.ndarray, card_info: dict) -> dict:
     """从卡牌框提取三个矩形（sprite、type1、type2），可能超出卡片框边界"""
     x, y, w, h = card_info['x'], card_info['y'], card_info['w'], card_info['h']
@@ -86,7 +75,7 @@ def _identify_pokemon(img: np.ndarray, card_info: dict, slot_idx: int, debug=Fal
     """识别卡牌中的 Pokemon"""
     regions = _extract_regions(img, card_info)
 
-    detector = _get_detector()
+    detector = get_detector()
     result = detector.detect(
         regions['sprite'],
         regions['type1'],

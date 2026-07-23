@@ -9,6 +9,7 @@ import argparse
 import io
 import json
 import shutil
+import threading
 from math import floor
 from pathlib import Path
 from flask import Flask, send_file, request, jsonify, send_from_directory
@@ -16,7 +17,7 @@ from flask_cors import CORS
 from PIL import Image
 from pokepilot.detect_team.my_team.parse_team import parse_team_init
 from pokepilot.detect_team.opponent_team.detect_opponents import detect_opponents_team
-from pokepilot.common.pokemon_detect import PokemonDetector
+from pokepilot.common.pokemon_detect import get_detector as _get_detector
 from pokepilot.common.pokemon_builder import PokemonBuilder
 
 _ROOT = Path(__file__).parent
@@ -29,8 +30,16 @@ SPRITES_DIR = PROJECT_ROOT / "sprites"
 TEAM_DIR = PROJECT_ROOT / "data" / "my_team"
 OPP_TEAM_DIR = PROJECT_ROOT / "data" / "opp_team"
 
-# 全局 PokemonDetector 实例
-_pokemon_detector = None
+_NATURE_ZH = {
+    "Hardy": "勤奋", "Lonely": "寂寞", "Brave": "勇敢", "Adamant": "固执",
+    "Naughty": "调皮", "Bold": "大胆", "Docile": "坦率", "Relaxed": "悠闲",
+    "Impish": "淘气", "Lax": "乐天", "Timid": "胆小", "Hasty": "急躁",
+    "Serious": "认真", "Jolly": "爽朗", "Naive": "天真", "Modest": "内敛",
+    "Mild": "慢吞吞", "Quiet": "冷静", "Bashful": "害羞", "Rash": "马虎",
+    "Calm": "温和", "Gentle": "温顺", "Sassy": "自大", "Careful": "慎重",
+    "Quirky": "浮躁",
+}
+
 _DAMAGE_LEVEL = 50
 
 
@@ -63,7 +72,7 @@ def _compute_damage_with_roll(power, atk, defense, stab, type_multiplier, roll):
     base = floor(floor((2 * _DAMAGE_LEVEL) / 5 + 2) * power * atk / defense / 50) + 2
     return max(1, floor(base * stab * type_multiplier * roll / 100))
 
-
+## 该方法已弃用
 def _compute_damage_range(attacker, defender, move):
     """计算某技能对目标的极限伤害范围（对方属性取极限值）。"""
     power = _to_int(move.get("power"), 0)
@@ -232,13 +241,6 @@ def _is_multi_hit_move(move):
         return True
     return False
 
-def get_detector():
-    """获取全局 PokemonDetector 实例（懒加载）"""
-    global _pokemon_detector
-    if _pokemon_detector is None:
-        _pokemon_detector = PokemonDetector()
-    return _pokemon_detector
-
 
 def create_app():
     app = Flask(__name__, static_folder=str(_ROOT), static_url_path="")
@@ -255,6 +257,343 @@ def create_app():
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
         return response
+
+    @app.route("/data", methods=["GET"])
+    def data_page():
+        html_file = _ROOT / "data" / "index.html"
+        response = send_file(html_file, mimetype="text/html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    @app.route("/data/<slug>", methods=["GET"])
+    def data_detail_page(slug):
+        html_file = _ROOT / "data" / "detail.html"
+        response = send_file(html_file, mimetype="text/html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    @app.route("/api/data/pokemon-detail/<slug>", methods=["GET"])
+    def pokemon_data_detail(slug):
+        try:
+            cache_path = PROJECT_ROOT / "data" / "pokechamdb_cache.json"
+            roster_path = PROJECT_ROOT / "data" / "champions_roster.json"
+            pokedb_path = PROJECT_ROOT / "data" / "pokedb_cache.json"
+
+            pokechamdb = json.loads(cache_path.read_text(encoding="utf-8"))
+            raw = pokechamdb.get(slug)
+            if not raw:
+                return jsonify({"success": False, "error": f"slug '{slug}' not found"}), 404
+
+            roster_data = json.loads(roster_path.read_text(encoding="utf-8"))
+            pokedb = json.loads(pokedb_path.read_text(encoding="utf-8"))
+
+            roster_by_slug = {p["slug"]: p for p in roster_data.get("pokemon", [])}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("pokemon", {}).items()}
+            move_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("moves", {}).items()}
+            item_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("items", {}).items()}
+            ability_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("abilities", {}).items()}
+
+            entry = roster_by_slug.get(slug)
+            sprite = ""
+            if entry and entry.get("sprite"):
+                sprite = f"sprites/champions/{entry['sprite']}"
+            name_zh = name_zh_map.get(slug, slug)
+            base_stats = pokedb.get("pokemon", {}).get(slug, {}).get("base_stats", {})
+
+            def _slug(s): return s.lower().replace(" ", "-").replace("'", "").replace(".", "")
+            def _is_damaging(name):
+                ms = _slug(name)
+                md = pokedb.get("moves", {}).get(ms, {})
+                p = md.get("power")
+                return p is not None and p > 0
+            def _tr(items, m):
+                return [{"name": m.get(_slug(i.get("name", ""))) or i["name"], "pct": i["pct"]} for i in items]
+
+            # Build evoforms list
+            base_name = (entry or {}).get("name", slug)
+            evoforms = []
+            for pk in roster_data.get("pokemon", []):
+                if pk.get("name", "").lower() != base_name:
+                    continue
+                if pk["slug"] == slug:
+                    continue
+                form_val = pk.get("form")
+                if form_val and form_val in _EVOFORM_TYPES:
+                    pd = pokedb.get("pokemon", {}).get(pk["slug"], {})
+                    evoforms.append({
+                        "slug_name": pk["slug"],
+                        "form_name": form_val,
+                        "form_name_zh": name_zh_map.get(pk["slug"], name_zh),
+                        "base_stats": pd.get("base_stats", {}),
+                        "ability": [{"name": a.lower()} for a in (pd.get("abilities", []) or [])] if pd.get("abilities") else [],
+                        "types": pk.get("types", []),
+                        "sprite": f"sprites/champions/{pk['sprite']}" if pk.get("sprite") else "",
+                        "name_zh": name_zh_map.get(pk["slug"], name_zh),
+                    })
+
+            result = {
+                "slug": slug,
+                "name_zh": name_zh,
+                "sprite": sprite,
+                "rank": raw.get("rank"),
+                "types": entry.get("types", []) if entry else [],
+                "base_stats": base_stats,
+                "moves": [{"name": move_zh_map.get(_slug(i.get("name", ""))) or i["name"], "pct": i["pct"], "damaging": _is_damaging(i.get("name", ""))} for i in raw.get("moves", [])],
+                "items": _tr(raw.get("items", []), item_zh_map),
+                "abilities": _tr(raw.get("abilities", []), ability_zh_map),
+                "natures": [{"name": _NATURE_ZH.get(i["name"], i["name"]), "name_en": i["name"], "pct": i["pct"]} for i in raw.get("natures", [])],
+                "teammates": _tr(raw.get("teammates", []), name_zh_map),
+                "evs": raw.get("evs", []),
+                "evoforms": evoforms,
+            }
+            return jsonify({"success": True, "pokemon": result})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/data/pokemon-list", methods=["GET"])
+    def pokemon_data_list():
+        try:
+            cache_path = PROJECT_ROOT / "data" / "pokechamdb_cache.json"
+            roster_path = PROJECT_ROOT / "data" / "champions_roster.json"
+            pokedb_path = PROJECT_ROOT / "data" / "pokedb_cache.json"
+
+            pokechamdb = json.loads(cache_path.read_text(encoding="utf-8"))
+            roster_data = json.loads(roster_path.read_text(encoding="utf-8"))
+            pokedb = json.loads(pokedb_path.read_text(encoding="utf-8"))
+
+            roster_by_slug = {p["slug"]: p for p in roster_data.get("pokemon", [])}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("pokemon", {}).items()}
+
+            entries = []
+            for slug, data in pokechamdb.items():
+                rank = data.get("rank") if isinstance(data, dict) else None
+                entry = roster_by_slug.get(slug)
+                sprite = ""
+                if entry and entry.get("sprite"):
+                    sprite = f"sprites/champions/{entry['sprite']}"
+                name_zh = name_zh_map.get(slug, slug)
+                entries.append({
+                    "slug": slug,
+                    "name_zh": name_zh,
+                    "sprite": sprite,
+                    "rank": rank if rank is not None else 9999,
+                })
+            entries.sort(key=lambda x: x["rank"])
+            for idx, p in enumerate(entries, start=1):
+                p["index"] = idx
+            return jsonify({"success": True, "pokemon": entries})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    # Nature multiplier table
+    _EVOFORM_TYPES = {"mega", "mega-nium", "mega-x", "mega-y", "blade-forme", "hero"}
+
+    _NATURE_MULT = {
+        'Hardy': {}, 'Lonely': {'attack': 1.1, 'defense': 0.9},
+        'Brave': {'attack': 1.1, 'speed': 0.9}, 'Adamant': {'attack': 1.1, 'sp_atk': 0.9},
+        'Naughty': {'attack': 1.1, 'sp_def': 0.9}, 'Bold': {'defense': 1.1, 'attack': 0.9},
+        'Docile': {}, 'Relaxed': {'defense': 1.1, 'speed': 0.9},
+        'Impish': {'defense': 1.1, 'sp_atk': 0.9}, 'Lax': {'defense': 1.1, 'sp_def': 0.9},
+        'Timid': {'speed': 1.1, 'attack': 0.9}, 'Hasty': {'speed': 1.1, 'defense': 0.9},
+        'Serious': {}, 'Jolly': {'speed': 1.1, 'sp_atk': 0.9}, 'Naive': {'speed': 1.1, 'sp_def': 0.9},
+        'Modest': {'sp_atk': 1.1, 'attack': 0.9}, 'Mild': {'sp_atk': 1.1, 'defense': 0.9},
+        'Quiet': {'sp_atk': 1.1, 'speed': 0.9}, 'Bashful': {},
+        'Rash': {'sp_atk': 1.1, 'sp_def': 0.9}, 'Calm': {'sp_def': 1.1, 'attack': 0.9},
+        'Gentle': {'sp_def': 1.1, 'defense': 0.9}, 'Sassy': {'sp_def': 1.1, 'speed': 0.9},
+        'Careful': {'sp_def': 1.1, 'sp_atk': 0.9}, 'Quirky': {},
+    }
+    _STAT_KEYS = ['hp', 'attack', 'defense', 'sp_atk', 'sp_def', 'speed']
+    _EV_KEYS = ['hp', 'atk', 'def', 'spA', 'spD', 'spe']
+
+    def _build_actual_stats(base_stats, ev_dict, nature_name):
+        stats = {}
+        for sk, ek in zip(_STAT_KEYS, _EV_KEYS):
+            base = base_stats.get(sk, 80)
+            ev = ev_dict.get(ek, 0)
+            if sk == 'hp':
+                stats[sk] = max(1, base + 75 + ev)
+            else:
+                nm = _NATURE_MULT.get(nature_name, {}).get(sk, 1.0)
+                stats[sk] = max(1, int((base + 20 + ev) * nm))
+        return stats
+
+    def _compute_effectiveness(types, type_chart):
+        types = [t.lower() for t in types]
+        eff = {}
+        for atk_type, def_chart in type_chart.items():
+            mult = 1.0
+            for dt in types:
+                mult *= def_chart.get(dt, 1.0)
+            eff[atk_type] = mult
+        return eff
+
+    _EV_KEY_MAP = {'hp':'hp', 'atk':'attack', 'def':'defense', 'spA':'sp_atk', 'spD':'sp_def', 'spe':'speed'}
+    _EV_LABEL_MAP = {'hp':'HP','atk':'Atk','def':'Def','spA':'SpA','spD':'SpD','spe':'Spd'}
+
+    def _build_move_meta(move_list, pokedb_moves, move_zh_map):
+        result = []
+        for m in move_list:
+            calc_name = m["name"].lower().replace(" ", "-").replace("'", "").replace(".", "").replace("é", "e")
+            md = pokedb_moves.get(calc_name, {})
+            power = md.get("power")
+            if power is not None and power > 0:
+                result.append({
+                    "name": calc_name,  # lowercase with hyphens, for calcDamage
+                    "name_zh": move_zh_map.get(calc_name, m["name"]),
+                    "power": power,
+                    "category": md.get("category", "status"),
+                    "type": md.get("type", "Normal"),
+                    "priority": md.get("priority", 0),
+                })
+        return result
+
+    @app.route("/api/data/pokemon-damage-rankings/<slug>", methods=["GET"])
+    def pokemon_damage_rankings(slug):
+        try:
+            cache_path = PROJECT_ROOT / "data" / "pokechamdb_cache.json"
+            roster_path = PROJECT_ROOT / "data" / "champions_roster.json"
+            pokedb_path = PROJECT_ROOT / "data" / "pokedb_cache.json"
+
+            pokechamdb = json.loads(cache_path.read_text(encoding="utf-8"))
+            roster_data = json.loads(roster_path.read_text(encoding="utf-8"))
+            pokedb = json.loads(pokedb_path.read_text(encoding="utf-8"))
+
+            roster_by_slug = {p["slug"]: p for p in roster_data.get("pokemon", [])}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("pokemon", {}).items()}
+            pokedb_moves = pokedb.get("moves", {})
+            move_zh_map = {k: v.get("name_zh", "") for k, v in pokedb_moves.items()}
+
+            my_raw = pokechamdb.get(slug)
+            if not my_raw:
+                return jsonify({"success": False, "error": f"slug '{slug}' not found"}), 404
+
+            my_roster = roster_by_slug.get(slug, {})
+            my_base = pokedb.get("pokemon", {}).get(slug, {}).get("base_stats", {})
+
+            # Accept query params for current Pokemon's EVs and nature
+            my_ev = {}
+            for _ek in ['hp', 'atk', 'def', 'spA', 'spD', 'spe']:
+                _val = request.args.get(f'ev_{_ek}', type=int)
+                if _val is not None:
+                    my_ev[_ek] = _val
+            _q_nature = request.args.get('nature', '')
+            if not my_ev:
+                my_ev_list = my_raw.get("evs", [{}])
+                my_ev = my_ev_list[0] if my_ev_list else {}
+            if not _q_nature:
+                my_nature_list = my_raw.get("natures", [])
+                my_nature = my_nature_list[0]["name"] if my_nature_list else "Hardy"
+            else:
+                my_nature = _q_nature
+
+            my_actual_stats = _build_actual_stats(my_base, my_ev, my_nature)
+            my_speed = my_actual_stats.get("speed", 80)
+            my_hp = my_actual_stats.get("hp", 1)
+            my_moves = _build_move_meta(my_raw.get("moves", []), pokedb_moves, move_zh_map)
+
+            # Build my data in calcDamage-compatible format
+            my_ev_for_calc = {}
+            for ek, ck in _EV_KEY_MAP.items():
+                my_ev_for_calc[ck] = my_ev.get(ek, 0)
+            my_items_raw = my_raw.get("items", [])
+            my_item = my_items_raw[0]["name"].lower().replace(" ", "-") if my_items_raw else ""
+            my_items_list = [{"name": i["name"].lower().replace(" ", "-"), "pct": i["pct"]} for i in my_items_raw] if my_items_raw else []
+            my_abilities_raw = my_raw.get("abilities", [])
+            my_ability_list = [{"name": a["name"].lower()} for a in my_abilities_raw] if my_abilities_raw else [{"name": "No Ability"}]
+            my_types = my_roster.get("types", [])
+            my_sprite = f"sprites/champions/{my_roster['sprite']}" if my_roster and my_roster.get("sprite") else ""
+
+            me_data = {
+                "slug": slug,
+                "name_zh": name_zh_map.get(slug, slug),
+                "sprite": my_sprite,
+                "types": my_types,
+                "speed": my_speed,
+                "hp": my_hp,
+                "base_stats": my_base,
+                "evs": my_ev_for_calc,
+                "nature": my_nature,
+                "ability": my_ability_list,
+                "item": my_item,
+                "items": my_items_list,
+                "moves": my_moves,
+            }
+
+            # Build opponents list
+            opponents = []
+            for opp_slug, opp_raw in pokechamdb.items():
+                if opp_slug == slug:
+                    continue
+                if not isinstance(opp_raw, dict):
+                    continue
+                opp_roster = roster_by_slug.get(opp_slug)
+                if not opp_roster:
+                    continue
+                opp_base = pokedb.get("pokemon", {}).get(opp_slug, {}).get("base_stats", {})
+                if not opp_base:
+                    continue
+
+                opp_ev_list = opp_raw.get("evs", [{}])
+                opp_first_ev = opp_ev_list[0] if opp_ev_list else {}
+                opp_nature_list = opp_raw.get("natures", [])
+                opp_nature = opp_nature_list[0]["name"] if opp_nature_list else "Hardy"
+                opp_types = opp_roster.get("types", [])
+
+                opp_actual_stats = _build_actual_stats(opp_base, opp_first_ev, opp_nature)
+                opp_speed = opp_actual_stats.get("speed", 80)
+                opp_hp = opp_actual_stats.get("hp", 1)
+                opp_moves = _build_move_meta(opp_raw.get("moves", []), pokedb_moves, move_zh_map)
+
+                # ev_text
+                ev_text_parts = []
+                for ek, el in _EV_LABEL_MAP.items():
+                    v = opp_first_ev.get(ek, 0)
+                    if v > 0:
+                        ev_text_parts.append(f"{el}{v}")
+                ev_text = ' '.join(ev_text_parts)
+
+                # EV in calcDamage format
+                ev_for_calc = {}
+                for ek, ck in _EV_KEY_MAP.items():
+                    ev_for_calc[ck] = opp_first_ev.get(ek, 0)
+
+                opp_items_raw = opp_raw.get("items", [])
+                opp_item = opp_items_raw[0]["name"].lower().replace(" ", "-") if opp_items_raw else ""
+                opp_items_list = [{"name": i["name"].lower().replace(" ", "-"), "pct": i["pct"]} for i in opp_items_raw] if opp_items_raw else []
+                opp_abilities_raw = opp_raw.get("abilities", [])
+                opp_ability_list = [{"name": a["name"].lower()} for a in opp_abilities_raw] if opp_abilities_raw else [{"name": "No Ability"}]
+                opp_sprite = f"sprites/champions/{opp_roster['sprite']}" if opp_roster.get("sprite") else ""
+
+                opponents.append({
+                    "slug": opp_slug,
+                    "name_zh": name_zh_map.get(opp_slug, opp_slug),
+                    "rank": opp_raw.get("rank", 9999),
+                    "sprite": opp_sprite,
+                    "types": opp_types,
+                    "speed": opp_speed,
+                    "hp": opp_hp,
+                    "base_stats": opp_base,
+                    "ev_text": ev_text,
+                    "evs": ev_for_calc,
+                    "nature": opp_nature,
+                    "ability": opp_ability_list,
+                    "item": opp_item,
+                    "items": opp_items_list,
+                    "moves": opp_moves,
+                })
+
+            return jsonify({
+                "success": True,
+                "me": me_data,
+                "opponents": opponents,
+            })
+
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route("/api/screenshot", methods=["POST"])
     def save_screenshot():
@@ -440,7 +779,7 @@ def create_app():
     def pokemon_detect_card(slug):
         """根据 slug 查询宝可梦的 detect_card 数据"""
         try:
-            detector = get_detector()
+            detector = _get_detector()
             card = detector.get_detect_card_by_slug(slug)
             if card:
                 return jsonify({"success": True, "card": card})
@@ -452,7 +791,7 @@ def create_app():
     def pokemon_by_name_zh(name_zh):
         """根据中文名查询宝可梦，返回所有匹配的variants（用于form下拉）"""
         try:
-            detector = get_detector()
+            detector = _get_detector()
             db = detector.db
             name_en = db.name_zh_to_en(name_zh)
             if not name_en:
@@ -482,7 +821,7 @@ def create_app():
     def pokemon_detect_card_by_name_form(name_zh, form):
         """根据中文名和form查询 detect_card"""
         try:
-            detector = get_detector()
+            detector = _get_detector()
             card = detector.get_detect_card_by_name_and_form(name_zh, form if form != "_none" else "")
             if card:
                 return jsonify({"success": True, "card": card})
@@ -499,7 +838,7 @@ def create_app():
             if not slug:
                 return jsonify({"success": False, "error": "缺少 slug"}), 400
 
-            detector = get_detector()
+            detector = _get_detector()
             card = detector.get_detect_card_by_slug(slug)
             if not card:
                 return jsonify({"success": False, "error": f"slug '{slug}' 不存在"}), 404
@@ -542,6 +881,7 @@ def create_app():
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
+    ## 该方法已弃用 
     @app.route("/api/damage/range", methods=["GET", "POST"])
     def damage_range():
         """点击我方技能后，返回该技能对对方全队的伤害范围。"""
@@ -690,6 +1030,9 @@ def main():
     parser.add_argument("--port", type=int, default=8765, help="服务器端口")
     parser.add_argument("--debug", action="store_true", help="调试模式")
     args = parser.parse_args()
+
+    # 后台预热 PokemonDetector（避免首次 API 调用阻塞）
+    threading.Thread(target=_get_detector, daemon=True).start()
 
     app = create_app()
     print(f"🎥 采集卡预览服务器启动: http://localhost:{args.port}")
