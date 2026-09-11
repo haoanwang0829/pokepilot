@@ -1,34 +1,84 @@
 """
-本地宝可梦数据库 —— 从本地 api-data 目录读取，完全离线。
+宝可梦数据访问层 —— 从 sqlite (db/db.db) 实时读取，替代旧的 pokedb_cache.json 一次性全量加载。
 
-初始化数据源（只需一次）:
-    git clone https://github.com/PokeAPI/api-data.git
+数据源: db/db.db 的 pokemon / moves / items / abilities / pokemon_abilities / language_map / champions_roster 表。
 
-设置路径（选其一）:
-    环境变量:  set POKEAPI_DATA=C:/path/to/api-data
-    或直接传参: PokeDB(api_data_path=Path("C:/path/to/api-data"))
+特点:
+    - 每域独立读取函数（pokemon / moves / items / abilities），各查各表互不干扰
+    - 惰性加载 + TTL 缓存：首次访问某域才读库，到期自动重读（默认 30 秒），clear_cache() 可立即刷新
+    - 输出 dict 与旧 pokedb_cache.json 条目同构，消费方按字段名取值即可
 
 用法:
-    from pokepilot.data.pokedb import PokeDB
-    db = PokeDB()
-    db.build_all_pokemon()   # 首次运行，从 api-data 构建缓存
-    db.pokemon_types("pelipper")   # → ["Water", "Flying"]
-    db.move_type("hurricane")      # → "Flying"
+    from pokepilot.data.pokedb import get_pokedb
+    db = get_pokedb()
+    db.get_pokemon("charizard-mega-x")   # → {types, base_stats, abilities, name_zh} | None
+    db.get_move("protect")               # → {type, power, category, ...} | None（极巨/超极巨 → None）
+    db.move_zh_to_en("守住")             # → "protect"
+
+注意:
+    - 本模块只读，不建表/写库。
+    - DB 路径可用环境变量 POKEPILOT_DB_PATH 覆盖（默认 <项目根>/db/db.db）。
+    - moves.cat 为中文；极巨/超极巨招式暂不参与分析，读取时直接过滤。
+    - items 只读取 in_champions='Y'（宝可梦冠军过签道具），非冠军道具不参与校验/构建。
+    - abilities.name_e 非唯一（As One/Embody Aspect），取 num 最小的一条。
 """
 
 import json
 import os
+import sqlite3
+import threading
+import time
 import unicodedata
 from pathlib import Path
 
-_DATA_DIR = Path(__file__).parent.parent.parent / "data"
-_CACHE_PATH = _DATA_DIR / "pokedb_cache.json"
-_MANUAL_MAPPINGS_PATH = _DATA_DIR / "manual.json"
+_ROOT = Path(__file__).parent.parent.parent
+_env_db_path = os.environ.get("POKEPILOT_DB_PATH", "")
+_DEFAULT_DB_PATH = Path(_env_db_path) if _env_db_path else _ROOT / "db" / "db.db"
+_MANUAL_MAPPINGS_PATH = _ROOT / "data" / "manual.json"
 
-# api-data 根目录：优先用环境变量，否则默认在项目根目录下
-_env_api_data = os.environ.get("POKEAPI_DATA", "")
-_DEFAULT_API_DATA = Path(_env_api_data) if _env_api_data else \
-                    Path(__file__).parent.parent.parent / "api-data"
+# 缓存 TTL（秒）：DB 外部改动后，最多 _CACHE_TTL 秒内自动重新读库
+_CACHE_TTL = 300.0
+
+# 中文属性名 → 英文（首字母大写，对齐旧缓存与前端 PIXILATE_TYPE_MAP）
+_TYPE_ZH_TO_EN = {
+    "一般": "Normal", "格斗": "Fighting", "飞行": "Flying", "毒": "Poison",
+    "地面": "Ground", "岩石": "Rock", "虫": "Bug", "幽灵": "Ghost",
+    "钢": "Steel", "火": "Fire", "水": "Water", "草": "Grass",
+    "电": "Electric", "超能力": "Psychic", "冰": "Ice", "龙": "Dragon",
+    "恶": "Dark", "妖精": "Fairy",
+}
+# 中文技能分类 → 英文（极巨/超极巨暂不参与分析，读取时过滤）
+_CAT_ZH_TO_EN = {"物理": "physical", "特殊": "special", "变化": "status"}
+_FILTERED_CATS = {"极巨", "超极巨"}
+
+
+def _slugify(s: str) -> str:
+    """英文名 → slug 键（与 ui_server 的 _slug 一致，并剥离重音符号）"""
+    if not s:
+        return ""
+    text = unicodedata.normalize("NFKD", s)
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    return text.lower().replace(" ", "-").replace("'", "").replace(".", "")
+
+
+def _to_int_or_none(value):
+    """DB 中的数值/中文串 → int 或 None（'—'/'变化'/空 → None）"""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or text in ("—", "变化"):
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
+def _strip_form_suffix(name_sch: str) -> str:
+    """去掉中文名中的形态后缀，如 '喷火龙-mega-x' → '喷火龙'"""
+    if not name_sch:
+        return ""
+    return name_sch.split("-")[0] if "-" in name_sch else name_sch
 
 
 def _levenshtein_distance(s1: str, s2: str) -> int:
@@ -78,42 +128,295 @@ def _fuzzy_match(query: str, candidates: dict, max_distance: int = 2) -> str:
 
 
 class PokeDB:
-    def __init__(self, cache_path: Path = _CACHE_PATH,
-                 api_data_path: Path = _DEFAULT_API_DATA):
-        self._path     = cache_path
-        self._api_root = Path(api_data_path) / "data" / "api" / "v2"
-        self._data: dict = {"pokemon": {}, "moves": {}, "items": {}, "abilities": {}}
-        if cache_path.exists():
-            self._data = json.loads(cache_path.read_text(encoding="utf-8"))
-            self._data.setdefault("items", {})
-            self._data.setdefault("abilities", {})
+    """从 sqlite 读取宝可梦数据的统一访问层（分域惰性加载 + TTL 缓存）"""
 
-            # 从 _data 生成中文映射表
-            self._name_mappings = {v['name_zh']: k.split('-')[0] for k, v in self._data.get('pokemon', {}).items() if v.get('name_zh')}
-            self._move_mappings = {v['name_zh']: k for k, v in self._data.get('moves', {}).items() if v.get('name_zh')}
-            self._item_mappings = {v['name_zh']: k for k, v in self._data.get('items', {}).items() if v.get('name_zh')}
-            self._ability_mappings = {v['name_zh']: k for k, v in self._data.get('abilities', {}).items() if v.get('name_zh')}
-
-            # 合并手动补充的映射
-            manual = self._load_manual_mappings("moves")
-            self._move_mappings.update(manual)
-            manual = self._load_manual_mappings("items")
-            self._item_mappings.update(manual)
-            manual = self._load_manual_mappings("abilities")
-            self._ability_mappings.update(manual)
+    def __init__(self, db_path: Path = _DEFAULT_DB_PATH, ttl: float = _CACHE_TTL):
+        self._db_path = Path(db_path)
+        self._ttl = ttl
+        self._lock = threading.Lock()
+        self._cache: dict[str, tuple[float, object]] = {}
 
     # ------------------------------------------------------------------
-    # 本地文件读取
+    # 缓存
     # ------------------------------------------------------------------
 
-    def _local(self, *parts: str) -> dict:
-        """读取 api-data 本地 JSON，如 _local('pokemon', 'pikachu')"""
-        path = self._api_root.joinpath(*parts) / "index.json"
-        return json.loads(path.read_text(encoding="utf-8"))
+    def _cached(self, domain: str, loader):
+        with self._lock:
+            hit = self._cache.get(domain)
+            if hit is not None and time.monotonic() - hit[0] < self._ttl:
+                return hit[1]
+        value = loader()
+        with self._lock:
+            self._cache[domain] = (time.monotonic(), value)
+        return value
 
-    def _local_exists(self, *parts: str) -> bool:
-        return (self._api_root.joinpath(*parts) / "index.json").exists()
+    def clear_cache(self) -> None:
+        """清空全部域缓存，下次访问立即重新读库"""
+        with self._lock:
+            self._cache.clear()
 
+    def refresh(self) -> None:
+        """同 clear_cache，供外部 DB 数据更新后手动刷新"""
+        self.clear_cache()
+
+    # ------------------------------------------------------------------
+    # 连接
+    # ------------------------------------------------------------------
+
+    def _open(self) -> sqlite3.Connection:
+        if not self._db_path.exists():
+            raise RuntimeError(
+                f"数据库不存在: {self._db_path}（缺少 db/db.db，宝可梦数据从该库读取）")
+        conn = sqlite3.connect(str(self._db_path))
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    # ------------------------------------------------------------------
+    # 分域读取（各自查询自己的表）
+    # ------------------------------------------------------------------
+
+    def _load_pokemon(self) -> dict:
+        """pokemon 表 + pokemon_abilities + language_map → {slug: dict}"""
+        conn = self._open()
+        try:
+            rows = conn.execute(
+                "SELECT id, form_num, name, name_sch, type1, type2, "
+                "hp, attack, defense, special_attack, special_defense, speed "
+                "FROM pokemon").fetchall()
+            lang_zh = dict(conn.execute(
+                "SELECT NUM, SCH FROM language_map "
+                "WHERE TYPE='name' AND SCH IS NOT NULL AND SCH != ''").fetchall())
+            roster = conn.execute(
+                "SELECT slug, form_num FROM champions_roster").fetchall()
+            ab_rows = conn.execute(
+                "SELECT form_num, ability FROM pokemon_abilities ORDER BY id").fetchall()
+        finally:
+            conn.close()
+
+        abilities_by_form: dict[str, list] = {}
+        for form_num, ability in ab_rows:
+            abilities_by_form.setdefault(form_num, []).append(_slugify(ability))
+
+        form_to_id = {r["form_num"]: r["id"] for r in rows}
+        by_form_num: dict[str, dict] = {}
+        result: dict[str, dict] = {}
+
+        for r in rows:
+            types = [r["type1"].capitalize()] if r["type1"] else []
+            if r["type2"]:
+                types.append(r["type2"].capitalize())
+            base_stats = {
+                "hp": r["hp"], "attack": r["attack"], "defense": r["defense"],
+                "sp_atk": r["special_attack"], "sp_def": r["special_defense"],
+                "speed": r["speed"],
+            }
+            base_num = (r["form_num"] or "")[:4] + "-000"
+            name_zh = lang_zh.get(form_to_id.get(base_num)) or _strip_form_suffix(r["name_sch"])
+            item = {
+                "types": types,
+                "base_stats": base_stats,
+                "abilities": abilities_by_form.get(r["form_num"], []),
+                "name_zh": name_zh,
+            }
+            result[_slugify(r["name"])] = item
+            by_form_num[r["form_num"]] = item
+
+        # roster slug 别名（如 'maushold'/'meowstic' 等基础名不等于 pokemon.name，
+        # 按 form_num 一对一关联到对应形态的种族值）
+        for slug, form_num in roster:
+            item = by_form_num.get(form_num)
+            if item is not None:
+                result[_slugify(slug)] = item
+
+        return result
+
+    def _load_moves(self) -> dict:
+        """moves 表 → {slug: dict}（极巨/超极巨过滤）"""
+        conn = self._open()
+        try:
+            rows = conn.execute(
+                "SELECT name, name_e, type, cat, power, acc, priority, desc AS description "
+                "FROM moves ORDER BY num").fetchall()
+        finally:
+            conn.close()
+
+        result: dict[str, dict] = {}
+        for r in rows:
+            if r["cat"] in _FILTERED_CATS:
+                continue
+            key = _slugify(r["name_e"])
+            if key in result:
+                continue
+            result[key] = {
+                "name": r["name_e"],
+                "type": _TYPE_ZH_TO_EN.get(r["type"], r["type"]),
+                "power": _to_int_or_none(r["power"]),
+                "category": _CAT_ZH_TO_EN.get(r["cat"], r["cat"]),
+                "accuracy": _to_int_or_none(r["acc"]),
+                "priority": int(r["priority"] or 0),
+                "ailment": "none",
+                "ailment_chance": 0,
+                "flinch_chance": 0,
+                "stat_changes": [],
+                "short_effect": "",
+                "name_zh": r["name"],
+                "short_effect_zh": r["description"] or "",
+            }
+        return result
+
+    def _load_items(self) -> dict:
+        """items 表 → {slug: dict}（只含宝可梦冠军过签道具 in_champions='Y'，供校验/构建用）"""
+        conn = self._open()
+        try:
+            rows = conn.execute(
+                "SELECT name, name_e, desc AS description FROM items "
+                "WHERE in_champions='Y'").fetchall()
+        finally:
+            conn.close()
+
+        result: dict[str, dict] = {}
+        for r in rows:
+            key = _slugify(r["name_e"])
+            if key in result:
+                continue
+            result[key] = {
+                "name": r["name_e"],
+                "category": "",
+                "fling_power": None,
+                "attributes": [],
+                "short_effect": "",
+                "name_zh": r["name"],
+                "short_effect_zh": r["description"] or "",
+            }
+        return result
+
+    def _load_all_item_zh_names(self) -> set:
+        """items 表全部中文名（含 in_champions='N' 的非冠军道具）→ 已知真实名称集合"""
+        conn = self._open()
+        try:
+            rows = conn.execute("SELECT name FROM items").fetchall()
+        finally:
+            conn.close()
+        return {self._normalize_text(r["name"]) for r in rows if r["name"]}
+
+    def _load_abilities(self) -> dict:
+        """abilities 表 → {slug: dict}（name_e 重复取 num 最小的一条）"""
+        conn = self._open()
+        try:
+            rows = conn.execute(
+                "SELECT num, name, name_e, desc AS description "
+                "FROM abilities ORDER BY num").fetchall()
+        finally:
+            conn.close()
+
+        result: dict[str, dict] = {}
+        for r in rows:
+            key = _slugify(r["name_e"])
+            if key in result:
+                continue
+            result[key] = {
+                "name": r["name_e"],
+                "effect": "",
+                "name_zh": r["name"],
+                "effect_zh": r["description"] or "",
+            }
+        return result
+
+    # ------------------------------------------------------------------
+    # 对外：分域数据
+    # ------------------------------------------------------------------
+
+    def get_all_pokemon(self) -> dict:
+        return self._cached("pokemon", self._load_pokemon)
+
+    def get_all_moves(self) -> dict:
+        return self._cached("moves", self._load_moves)
+
+    def get_all_items(self) -> dict:
+        return self._cached("items", self._load_items)
+
+    def get_all_abilities(self) -> dict:
+        return self._cached("abilities", self._load_abilities)
+
+    def get_pokemon(self, slug: str) -> dict | None:
+        """按 slug 查单只宝可梦（含 roster 别名），查不到返回 None"""
+        return self.get_all_pokemon().get(_slugify(slug))
+
+    def get_move(self, key: str) -> dict | None:
+        """按 slug 查招式，极巨/超极巨或不存在返回 None"""
+        return self.get_all_moves().get(_slugify(key))
+
+    def get_item(self, key: str) -> dict | None:
+        """按 slug 查道具，查不到返回 None"""
+        return self.get_all_items().get(_slugify(key))
+
+    def get_ability(self, key: str) -> dict | None:
+        """按 slug 查特性，查不到返回 None"""
+        return self.get_all_abilities().get(_slugify(key))
+
+    def get_all_item_zh_names(self) -> set:
+        """已知全部道具中文名（含非冠军道具），供不做模糊纠错的判断使用"""
+        return self._cached("items_zh_all", self._load_all_item_zh_names)
+
+    # ------------------------------------------------------------------
+    # 中文 → 英文映射（惰性构建 + TTL 缓存）
+    # ------------------------------------------------------------------
+
+    def _load_pokemon_mappings(self) -> dict:
+        """{中文名: 英文基础名}，基于 champions_roster 构建（与 detect 的 variants.name 匹配）"""
+        conn = self._open()
+        try:
+            roster = conn.execute(
+                "SELECT id, name, form_num FROM champions_roster").fetchall()
+            lang_zh = dict(conn.execute(
+                "SELECT NUM, SCH FROM language_map "
+                "WHERE TYPE='name' AND SCH IS NOT NULL AND SCH != ''").fetchall())
+            pokemon_names = dict(conn.execute(
+                "SELECT form_num, name_sch FROM pokemon").fetchall())
+        finally:
+            conn.close()
+
+        mapping: dict[str, str] = {}
+        for r in roster:
+            try:
+                base_id = int(str(r["id"]))
+            except (TypeError, ValueError):
+                base_id = None
+            name_zh = lang_zh.get(base_id) or _strip_form_suffix(pokemon_names.get(r["form_num"], ""))
+            if name_zh:
+                mapping[name_zh] = r["name"]
+        return mapping
+
+    def _load_move_mappings(self) -> dict:
+        mapping = {v["name_zh"]: k for k, v in self.get_all_moves().items() if v.get("name_zh")}
+        mapping.update(self._load_manual_mappings("moves"))
+        return mapping
+
+    def _load_item_mappings(self) -> dict:
+        mapping = {v["name_zh"]: k for k, v in self.get_all_items().items() if v.get("name_zh")}
+        mapping.update(self._load_manual_mappings("items"))
+        return mapping
+
+    def _load_ability_mappings(self) -> dict:
+        mapping = {v["name_zh"]: k for k, v in self.get_all_abilities().items() if v.get("name_zh")}
+        mapping.update(self._load_manual_mappings("abilities"))
+        return mapping
+
+    def get_pokemon_mappings(self) -> dict:
+        return self._cached("map_pokemon", self._load_pokemon_mappings)
+
+    def get_move_mappings(self) -> dict:
+        return self._cached("map_moves", self._load_move_mappings)
+
+    def get_item_mappings(self) -> dict:
+        return self._cached("map_items", self._load_item_mappings)
+
+    def get_ability_mappings(self) -> dict:
+        return self._cached("map_abilities", self._load_ability_mappings)
+
+    # ------------------------------------------------------------------
+    # 中文名翻译
+    # ------------------------------------------------------------------
 
     @staticmethod
     def _normalize_text(text: str) -> str:
@@ -124,11 +427,22 @@ class PokeDB:
         """加载手动补充的映射（manual.json）"""
         if not _MANUAL_MAPPINGS_PATH.exists():
             return {}
-        manual = json.loads(_MANUAL_MAPPINGS_PATH.read_text(encoding="utf-8"))
+        try:
+            manual = json.loads(_MANUAL_MAPPINGS_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
         return manual.get(data_key, {})
 
-    def _translate_with_preloaded(self, zh_text: str, mapping: dict, fallback: str) -> str:
-        """使用预加载的映射表进行转换"""
+    def _translate_with_preloaded(self, zh_text: str, mapping: dict, fallback: str,
+                                  known_exact: set | None = None) -> str:
+        """
+        使用预加载的映射表进行转换
+
+        Args:
+            known_exact: 已知真实名称集合。命中（精确）这些名称但不在 mapping
+                范围时直接返回 fallback，不做模糊纠错（避免把范围外的
+                真实名称强行纠成范围内道具，如非冠军道具『大师球』→『烟雾球』）。
+        """
         if not mapping:
             return fallback
 
@@ -136,296 +450,52 @@ class PokeDB:
         if zh_norm in mapping:
             return mapping[zh_norm]
 
+        if known_exact and zh_norm in known_exact:
+            print(f"  [PokeDB] '{zh_norm}' 为已知名称但不在冠军范围内（保留原文）")
+            return fallback
+
         matched_key = _fuzzy_match(zh_norm, mapping)
         if matched_key != zh_norm:
             print(f"  [PokeDB] 中文名模糊匹配: '{zh_norm}' → '{matched_key}' → '{mapping[matched_key]}'")
             return mapping[matched_key]
 
         return fallback
-    
+
     def name_zh_to_en(self, name_zh: str) -> str:
-        """中文招式名 → 英文招式名"""
-        return self._translate_with_preloaded(name_zh, self._name_mappings, name_zh)
+        """中文宝可梦名 → 英文基础名"""
+        return self._translate_with_preloaded(name_zh, self.get_pokemon_mappings(), name_zh)
 
     def move_zh_to_en(self, move_zh: str) -> str:
-        """中文招式名 → 英文招式名"""
-        return self._translate_with_preloaded(move_zh, self._move_mappings, move_zh)
+        """中文招式名 → 英文招式 slug"""
+        return self._translate_with_preloaded(move_zh, self.get_move_mappings(), move_zh)
 
     def item_zh_to_en(self, item_zh: str) -> str:
-        """中文道具名 → 英文道具名"""
-        return self._translate_with_preloaded(item_zh, self._item_mappings, item_zh)
+        """中文道具名 → 英文道具 slug（只含冠军道具；已知非冠军道具不做模糊纠错，返回原文）"""
+        return self._translate_with_preloaded(
+            item_zh, self.get_item_mappings(), item_zh,
+            known_exact=self.get_all_item_zh_names())
 
     def ability_zh_to_en(self, ability_zh: str) -> str:
-        """中文特性名 → 英文特性名"""
-        return self._translate_with_preloaded(ability_zh, self._ability_mappings, ability_zh)
-
-    # ------------------------------------------------------------------
-    # 批量构建缓存（从 api-data 目录扫描）
-    # ------------------------------------------------------------------
+        """中文特性名 → 英文特性 slug"""
+        return self._translate_with_preloaded(ability_zh, self.get_ability_mappings(), ability_zh)
 
 
-    def build_all_pokemon(self) -> None:
-        """
-        扫描 api-data/pokemon-species/ 下所有数字编号目录，
-        构建全宝可梦属性 + 种族值缓存（含所有形态）。
-        可断点续跑。
-        """
-        species_dir = self._api_root / "pokemon-species"
-        ids = sorted(int(p.name) for p in species_dir.iterdir() if p.name.isdigit())
-        total = len(ids)
-        print(f"从 api-data 构建全部 {total} 只宝可梦缓存...")
-        fetched = 0
+# --------------------------------------------------------------------------
+# 全局单例（避免每个消费方各自连库）
+# --------------------------------------------------------------------------
 
-        for i, idx in enumerate(ids, 1):
-            try:
-                species_data = self._local("pokemon-species", str(idx))
-                species_name = species_data["name"]
-
-                if species_name in self._data["pokemon"]:
-                    continue
-
-                varieties = species_data.get("varieties", [])
-                default_pokemon_name = None
-
-                for variety in varieties:
-                    pokemon_name = variety["pokemon"]["name"]
-                    if variety.get("is_default"):
-                        default_pokemon_name = pokemon_name
-
-                    if pokemon_name in self._data["pokemon"]:
-                        continue
-
-                    # api-data pokemon 目录是数字，从 URL 提取 ID
-                    # variety["pokemon"]["url"] 如 "/api/v2/pokemon/1/"
-                    pokemon_id = variety["pokemon"]["url"].rstrip("/").split("/")[-1]
-                    if not self._local_exists("pokemon", pokemon_id):
-                        continue
-
-                    data = self._local("pokemon", pokemon_id)
-                    self._data["pokemon"][pokemon_name] = self._parse_pokemon(data, species_data)
-
-                # species_name 指向默认形态（方便不指定形态时查询）
-                if default_pokemon_name and species_name not in self._data["pokemon"]:
-                    self._data["pokemon"][species_name] = \
-                        self._data["pokemon"].get(default_pokemon_name, {})
-
-                fetched += 1
-                if i % 100 == 0:
-                    self._save()
-                    print(f"  {i}/{total}，新增 {fetched} 条 ...")
-
-            except Exception as e:
-                print(f"  跳过 #{idx}: {e}")
-
-        self._save()
-        print(f"完成，缓存共 {len(self._data['pokemon'])} 条宝可梦数据")
-
-    def _build_all_items(self, data_key: str, api_path: str, parse_fn, save_interval: int = 100) -> None:
-        """通用的批量构建缓存函数"""
-        item_dir = self._api_root / api_path
-        ids = sorted(int(p.name) for p in item_dir.iterdir() if p.name.isdigit())
-        total = len(ids)
-        label = {"moves": "招式", "items": "道具", "abilities": "特性"}[data_key]
-        api_name = api_path.rstrip("s")  # move, item, ability
-
-        print(f"从 api-data 构建全部 {total} 个{label}缓存...")
-        fetched = 0
-
-        for i, idx in enumerate(ids, 1):
-            try:
-                data = self._local(api_name, str(idx))
-                name = data["name"]
-                if name not in self._data.get(data_key, {}):
-                    self._data[data_key][name] = parse_fn(data)
-                    fetched += 1
-                if i % save_interval == 0:
-                    self._save()
-                    print(f"  {i}/{total}，新增 {fetched} 条 ...")
-            except Exception as e:
-                print(f"  跳过 {api_name} #{idx}: {e}")
-
-        self._save()
-        print(f"完成，缓存共 {len(self._data[data_key])} 个{label}")
-
-    def build_all_moves(self) -> None:
-        """扫描 api-data/move/ 构建全招式缓存"""
-        self._build_all_items("moves", "move", self._parse_move, 200)
-
-    def build_all_items(self) -> None:
-        """扫描 api-data/item/ 构建全道具缓存"""
-        self._build_all_items("items", "item", self._parse_item, 200)
-
-    def build_all_abilities(self) -> None:
-        """扫描 api-data/ability/ 构建全特性缓存"""
-        self._build_all_items("abilities", "ability", self._parse_ability, 100)
+_instance: PokeDB | None = None
+_lock = threading.Lock()
 
 
-
-    # ------------------------------------------------------------------
-    # 内部：解析 + 按需获取单条数据
-    # ------------------------------------------------------------------
-
-
-    @staticmethod
-    def _extract_zh_name(entries: list) -> str:
-        """优先简体中文名，备选繁体"""
-        for lang in ["hans", "hant"]:
-            for entry in entries:
-                if entry.get("language", {}).get("name") == f"zh-{lang}":
-                    return entry.get("name", "")
-        return ""
-
-    @staticmethod
-    def _extract_zh_text(entries: list, field: str = "flavor_text") -> str:
-        """优先简体中文文本，备选繁体"""
-        for lang in ["hans", "hant"]:
-            for entry in entries:
-                if entry.get("language", {}).get("name") == f"zh-{lang}":
-                    return entry.get(field, "").replace("\n", " ")
-        return ""
-
-    @staticmethod
-    def _parse_pokemon(data: dict, species_data: dict = None) -> dict:
-        types = [t["type"]["name"].capitalize() for t in data["types"]]
-        base_stats = {
-            s["stat"]["name"].replace("special-attack", "sp_atk")
-                             .replace("special-defense", "sp_def")
-                             .replace("-", "_"): s["base_stat"]
-            for s in data["stats"]
-        }
-        abilities = [a["ability"]["name"].capitalize() for a in data.get("abilities", [])]
-        name_zh = PokeDB._extract_zh_name(species_data.get("names", [])) if species_data else ""
-
-        return {
-            "types": types,
-            "base_stats": base_stats,
-            "abilities": abilities,
-            "name_zh": name_zh,
-        }
-
-    def _fetch_pokemon(self, key: str) -> None:
-        """运行时按需加载单只宝可梦（缓存未命中时调用）"""
-        try:
-            # pokemon 目录是数字，查 species 找对应 ID
-            species_data = None
-            if self._local_exists("pokemon-species", key):
-                species_data = self._local("pokemon-species", key)
-                varieties = species_data.get("varieties", [])
-                default = next((v for v in varieties if v.get("is_default")), None)
-                if not default:
-                    raise FileNotFoundError(key)
-                pokemon_id = default["pokemon"]["url"].rstrip("/").split("/")[-1]
-                data = self._local("pokemon", pokemon_id)
-            else:
-                raise FileNotFoundError(key)
-
-            self._data["pokemon"][key] = self._parse_pokemon(data, species_data)
-            self._save()
-        except Exception as e:
-            print(f"  [PokeDB] 获取 {key} 失败: {e}")
-            self._data["pokemon"][key] = {"types": [], "base_stats": {}, "abilities": [], "name_zh": ""}
-
-    @staticmethod
-    def _parse_move(data: dict) -> dict:
-        # 英文描述：优先 short_effect，否则从 flavor_text_entries 获取
-        short_effect = next(
-            (e.get("short_effect", "") for e in data.get("effect_entries", [])
-             if e["language"]["name"] == "en"),
-            None
-        ) or next(
-            (e.get("flavor_text", "").replace("\n", " ")
-             for e in data.get("flavor_text_entries", [])
-             if e.get("language", {}).get("name") == "en"),
-            ""
-        )
-
-        meta = data.get("meta") or {}
-        return {
-            "type":           data["type"]["name"].capitalize(),
-            "power":          data["power"],
-            "category":       data["damage_class"]["name"],
-            "accuracy":       data["accuracy"],
-            "priority":       data["priority"],
-            "ailment":        (meta.get("ailment") or {}).get("name", "none"),
-            "ailment_chance": meta.get("ailment_chance", 0),
-            "flinch_chance":  meta.get("flinch_chance", 0),
-            "stat_changes":   [{"stat": sc["stat"]["name"], "change": sc["change"]}
-                               for sc in data.get("stat_changes", [])],
-            "short_effect":   short_effect,
-            "name_zh":        PokeDB._extract_zh_name(data.get("names", [])),
-            "short_effect_zh": PokeDB._extract_zh_text(data.get("flavor_text_entries", [])),
-        }
-
-    @staticmethod
-    def _parse_item(data: dict) -> dict:
-        short_effect = next(
-            (e.get("short_effect", "") for e in data.get("effect_entries", [])
-             if e["language"]["name"] == "en"),
-            ""
-        )
-
-        return {
-            "category":     data.get("category", {}).get("name", ""),
-            "fling_power":  data.get("fling_power"),
-            "attributes":   [a["name"] for a in data.get("attributes", [])],
-            "short_effect": short_effect,
-            "name_zh":      PokeDB._extract_zh_name(data.get("names", [])),
-            "short_effect_zh": PokeDB._extract_zh_text(data.get("flavor_text_entries", []), "text"),
-        }
-
-    @staticmethod
-    def _parse_ability(data: dict) -> dict:
-        short_effect = next(
-            (e.get("effect", "") for e in data.get("effect_entries", [])
-             if e["language"]["name"] == "en"),
-            ""
-        )
-
-        return {
-            "effect":     short_effect,
-            "name_zh":    PokeDB._extract_zh_name(data.get("names", [])),
-            "effect_zh":  PokeDB._extract_zh_text(data.get("flavor_text_entries", [])),
-        }
-
-    def _fetch_move(self, key: str) -> None:
-        try:
-            self._data["moves"][key] = self._parse_move(self._local("move", key))
-            self._save()
-        except Exception as e:
-            print(f"  [PokeDB] 获取招式 {key} 失败: {e}")
-            self._data["moves"][key] = {
-                "type": "", "power": 0, "category": "", "accuracy": 0,
-                "priority": 0, "ailment": "none", "ailment_chance": 0,
-                "flinch_chance": 0, "stat_changes": [], "short_effect": "",
-                "name_zh": "", "short_effect_zh": "",
-            }
-
-    def _fetch_item(self, key: str) -> None:
-        try:
-            self._data["items"][key] = self._parse_item(self._local("item", key))
-            self._save()
-        except Exception as e:
-            print(f"  [PokeDB] 获取道具 {key} 失败: {e}")
-            self._data["items"][key] = {
-                "category": "", "fling_power": None, "attributes": [],
-                "short_effect": "", "name_zh": "", "short_effect_zh": "",
-            }
-
-    def _fetch_ability(self, key: str) -> None:
-        try:
-            self._data["abilities"][key] = self._parse_ability(self._local("ability", key))
-            self._save()
-        except Exception as e:
-            print(f"  [PokeDB] 获取特性 {key} 失败: {e}")
-            self._data["abilities"][key] = {
-                "effect": "", "name_zh": "", "effect_zh": "",
-            }
-
-    def _save(self) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._path.write_text(
-            json.dumps(self._data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+def get_pokedb() -> PokeDB:
+    """线程安全的 PokeDB 全局单例获取"""
+    global _instance
+    if _instance is None:
+        with _lock:
+            if _instance is None:
+                _instance = PokeDB()
+    return _instance
 
 
 # --------------------------------------------------------------------------
@@ -433,27 +503,5 @@ class PokeDB:
 # --------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="从本地 api-data 构建 PokeDB 缓存")
-    parser.add_argument("--all-pokemon",  action="store_true", help="构建全宝可梦属性+种族值缓存")
-    parser.add_argument("--all-moves",    action="store_true", help="构建全招式缓存")
-    parser.add_argument("--all-items",    action="store_true", help="构建全道具缓存")
-    parser.add_argument("--all-abilities",action="store_true", help="构建全特性缓存")
-    parser.add_argument("--all",          action="store_true", help="构建全部缓存（pokemon+moves+items+abilities）")
-    args = parser.parse_args()
-
-    db = PokeDB()
-
-    if args.all or args.all_pokemon:
-        db.build_all_pokemon()
-    if args.all or args.all_moves:
-        db.build_all_moves()
-    if args.all or args.all_items:
-        db.build_all_items()
-    if args.all or args.all_abilities:
-        db.build_all_abilities()
-
-    print(f"\n缓存: {db._path}")
-    print(f"  宝可梦: {len(db._data['pokemon'])} 条")
-    print(f"  招式:   {len(db._data['moves'])} 条")
-    print(f"  道具:   {len(db._data['items'])} 条")
+    print("pokedb 数据源已改为从 db/db.db 读取，不再生成/读取 pokedb_cache.json。")
+    print("如需补充数据，请直接修改 db/db.db（pokemon/moves/items/abilities/pokemon_abilities/language_map 表）。")

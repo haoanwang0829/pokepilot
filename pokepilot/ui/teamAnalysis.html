@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>战队对抗分析 - PokePilot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .container { display: flex; flex-direction: column; height: 100vh; }
+        .header {
+            height: 48px;
+            background: #2d2d2d;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+            gap: 14px;
+        }
+        .header h1 { font-size: 16px; font-weight: 600; color: #e0e0e0; }
+        .header .back-link {
+            margin-left: auto;
+            color: #4fc3f7;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        .header .back-link:hover { text-decoration: underline; }
+        .header-btn {
+            font-size: 13px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 4px 12px;
+            cursor: pointer;
+        }
+        .header-btn:hover { border-color: #4fc3f7; }
+        .header-btn.btn-primary { background: #0e639c; border-color: #0e639c; color: #fff; }
+        .header-btn.btn-primary:hover { background: #1177bb; }
+        .btn-danger { background: #a33 !important; border-color: #a33 !important; color: #fff !important; }
+        .btn-danger:hover { background: #c33 !important; }
+        .header select, .header .radio-group {
+            font-size: 13px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 4px 8px;
+            outline: none;
+        }
+        .radio-group { display: inline-flex; padding: 2px; }
+        .radio-group label {
+            padding: 3px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #aaa;
+            font-size: 13px;
+        }
+        .radio-group input { display: none; }
+        .radio-group input:checked + span { color: #fff; }
+        .radio-group label:has(input:checked) { background: #0e639c; }
+        .header .field-label { color: #888; font-size: 12px; }
+
+        .top-section {
+            flex-shrink: 0;
+            padding: 10px 16px;
+            border-bottom: 1px solid #3e3e42;
+            background: #252526;
+        }
+        .top-section .my-row-title { font-size: 12px; color: #888; margin-bottom: 8px; }
+        .my-cards {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+        .my-card {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+            padding: 8px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .my-card.empty { display: flex; align-items: center; justify-content: center; color: #666; font-size: 13px; min-height: 120px; }
+        .mc-body { display: flex; gap: 8px; }
+        .mc-left { flex: 1 1 50%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+        .mc-sprite { width: 58px; height: 58px; object-fit: contain; image-rendering: pixelated; }
+        .mc-name {
+            font-size: 11px; font-weight: 600; color: #fff; margin-top: 1px;
+            max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        /* 属性（性格/道具/特性）chips：展示中文，底部通栏横排，无表头 */
+        .mc-attrs {
+            display: flex; gap: 4px; margin-top: 6px; padding-top: 4px;
+            border-top: 1px solid #2d2d30;
+        }
+        .mc-attr {
+            flex: 1; text-align: center; font-size: 10px; color: #e8e8e8;
+            padding: 1px 2px; border-radius: 3px; cursor: pointer;
+            min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            background: rgba(255,255,255,0.05);
+        }
+        .mc-attr:hover { background: #2d2d30; color: #fff; }
+        .mc-right { flex: 1 1 50%; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+        /* 能力值（努力值 0-32）单行展示，为 0 的隐藏 */
+        .mc-evs {
+            margin-top: 6px; padding-top: 4px; border-top: 1px solid #2d2d30;
+            font-size: 10px; color: #ffa726; text-align: center; cursor: pointer;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .mc-evs:hover { color: #ffc95e; }
+        .mc-evs .evs-speed { float: left; color: #66bbff; font-weight: 700; margin-left: 2px; }
+        .mc-evs .evs-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* 参照 index.html 的 evo-button */
+        .evo-buttons { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; justify-content: center; }
+        .evo-button {
+            font-size: 10px; padding: 1px 4px; border-radius: 3px;
+            background: rgba(100, 150, 255, 0.3); color: #a0d0ff;
+            border: 1px solid rgba(100, 150, 255, 0.5); cursor: pointer;
+            font-family: inherit;
+        }
+        .evo-button.active {
+            background: rgba(100, 200, 255, 0.8); color: #fff;
+            border-color: rgba(100, 200, 255, 1); font-weight: 600;
+        }
+        .evo-button:hover { border-color: rgba(100, 200, 255, 1); }
+
+        /* 参照 index.html 的 move-chip */
+        .move-chip {
+            font-size: 10px; padding: 2px 6px; border-radius: 3px; color: #fff;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;
+            display: flex; align-items: center; justify-content: space-between; gap: 2px;
+            cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease; min-height: 18px;
+        }
+        .move-chip:hover { border-color: rgba(255,255,255,0.5); box-shadow: 0 0 4px rgba(255,255,255,0.3); }
+        .move-stats { font-size: 9px; opacity: 0.9; flex-shrink: 0; max-width: 40px; text-align: right; }
+        .mc-move-null { color: #666; font-size: 10px; }
+        .type-normal { background: #A8A878; } .type-fighting { background: #C03028; }
+        .type-flying { background: #A890F0; } .type-poison { background: #A040A0; }
+        .type-ground { background: #E0C068; } .type-rock { background: #B8A038; }
+        .type-bug { background: #A8B820; } .type-ghost { background: #705898; }
+        .type-steel { background: #B8B8D0; } .type-fire { background: #F08030; }
+        .type-water { background: #6890F0; } .type-grass { background: #78C850; }
+        .type-electric { background: #F8D030; } .type-psychic { background: #F85888; }
+        .type-ice { background: #98D8D8; } .type-dragon { background: #7038F8; }
+        .type-dark { background: #705848; } .type-fairy { background: #EE99AC; }
+        .type-add { background: rgba(255,255,255,0.08); border-style: dashed; color: #9fd0ff; text-align: center; justify-content: center; }
+
+        /* EV 编辑悬浮窗：位于对应宝可梦下方 */
+        .ev-pop {
+            position: fixed; z-index: 80; width: 250px;
+            background: #2b2b2e; border: 1px solid #3e3e42; border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5); padding: 10px 12px;
+        }
+        .ev-pop .ev-title { font-size: 12px; color: #fff; font-weight: 600; margin-bottom: 8px; }
+        .ev-editor-grid { display: flex; flex-direction: column; gap: 6px; }
+        .ev-ed-row { display: flex; align-items: center; gap: 8px; }
+        .ev-ed-row label { font-size: 11px; color: #ccc; width: 74px; flex-shrink: 0; }
+        .ev-ed-row input[type="range"] { flex: 1; accent-color: #4fc3f7; }
+        .ev-ed-row .ev-num { width: 30px; text-align: right; color: #ffa726; font-size: 12px; flex-shrink: 0; }
+        .ev-ed-total { font-size: 11px; color: #777; margin: 8px 0; text-align: center; }
+        .ev-pop .p-btns { display: flex; justify-content: flex-end; gap: 6px; }
+
+        .bottom-section {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            background: #1e1e1e;
+        }
+        .bottom-section::-webkit-scrollbar { width: 10px; height: 10px; }
+        .bottom-section::-webkit-scrollbar-track { background: #1e1e1e; }
+        .bottom-section::-webkit-scrollbar-thumb { background: #3e3e42; border-radius: 5px; border: 2px solid #1e1e1e; }
+        .bottom-section::-webkit-scrollbar-thumb:hover { background: #4a4a4e; }
+        .bottom-section::-webkit-scrollbar-corner { background: #1e1e1e; }
+        .table-wrap { min-width: 100%; }
+        .damage-table col.col-enemy { width: 18%; }
+        .damage-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+        .damage-table th, .damage-table td {
+            border: 1px solid #2d2d30;
+            padding: 4px 5px;
+            vertical-align: middle;
+            text-align: center;
+            font-size: 11px;
+            word-break: break-word;
+        }
+        .damage-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: #2d2d2d;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+        .damage-table thead th.group-my { background: #26334d; }
+        .damage-table thead th.group-opp { background: #3d2b2b; }
+        .header-mon {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .header-mon img {
+            width: 42px; height: 42px; object-fit: contain; image-rendering: pixelated;
+            background: rgba(255,255,255,0.04); border-radius: 4px;
+        }
+        .header-mon .hm-name {
+            font-size: 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .header-mon .hm-label {
+            font-size: 9px; color: #9aa6b8; font-weight: 400;
+        }
+        .col-my { background: rgba(38, 51, 77, 0.25); }
+        .col-opp { background: rgba(61, 43, 43, 0.25); }
+
+        /* 下方宝可梦卡片：与上方我方卡片布局一致（mc-body / mc-attrs / mc-evs） */
+        .enemy-cell { position: relative; min-width: 120px; }
+        .enemy-card {
+            background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 6px;
+            padding: 8px; display: flex; flex-direction: column;
+        }
+        .enemy-card .ec-types { display: flex; gap: 2px; justify-content: center; }
+        .add-config-btn {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            font-size: 11px;
+            padding: 1px 6px;
+            border: 1px solid rgba(79,195,247,0.5);
+            border-radius: 3px;
+            background: transparent;
+            color: #4fc3f7;
+            cursor: pointer;
+        }
+        .add-config-btn:hover { background: rgba(79,195,247,0.15); }
+
+        .dmg-cell { min-height: 48px; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 4px; }
+        .dmg-entry { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; }
+        .dmg-cell .dmg-entry + .dmg-entry { border-top: 1px dashed #2d2d30; padding-top: 4px; }
+        /* 伤害格子的技能：参照上方 move-chip，类型底色 + 威力 */
+        .dmg-cell .dmg-move { width: 100%; min-height: 22px; }
+        .dmg-label {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 1px;
+            line-height: 18px;
+            min-height: 18px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .dmg-label.placeholder { color: #444; font-weight: 400; }
+        .dmg-label.red { color: #e74c3c; }
+        .dmg-label.yellow { color: #f0c000; }
+        .dmg-label.blue { color: #5fb9e0; }
+        .dmg-label.green { color: #58d68d; }
+        .dmg-label.none { color: #666; font-size: 11px; font-weight: 400; }
+        .dmg-pct { font-size: 13px; line-height: 16px; min-height: 16px; color: #ccc; }
+        .dmg-real { font-size: 13px; line-height: 16px; min-height: 16px; color: #ddd; }
+        .dmg-none { color: #555; font-size: 10px; }
+
+        .load-more-wrap { text-align: center; padding: 12px; }
+        .load-more-btn {
+            padding: 6px 24px; border: 1px solid #3e3e42; border-radius: 4px;
+            background: #2d2d2d; color: #e0e0e0; font-size: 13px; cursor: pointer;
+        }
+        .load-more-btn:hover { border-color: #4fc3f7; }
+        .loading-text { color: #888; font-size: 12px; padding: 16px; text-align: center; }
+        .empty-text { color: #888; font-size: 14px; padding: 40px 0; text-align: center; }
+
+        .type-normal { background: #A8A878; } .type-fighting { background: #C03028; }
+        .type-flying { background: #A890F0; } .type-poison { background: #A040A0; }
+        .type-ground { background: #E0C068; } .type-rock { background: #B8A038; }
+        .type-bug { background: #A8B820; } .type-ghost { background: #705898; }
+        .type-steel { background: #B8B8D0; } .type-fire { background: #F08030; }
+        .type-water { background: #6890F0; } .type-grass { background: #78C850; }
+        .type-electric { background: #F8D030; } .type-psychic { background: #F85888; }
+        .type-ice { background: #98D8D8; } .type-dragon { background: #7038F8; }
+        .type-dark { background: #705848; } .type-fairy { background: #EE99AC; }
+
+        .type-chip {
+            width: 14px; height: 14px; border-radius: 3px; background-size: contain;
+            background-repeat: no-repeat; background-position: center; display: inline-block;
+        }
+
+        .dropdown {
+            position: fixed; z-index: 1000; background: #252526;
+            border: 1px solid #4a4a50; border-radius: 5px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+            max-height: 320px; overflow-y: auto; min-width: 160px; padding: 4px 0;
+            scrollbar-width: thin;
+            scrollbar-color: #4a4a50 transparent;
+        }
+        .dropdown::-webkit-scrollbar { width: 8px; }
+        .dropdown::-webkit-scrollbar-track { background: transparent; }
+        .dropdown::-webkit-scrollbar-thumb {
+            background: #4a4a50; border-radius: 4px;
+            border: 2px solid #252526;
+        }
+        .dropdown::-webkit-scrollbar-thumb:hover { background: #5a5a60; }
+        .dropdown .opt {
+            padding: 6px 12px; font-size: 12px; color: #e0e0e0; cursor: pointer;
+            white-space: nowrap; display: flex; justify-content: space-between; gap: 12px;
+        }
+        .dropdown .opt:hover, .dropdown .opt.active { background: #0e639c; color: #fff; }
+        .dropdown .opt .pct { color: #888; font-size: 11px; }
+        .dropdown .opt:hover .pct { color: #ccc; }
+        .dropdown .grp-title { padding: 5px 12px; font-size: 11px; color: #666; border-top: 1px solid #333; }
+        .dropdown .grp-title:first-child { border-top: none; }
+        .dropdown .clear-opt { color: #f08c5f; }
+        .dropdown .drop-search {
+            position: sticky; bottom: 0; background: #1e1e1e;
+            border-top: 1px solid #3e3e42; padding: 6px 8px; margin-top: 2px;
+        }
+        .dropdown .drop-search input {
+            width: 100%; box-sizing: border-box; background: #151516; color: #e0e0e0;
+            border: 1px solid #3e3e42; border-radius: 4px; padding: 5px 8px; font-size: 12px; outline: none;
+        }
+        .dropdown .drop-search input:focus { border-color: #0e639c; }
+        .dropdown .drop-search-results { max-height: 180px; overflow-y: auto; margin-top: 4px; }
+        .dropdown .drop-hint { padding: 6px 10px; font-size: 11px; color: #777; white-space: nowrap; }
+        .dropdown .drop-meta { color: #888; font-size: 11px; }
+
+        .overlay {
+            position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .overlay .panel {
+            background: #252526; border: 1px solid #4a4a50; border-radius: 8px;
+            width: min(720px, 92vw); max-height: 86vh; overflow: auto; padding: 16px;
+        }
+        .panel h3 { font-size: 15px; color: #e0e0e0; margin-bottom: 12px; }
+        .panel .p-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .panel .p-row label { font-size: 12px; color: #888; width: 56px; flex-shrink: 0; }
+        .panel select {
+            background: #1e1e1e; color: #e0e0e0; border: 1px solid #3e3e42; border-radius: 4px;
+            padding: 4px 8px; font-size: 12px; outline: none; flex: 1; min-width: 0;
+        }
+        .panel .p-row input {
+            background: #1e1e1e; color: #e0e0e0; border: 1px solid #3e3e42; border-radius: 4px;
+            padding: 4px 8px; font-size: 12px; outline: none; flex: 1; min-width: 0;
+        }
+        .panel .p-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .panel .btn {
+            padding: 6px 16px; border: 1px solid #3e3e42; border-radius: 4px;
+            background: #2d2d2d; color: #e0e0e0; font-size: 13px; cursor: pointer;
+        }
+        .panel .btn:hover { border-color: #4fc3f7; }
+        .panel .btn-primary { background: #0e639c; border-color: #0e639c; color: #fff; }
+        .panel .hint { font-size: 11px; color: #777; margin: 2px 0 8px; }
+
+        /* 敌方配置：checkbox 平铺多列 */
+        .panel-wide { width: min(980px, 94vw) !important; }
+        .ck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 12px; }
+        .p-col .p-col-title { font-size: 12px; color: #aaa; font-weight: 600; margin-bottom: 6px; }
+        .ck-list { display: flex; flex-direction: column; gap: 3px; max-height: 300px; overflow: auto; padding-right: 2px; }
+        .ck-list label.ck-item {
+            display: flex; align-items: center; gap: 6px; font-size: 12px; color: #ccc;
+            border: 1px solid #333; border-radius: 4px; padding: 3px 6px; cursor: pointer;
+            line-height: 1.3;
+        }
+        .ck-list label.ck-item:hover { border-color: #4fc3f7; }
+        .ck-list label.ck-item.checked { border-color: #4fc3f7; background: rgba(79,195,247,0.14); color: #fff; }
+        .ck-list input[type=checkbox] { accent-color: #4fc3f7; margin: 0; flex-shrink: 0; }
+        .ck-list .pct { color: #888; font-size: 10px; margin-left: 2px; }
+
+        /* 下方宝可梦卡片左下角：超进化/形态切换 */
+        .enemy-evo {
+            display: flex; flex-wrap: wrap; gap: 2px; align-items: center; justify-content: flex-start; margin-top: 4px;
+        }
+
+        /* 全局滚动条样式 */
+        * { scrollbar-width: thin; scrollbar-color: #4a4a50 transparent; }
+        *::-webkit-scrollbar { width: 10px; height: 10px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb {
+            background: #3e3e42; border-radius: 5px; border: 2px solid #1e1e1e;
+        }
+        *::-webkit-scrollbar-thumb:hover { background: #5a5a60; }
+        *::-webkit-scrollbar-corner { background: transparent; }
+
+        /* 我方宝可梦切换选择器 */
+        .picker-overlay { display: none; position: fixed; inset: 0; z-index: 2500; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+        .picker-overlay.show { display: flex; }
+        .picker-panel {
+            background: #252526; border: 1px solid #4a4a50; border-radius: 8px;
+            width: min(760px, 94vw); max-height: 82vh; display: flex; flex-direction: column;
+        }
+        .picker-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #333; }
+        .picker-head h3 { font-size: 14px; color: #e0e0e0; flex-shrink: 0; }
+        .picker-search {
+            flex: 1; background: #1e1e1e; color: #e0e0e0; border: 1px solid #3e3e42;
+            border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; min-width: 0;
+        }
+        .picker-search:focus { border-color: #4fc3f7; }
+        .picker-body { overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+        .picker-item {
+            width: 96px; border: 1px solid #333; border-radius: 6px; padding: 8px 4px 6px;
+            background: #1e1e1e; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .picker-item:hover { border-color: #4fc3f7; background: #2a2a2c; }
+        .picker-item .pi-sprite { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+        .picker-item .pi-name { font-size: 11px; color: #e0e0e0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+        .picker-item .pi-usage { font-size: 9px; color: #666; }
+        .picker-empty { color: #888; font-size: 13px; padding: 20px; text-align: center; width: 100%; }
+
+        /* 我方头像/名字可点击切换宝可梦 */
+        .mc-left { cursor: pointer; }
+        .mc-change { display: flex; flex-direction: column; align-items: center; }
+        .mc-name:hover { color: #4fc3f7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>战队对抗分析</h1>
+            <span class="field-label">赛季</span>
+            <select id="season-select"></select>
+            <span class="field-label">格式</span>
+            <span class="radio-group">
+                <label><input type="radio" name="format" value="double" checked onchange="onSeasonFormatChange()"><span>双打</span></label>
+                <label><input type="radio" name="format" value="single" onchange="onSeasonFormatChange()"><span>单打</span></label>
+            </span>
+            <span class="field-label">我方队伍</span>
+            <select id="team-select" onchange="onTeamChange()"></select>
+            <button class="btn btn-primary header-btn" onclick="saveMyTeam()">保存</button>
+            <button class="btn header-btn" onclick="openSaveAsModal()">另存为</button>
+            <a class="back-link" href="/">← 返回主页</a>
+        </div>
+
+        <div class="top-section">
+            <!-- <div class="my-row-title">我方队伍（点击性格/道具/特性/技能可切换候选，努力值可微调，移动端滚动浏览）</div> -->
+            <div class="my-cards" id="my-cards"></div>
+        </div>
+
+        <div class="bottom-section" id="bottom-section">
+            <div class="loading-text" id="table-loading" style="display:none">正在加载敌方数据...</div>
+        </div>
+    </div>
+
+    <!-- 敌方配置编辑弹窗 -->
+    <div class="overlay" id="edit-overlay" style="display:none;">
+        <div class="panel panel-wide">
+            <h3 id="edit-title">配置敌方宝可梦</h3>
+            <div class="ck-grid">
+                <div class="p-col"><div class="p-col-title">形态 / 超进化</div><div class="ck-list ck-single" id="edit-form"></div></div>
+                <div class="p-col"><div class="p-col-title">性格</div><div class="ck-list ck-single" id="edit-nature"></div></div>
+                <div class="p-col"><div class="p-col-title">特性</div><div class="ck-list ck-single" id="edit-ability"></div></div>
+                <div class="p-col"><div class="p-col-title">道具</div><div class="ck-list ck-single" id="edit-item"></div></div>
+                <div class="p-col"><div class="p-col-title">努力值</div><div class="ck-list ck-single" id="edit-ev"></div></div>
+                <div class="p-col"><div class="p-col-title">技能（可多选）</div><div class="ck-list" id="edit-moves"></div></div>
+            </div>
+            <div class="p-btns">
+                <button class="btn" onclick="closeEditOverlay()">取消</button>
+                <button class="btn" onclick="saveEdit('row')">保存修改</button>
+                <button class="btn btn-primary" onclick="saveEdit('insert')">保存并插入新行↓</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我方能力值（努力值）编辑悬浮窗 -->
+    <div class="ev-pop" id="ev-pop" style="display:none;">
+        <div class="ev-title" id="ev-title">调整努力值（0-32）</div>
+        <div class="ev-editor-grid"></div>
+        <div class="ev-ed-total" id="ev-total"></div>
+        <div class="p-btns">
+            <button class="btn" onclick="closeEvOverlay()">取消</button>
+            <button class="btn btn-primary" onclick="saveEvOverlay()">确定</button>
+        </div>
+    </div>
+
+    <!-- 另存为新队伍弹窗 -->
+    <div class="overlay" id="save-as-overlay" style="display:none;">
+        <div class="panel">
+            <h3>另存为队伍</h3>
+            <div class="p-row"><label>名称</label><input id="save-as-name" type="text" placeholder="输入新队伍名称"></div>
+            <div class="p-btns">
+                <button class="btn" onclick="closeSaveAsModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveAsNewTeam()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我方宝可梦切换选择器 -->
+    <div class="picker-overlay" id="my-picker-overlay">
+        <div class="picker-panel">
+            <div class="picker-head">
+                <h3>选择宝可梦</h3>
+                <input class="picker-search" id="my-picker-search" type="text" placeholder="输入中文/英文名搜索…" oninput="onMyPickerFilter()">
+                <button class="btn btn-danger picker-clear-btn" id="my-picker-clear-btn" onclick="clearMyPokemonFromPicker()">清空该宝可梦</button>
+                <button class="btn" onclick="closeMyPicker()">关闭</button>
+            </div>
+            <div class="picker-body" id="my-picker-body"></div>
+        </div>
+    </div>
+    <script>
+        // Polyfill: production.min.js uses require("./desc") for display formatting
+        function require() { return {}; }
+    </script>
+    
+    <script src="./calc/data.min.js"></script>
+    <script src="./calc/production.min.js"></script>
+    <script src="./team-analysis-save.js?v=3"></script>
+    <script>
+    // ===================== 常量 =====================
+    const TYPE_ID_MAP = {
+        'Normal':1,'Fighting':2,'Flying':3,'Poison':4,'Ground':5,'Rock':6,
+        'Bug':7,'Ghost':8,'Steel':9,'Fire':10,'Water':11,'Grass':12,
+        'Electric':13,'Psychic':14,'Ice':15,'Dragon':16,'Dark':17,'Fairy':18
+    };
+    const NATURE_ZH = {
+        Hardy:'勤奋',Lonely:'寂寞',Brave:'勇敢',Adamant:'固执',Naughty:'调皮',
+        Bold:'大胆',Docile:'坦率',Relaxed:'悠闲',Impish:'淘气',Lax:'乐天',
+        Timid:'胆小',Hasty:'急躁',Serious:'认真',Jolly:'爽朗',Naive:'天真',
+        Modest:'内敛',Mild:'慢吞吞',Quiet:'冷静',Bashful:'害羞',Rash:'马虎',
+        Calm:'温和',Gentle:'温顺',Sassy:'自大',Careful:'慎重',Quirky:'浮躁'
+    };
+    const NATURE_EN = Object.keys(NATURE_ZH);
+    const STAT_KEYS = ['hp','attack','defense','sp_atk','sp_def','speed'];
+    const STAT_LABEL = { hp:'HP', attack:'A', defense:'D', sp_atk:'SA', sp_def:'SD', speed:'S' };
+
+    const MEGA_STONES = [
+      "gengarite","gardevoirite","ampharosite","venusaurite","charizardite x","blastoisinite","mewtwonite x","mewtwonite y","blazikenite","medichamite","houndoominite","aggronite","banettite","tyranitarite","scizorite","pinsirite","aerodactylite","lucarionite","abomasite","kangaskhanite","gyaradosite","absolite","charizardite y","alakazite","heracronite","mawilite","manectite","garchompite","latiasite","latiosite","swampertite","sceptilite","sablenite","altarianite","galladite","audinite","metagrossite","sharpedonite","slowbronite","steelixite","pidgeotite","glalitite","diancite","cameruptite","lopunnite","salamencite","beedrillite","clefablite","victreebelite","starminite","dragoninite","meganiumite","feraligite","skarmorite","froslassite","heatranite","darkranite","emboarite","excadrite","scolipite","scraftinite","eelektrossite","chandelurite","chesnaughtite","delphoxite","greninjite","pyroarite","floettite","malamarite","barbaracite","dragalgite","hawluchanite","zygardite","drampanite","zeraorite","falinksite","raichunite x","raichunite y","chimechite","absolite z","staraptite","staraptornite","garchompite z","lucarionite z","golurkite","meowsticite","crabominite","golisopite","magearnite","scovillainite","baxcalibrite","tatsugirinite"
+      ,"drampite","starmiite","dragonitite","feraligatrite","hawluchite","greninjaite","skarmoryite"
+      ,"scraftite","barbaraclite","scolipedite"
+    ];
+    const NATURE_STR_MAP = {
+        "attack↑/defense↓":"Lonely","attack↑/sp_atk↓":"Adamant","attack↑/sp_def↓":"Naughty","attack↑/speed↓":"Brave",
+        "defense↑/attack↓":"Bold","defense↑/sp_atk↓":"Impish","defense↑/sp_def↓":"Lax","defense↑/speed↓":"Relaxed",
+        "sp_atk↑/attack↓":"Modest","sp_atk↑/defense↓":"Mild","sp_atk↑/sp_def↓":"Rash","sp_atk↑/speed↓":"Quiet",
+        "sp_def↑/attack↓":"Calm","sp_def↑/defense↓":"Gentle","sp_def↑/sp_atk↓":"Careful","sp_def↑/speed↓":"Sassy",
+        "speed↑/attack↓":"Timid","speed↑/defense↓":"Hasty","speed↑/sp_atk↓":"Jolly","speed↑/sp_def↓":"Naive",
+    };
+
+    // ===================== 伤害计算（复用 type-effect.js 逻辑，独立版） =====================
+    window.__battleMode = 'double';
+    function canonicalName(cat, name) {
+        if (!name) return name;
+        try {
+            const gen = window.calc.Generations.get(9);
+            const id = window.calc.toID(name);
+            const obj = gen[cat].get(id);
+            return (obj && obj.name) || name;
+        } catch (e) { return name; }
+    }
+    function mapName(slug) {
+        const nameMap = {
+            'basculegion-male':'basculegion', 'basculegion-female':'basculegion-F',
+            'floette-eternal-flower':'Floette-Eternal', 'aegislash':'Aegislash-Shield',
+            'aegislash-blade-forme':'Aegislash-Blade'
+        };
+        return nameMap[String(slug).toLowerCase()] || slug;
+    }
+    function getNatureName(mon) {
+        if (mon.nature_en && Array.isArray(mon.nature_en) && mon.nature_en[0] && mon.nature_en[0].name) return mon.nature_en[0].name;
+        if (mon.nature_en && typeof mon.nature_en === 'string') return mon.nature_en;
+        if (mon.nature && NATURE_STR_MAP[mon.nature]) return NATURE_STR_MAP[mon.nature];
+        if (mon.nature && typeof mon.nature === 'string' && NATURE_EN.includes(mon.nature)) return mon.nature;
+        return 'Hardy';
+    }
+    function getAbilityName(mon) {
+        if (Array.isArray(mon.ability) && mon.ability[0]) return mon.ability[0].name;
+        if (mon.ability && typeof mon.ability === 'string') return mon.ability;
+        return undefined;
+    }
+    function getItemName(mon) {
+        if (mon.item) return mon.item;
+        if (Array.isArray(mon.held_item) && mon.held_item[0]) return mon.held_item[0].name;
+        if (mon.held_item && typeof mon.held_item === 'string') return mon.held_item;
+        return undefined;
+    }
+    function getAbilityZh(mon) {
+        if (Array.isArray(mon.ability) && mon.ability[0]) return mon.ability[0].name_zh || mon.ability[0].name;
+        if (mon.ability && typeof mon.ability === 'string') return mon.ability;
+        return '-';
+    }
+    function getItemZh(mon) {
+        if (mon.item) return mon.item;
+        if (Array.isArray(mon.held_item) && mon.held_item[0]) return mon.held_item[0].name_zh || mon.held_item[0].name;
+        if (mon.held_item && typeof mon.held_item === 'string') return mon.held_item;
+        return '无道具';
+    }
+
+    const pokeCache = new WeakMap();
+    function getPoke(mon) {
+        if (pokeCache.has(mon)) return pokeCache.get(mon);
+        try {
+            const gen = window.calc.Generations.get(9);
+            const evs = mon.evs || {};
+            let itemOpt;
+            const it = getItemName(mon);
+            const aitem = it ? canonicalName('items', it) : undefined;
+            if (aitem) {
+                const l = aitem.toLowerCase();
+                if (!MEGA_STONES.includes(l) && !l.includes('进化石')) itemOpt = aitem;
+            }
+            const p = new window.calc.Pokemon(gen, mapName(mon.formSlug || mon.slug), {
+                level: 50,
+                ivs: { hp:31,atk:31,def:31,spa:31,spd:31,spe:31 },
+                evs: {
+                    hp: evs.hp > 0 ? evs.hp*8-4 : 0,
+                    atk: evs.attack > 0 ? evs.attack*8-4 : 0,
+                    def: evs.defense > 0 ? evs.defense*8-4 : 0,
+                    spa: evs.sp_atk > 0 ? evs.sp_atk*8-4 : 0,
+                    spd: evs.sp_def > 0 ? evs.sp_def*8-4 : 0,
+                    spe: evs.speed > 0 ? evs.speed*8-4 : 0,
+                },
+                nature: getNatureName(mon),
+                ability: getAbilityName(mon) ? canonicalName('abilities', getAbilityName(mon)) : undefined,
+                ...(itemOpt ? { item: itemOpt } : {}),
+            });
+            p.__hp = p.stats.hp;
+            pokeCache.set(mon, p);
+            return p;
+        } catch (e) { console.log('buildPoke error', e, mon.slug); return null; }
+    }
+    function calcSingle(monAtk, monDef, move) {
+        try {
+            const gen = window.calc.Generations.get(9);
+            const atk = getPoke(monAtk);
+            const def = getPoke(monDef);
+            if (!atk || !def) return null;
+            const _raw = new window.calc.Move(gen, move.name);
+            const calcMove = _raw.name === move.name ? _raw : new window.calc.Move(gen, _raw.name);
+            const field = new window.calc.Field(gen);
+            field.isDoubles = window.__battleMode === 'double';
+            field.gameType = field.isDoubles ? 'Doubles' : 'Singles';
+            return window.calc.calculate(gen, atk, def, calcMove, field);
+        } catch (e) { console.log('calcSingle error', e, monAtk.slug, monDef.slug, move.name); }
+        return null;
+    }
+    function hitsLabel(min, max, hp, kill) {
+        // min/max 为实际伤害（整数），计算击杀所需打击数
+        const nMin = min > 0 ? Math.ceil(hp / min) : Infinity;
+        const nMax = max > 0 ? Math.ceil(hp / max) : Infinity;
+        if (!isFinite(nMin) && !isFinite(nMax)) return { label: '', color: 'none', kill: null };
+        const guaranteed = nMin === nMax;
+        const n = guaranteed ? nMin : nMax;
+        let label = (guaranteed ? '确' : '乱') + n;
+        // 乱一击杀率概率放在“乱一”之后
+        if (!guaranteed && n === 1 && kill != null) label += ' ' + kill.toFixed(1) + '%';
+        let color = n === 1 ? 'red' : n === 2 ? 'yellow' : 'blue';
+        // 乱三及之后用绿色字体
+        if (!guaranteed && n >= 3) color = 'green';
+        return { label, color, kill: (guaranteed || n !== 1) ? null : kill };
+    }
+    function computeCell(monAtk, monDef) {
+        const defP = getPoke(monDef);
+        if (!defP) return [];
+        const hp = defP.__hp || 1;
+        const evalMove = (m) => {
+            const res = calcSingle(monAtk, monDef, m);
+            if (!res) return null;
+            const [min, max] = res.range();
+            let kill = null;
+            const rolls = typeof res.damage === 'function' ? res.damage() : res.damage;
+            if (Array.isArray(rolls) && rolls.length) {
+                kill = rolls.filter(r => r >= hp).length / rolls.length * 100;
+            }
+            const pctLow = min / hp * 100, pctHigh = max / hp * 100;
+            return {
+                move: m, min: Math.round(min), max: Math.round(max),
+                hp, pctLow, pctHigh, kill,
+                eff: res.effectiveness || 1,
+                hits: hitsLabel(Math.round(min), Math.round(max), hp, kill)
+            };
+        };
+        const damaging = (monAtk.moves || []).filter(m=>m && m.category!=='status' && Number(m.power)>0);
+        // 非先制最高伤害技能
+        let best = null;
+        for (const m of damaging) {
+            if (Number(m.priority) > 0) continue;
+            const e = evalMove(m);
+            if (e && (!best || e.max > best.max)) best = e;
+        }
+        // 最高先制技能（priority>0）
+        let bestPrio = null;
+        for (const m of damaging) {
+            if (!(Number(m.priority) > 0)) continue;
+            const e = evalMove(m);
+            if (e && (!bestPrio || e.max > bestPrio.max)) bestPrio = e;
+        }
+        return { prio: bestPrio, normal: best };
+    }
+    function damageCellHtml(entry) {
+        // 每个格子固定两段：上=先制技能，下=非先制技能；先制缺省为占位空内容
+        const segHtml = (info)=>{
+            if (!info) {
+                // 占位空内容：与真实条目结构一致，保证高度对齐
+                return `<div class="dmg-entry"><div class="dmg-move"></div><div class="dmg-label placeholder"></div><div class="dmg-pct"></div><div class="dmg-real"></div></div>`;
+            }
+            const m = info.move;
+            const mv = `<div class="dmg-move"><div class="move-chip type-${esc((m.type||'normal').toLowerCase())}" title="${esc(m.name_zh||m.name)}">${esc(m.name_zh||m.name)}<span class="move-stats">${esc(m.power!=null?m.power:'-')}</span></div></div>`;
+            const label = `<div class="dmg-label ${info.hits.color}">${info.hits.label?esc(info.hits.label):'&nbsp;'}</div>`;
+            const pct = `<div class="dmg-pct">${info.pctLow.toFixed(1)}% - ${info.pctHigh.toFixed(1)}%</div>`;
+            const real = `<div class="dmg-real">${info.min} - ${info.max}</div>`;
+            return `<div class="dmg-entry">${mv}${label}${pct}${real}</div>`;
+        };
+        if (!entry || (!entry.prio && !entry.normal)) return '<div class="dmg-cell"></div>';
+        return `<div class="dmg-cell">${segHtml(entry.prio)}${segHtml(entry.normal)}</div>`;
+    }
+
+    // ===================== 工具 =====================
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function typeId(t) { return TYPE_ID_MAP[String(t||'').charAt(0).toUpperCase()+String(t||'').slice(1)] || 1; }
+    function typeIcon(t, cls, title) {
+        return `<div class="${cls}" title="${esc(title||t||'')}" style="background-image:url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${typeId(t)}.png')"></div>`;
+    }
+    function natureToZh(n) { return (NATURE_ZH[n] || n || '-'); }
+    function spritePath(p) { return p ? p.replace(/^sprites\//, '') : ''; }
+
+    // ===================== 状态 =====================
+    let currentSeason = '';
+    let currentFormat = 'double';
+    let myTeam = [];              // 我方 6 只（含 form/编辑状态）
+    let enemiesAll = [];          // 全部敌方（rank 排序）
+    let enemiesMap = {};          // slug -> enemy (基形)
+    let loadedRows = [];          // 已生成的行对象 {enemy, isCustom, build, rowId}
+    let currentCustomId = 0;
+    let myTeamSlots = [];
+
+    // ===================== 赛季 / 格式 =====================
+    async function loadSeasonsFormats() {
+        try {
+            const [rs, rf] = await Promise.all([
+                fetch('/api/data/seasons').then(r=>r.json()),
+                fetch('/api/data/formats').then(r=>r.json())
+            ]);
+            const sels = rs.seasons || [];
+            const sel = document.getElementById('season-select');
+            sel.innerHTML = sels.slice().reverse().map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+            if (sels.length) { currentSeason = sels[sels.length-1]; sel.value = currentSeason; }
+            currentFormat = 'double';
+        } catch (e) { console.log(e); }
+    }
+
+    // ===================== 我方队伍 =====================
+    async function loadTeamSlots() {
+        try {
+            const res = await fetch('/api/teams');
+            const data = await res.json();
+            myTeamSlots = data.teams || [];
+            const sel = document.getElementById('team-select');
+            sel.innerHTML = myTeamSlots.map(t=>`<option value="${esc(t.id)}">${esc(t.slot_name)}</option>`).join('');
+            // 默认选择最后一个真实队伍（跳过 draft/temp 工作缓冲，避免空 roster 导致表头无头像）
+            const real = myTeamSlots.filter(t=>t.id!=='draft' && t.id!=='temp');
+            const def = real[real.length-1] || myTeamSlots[myTeamSlots.length-1];
+            if (def) {
+                sel.value = def.id;
+                await loadTeamSlot(def.id);
+            } else {
+                showEmptyCards();
+            }
+        } catch (e) { console.log('loadTeamSlots', e); }
+    }
+    async function loadTeamSlot(id) {
+        try {
+            const res = await fetch(`/api/teams/load/${id}`, { method:'POST' });
+            const data = await res.json();
+            if (!data.success) return;
+            myTeam = (data.team.roster || []).slice(0,6);
+            for (const mon of myTeam) {
+                if (!mon) continue;
+                mon.formSlug = mon.slug;
+                mon.moves = (mon.moves||[]).slice(0,4);
+            }
+            renderMyCards();
+            updateTableHeader();
+            recomputeAllRows();
+        } catch (e) { console.log('loadTeamSlot', e); }
+    }
+    function showEmptyCards() {
+        const el = document.getElementById('my-cards');
+        el.innerHTML = '<div class="empty-text">请先在队伍库保存队伍，再从本页下拉选择</div>';
+    }
+    function onTeamChange() {
+        const id = document.getElementById('team-select').value;
+        if (id) loadTeamSlot(id);
+    }
+
+    // ===================== 我方卡片渲染 =====================
+    function renderMyCards() {
+        const el = document.getElementById('my-cards');
+        el.innerHTML = myTeam.map((mon, i) => mon ? myCardHtml(mon, i) : `<div class="my-card empty">槽位 ${i+1}</div>`).join('');
+    }
+    function myCardHtml(mon, i) {
+        const sp = spritePath(mon.sprite);
+        const nat = natureToZh(getNatureName(mon));
+        const it = getItemZh(mon);
+        const ab = getAbilityZh(mon);
+        // 属性 chips：直接展示中文内容（性格/道具/特性），无表头，通栏横排
+        const attrs = `
+            <div class="mc-attr" onclick="openMyChoice(${i},'nature',event)" title="性格">${esc(nat)}</div>
+            <div class="mc-attr" onclick="openMyChoice(${i},'item',event)" title="道具">${esc(it)}</div>
+            <div class="mc-attr" onclick="openMyChoice(${i},'ability',event)" title="特性">${esc(ab)}</div>`;
+        // 技能：固定 4 个技能槽。有技能显示技能 chip（点按替换），空槽显示“＋添加”（点按添加技能）
+        const MOVES_MAX = 4;
+        let movesHtml = '';
+        const mv = mon.moves || [];
+        for (let mi = 0; mi < MOVES_MAX; mi++) {
+            const m = mv[mi];
+            if (m && m.name) {
+                const isStatus = m.category==='status' || !(Number(m.power)>0);
+                const t = (m.type||'normal').toLowerCase();
+                const name = m.name_zh||m.name||'-';
+                const pw = isStatus ? '-' : (m.power!=null?m.power:'-');
+                movesHtml += `<div class="mc-move move-chip type-${esc(t)}" onclick="onMyMoveClick(${i},${mi},event)" title="${esc(m.name_zh||m.name)}">${esc(name)}${isStatus?'':'<span class="move-stats">'+esc(pw)+'</span>'}</div>`;
+            } else {
+                movesHtml += `<div class="mc-move move-chip type-add" onclick="onMyMoveClick(${i},${mi},event)" title="添加技能">＋添加</div>`;
+            }
+        }
+        if (!movesHtml) movesHtml = '<div class="mc-move-null">无技能</div>';
+        // 多形态 → mega 切换按钮（参照 index.html）
+        const evoBtns = evoButtonsHtml(mon, i);
+        // 能力值（努力值 0-32）单行，为 0 的隐藏；最左侧展示速度种族值（仅数字）
+        const baseSpeed = (mon.base_stats && mon.base_stats.speed) != null ? mon.base_stats.speed : '';
+        const evsLine = `<div class="mc-evs" onclick="openMyEvEditor(${i},event)" title="点击调整努力值"><span class="evs-speed" title="速度种族值">${esc(baseSpeed)}</span><span class="evs-detail">${esc(evoString(mon))}</span></div>`;
+        return `
+        <div class="my-card">
+            <div class="mc-body">
+                <div class="mc-left">
+                    <div class="mc-change" onclick="openMyPicker(${i},event)" title="点击切换宝可梦">
+                        ${sp?`<img class="mc-sprite" src="/sprites/${esc(sp)}" alt="">`:'<div class="mc-sprite"></div>'}
+                        <div class="mc-name" title="${esc(mon.name_zh||mon.name)}">${esc(mon.name_zh||mon.name)}</div>
+                    </div>
+                    ${evoBtns}
+                </div>
+                <div class="mc-right">${movesHtml}</div>
+            </div>
+            <div class="mc-attrs">${attrs}</div>
+            ${evsLine}
+        </div>`;
+    }
+    function evoButtonsHtml(mon, i) {
+        const evos = (mon.evoforms||[]);
+        if (!evos.length) return '';
+        return `<div class="evo-buttons">${evos.map((ef, ei)=>`
+            <button class="evo-button ${mon._evoIdx===ei?'active':''}" onclick="switchMyEvo(${i},${ei})" title="${esc(ef.form_name_zh||ef.form_name||'')}">${esc(ef.form_name||'mega')}</button>`).join('')}</div>`;
+    }
+    function switchMyEvo(i, ei) {
+        const mon = myTeam[i]; if (!mon) return;
+        const evos = mon.evoforms||[]; if (!evos[ei]) return;
+        if (!mon._originalData) {
+            mon._originalData = { base_stats: mon.base_stats, stats: mon.stats, ability: mon.ability, types: mon.types, sprite: mon.sprite, slug: mon.slug };
+        }
+        if (mon._evoIdx === ei) {
+            // 退回基础形态
+            mon.base_stats = mon._originalData.base_stats;
+            mon.stats = mon._originalData.stats;
+            mon.ability = mon._originalData.ability;
+            mon.types = mon._originalData.types;
+            mon.sprite = mon._originalData.sprite;
+            mon.formSlug = mon._originalData.slug;
+            delete mon._evoIdx;
+        } else {
+            const evo = evos[ei];
+            mon.base_stats = evo.base_stats;
+            mon.stats = evo.stats;
+            // ability 可能是旧数据的单对象 {name,name_zh} 或新数据的数组 [{...}]，统一化为数组
+            const ab = evo.ability;
+            if (ab) {
+                mon.ability = Array.isArray(ab) ? ab : [ab];
+            }
+            if (Array.isArray(evo.types) && evo.types.length) mon.types = evo.types;
+            if (evo.sprite) mon.sprite = evo.sprite;
+            mon.formSlug = evo.slug_name || mon._originalData.slug;
+            mon._evoIdx = ei;
+        }
+        pokeCache.delete(mon);
+        renderMyCards(); updateTableHeader(); recomputeAllRows();
+    }
+    function evoString(mon) {
+        const evs = mon.evs||{};
+        const map = [['HP','hp'],['A','attack'],['D','defense'],['SA','sp_atk'],['SD','sp_def'],['S','speed']];
+        const parts = map.map(([l,k])=>((evs[k]||0)>0)?`${l}:${evs[k]}`:'').filter(Boolean);
+        return parts.length ? parts.join('/') : '无额外努力值';
+    }
+    let _evEditingIndex = -1;
+    function openMyEvEditor(i, ev) {
+        const mon = myTeam[i]; if (!mon) return;
+        _evEditingIndex = i;
+        document.getElementById('ev-title').textContent = `调整努力值：${mon.name_zh||mon.name}（0-32）`;
+        renderEvEditorGrid();
+        const pop = document.getElementById('ev-pop');
+        const anchor = ev && ev.currentTarget;
+        const cards = document.querySelectorAll('#my-cards .my-card');
+        const card = i < cards.length ? cards[i] : null;
+        const rect = (anchor && anchor.getBoundingClientRect) ? anchor.getBoundingClientRect() : (card ? card.getBoundingClientRect() : null);
+        if (rect) {
+            const vw = window.innerWidth;
+            let left = rect.left;
+            if (left + 260 > vw - 8) left = vw - 268;
+            if (left < 8) left = 8;
+            pop.style.left = left + 'px';
+            pop.style.top = (rect.bottom + 6) + 'px';
+        } else {
+            pop.style.left = '50%';
+            pop.style.top = '40%';
+            pop.style.transform = 'translateX(-50%)';
+        }
+        pop.style.display = 'block';
+    }
+    function renderEvEditorGrid() {
+        const mon = myTeam[_evEditingIndex]; if (!mon) return;
+        const evs = mon.evs||{};
+        const map = [['hp','HP'],['attack','攻击'],['defense','防御'],['sp_atk','特攻'],['sp_def','特防'],['speed','速度']];
+        const grid = document.querySelector('#ev-pop .ev-editor-grid');
+        grid.innerHTML = map.map(([k,l])=>{
+            const v = evs[k]||0;
+            return `<div class="ev-ed-row"><label>${l}</label><input type="range" min="0" max="32" value="${v}" data-key="${k}" oninput="updateEvRange(this)"><span class="ev-num">${v}</span></div>`;
+        }).join('');
+        updateEvTotal();
+    }
+    function updateEvRange(el) {
+        el.nextElementSibling.textContent = el.value;
+        updateEvTotal();
+    }
+    function updateEvTotal() {
+        const inputs = document.querySelectorAll('#ev-pop input[type="range"]');
+        const sum = Array.from(inputs).reduce((a,x)=>a+Number(x.value),0);
+        document.getElementById('ev-total').textContent = `合计 ${sum} / 192`;
+    }
+    function closeEvOverlay() {
+        document.getElementById('ev-pop').style.display = 'none';
+        _evEditingIndex = -1;
+    }
+    function saveEvOverlay() {
+        const mon = myTeam[_evEditingIndex];
+        if (!mon) { closeEvOverlay(); return; }
+        if (!mon.evs) mon.evs = {};
+        document.querySelectorAll('#ev-pop input[type="range"]').forEach(el=>{
+            mon.evs[el.dataset.key] = Number(el.value);
+        });
+        pokeCache.delete(mon);
+        closeEvOverlay();
+        renderMyCards(); recomputeAllRows();
+    }
+
+    // 我方：候选选择（特性/道具/技能/性格）
+    function onMyMoveClick(i, mi, ev) {
+        const mon = myTeam[i]; if (!mon) return;
+        showMoveChoiceBox(mon, mi, ev && ev.currentTarget);
+    }
+    // 设置我方技能（覆盖该槽位）并刷新
+    function setMyMove(mon, mi, m) {
+        if (!mon.moves) mon.moves = [];
+        mon.moves[mi] = m;
+        pokeCache.delete(mon);
+        renderMyCards(); updateTableHeader(); recomputeAllRows();
+    }
+    // 清空该槽位技能（置空，该位置变成“＋添加”，可再次添加技能）
+    function clearMyMove(mon, mi) {
+        if (!Array.isArray(mon.moves)) mon.moves = [];
+        mon.moves[mi] = null;
+        pokeCache.delete(mon);
+        renderMyCards(); updateTableHeader(); recomputeAllRows();
+    }
+    // 全部技能（搜索用）：懒加载一次
+    let allMovesCache = null;
+    let allMovesLoading = null;
+    function loadAllMoves() {
+        if (allMovesCache) return Promise.resolve(allMovesCache);
+        if (!allMovesLoading) {
+            allMovesLoading = fetch('/api/data/all-moves')
+                .then(r=>r.json())
+                .then(d=>{
+                    if (!d.success) throw new Error(d.error || '加载失败');
+                    allMovesCache = d.moves || [];
+                    return allMovesCache;
+                })
+                .catch(e=>{ allMovesLoading = null; throw e; });
+        }
+        return allMovesLoading;
+    }
+    // 技能选择下拉：顶部「清空」+ 使用率候选 + 底部全技能搜索框
+    function showMoveChoiceBox(mon, mi, anchorEl) {
+        // 已由同一触发元素打开 → 关闭（点按钮切换/收起）
+        if (currentChoiceBox && currentChoiceAnchor === anchorEl) { closeChoiceBox(); return; }
+        closeChoiceBox();
+        const usage = enemiesMap[mon.slug];
+        const opts = usage ? usage.moves.filter(m=>m.damaging) : [];
+        const box = document.createElement('div');
+        box.className = 'dropdown';
+        box.id = 'choice-box';
+        let html = `<div class="grp-title">切换技能（${esc(mon.name_zh||mon.name)} 技能${mi+1}）</div>`;
+        html += `<div class="opt clear-opt" data-action="clear"><span>清空该技能</span></div>`;
+        html += opts.map((m,j)=>{
+            const active = mon.moves[mi] && mon.moves[mi].name === m.name;
+            return `<div class="opt${active?' active':''}" data-move="${j}"><span>${esc(m.name_zh||m.name)}</span>${m.pct!=null?`<span class="pct">${(m.pct).toFixed(0)}%</span>`:''}</div>`;
+        }).join('');
+        html += `<div class="drop-search">
+            <input type="text" id="move-search-input" placeholder="搜索全部技能…" autocomplete="off" spellcheck="false">
+            <div class="drop-search-results"><div class="drop-hint">输入技能名搜索所有宝可梦的技能</div></div>
+        </div>`;
+        box.innerHTML = html;
+        document.body.appendChild(box);
+        box.style.display = 'block';
+        positionChoiceBox(box, anchorEl);
+        box.querySelector('.clear-opt').addEventListener('click', ()=>{
+            closeChoiceBox();
+            clearMyMove(mon, mi);
+        });
+        box.querySelectorAll('.opt[data-move]').forEach(el=>{
+            el.addEventListener('click', ()=>{
+                const o = opts[parseInt(el.dataset.move,10)];
+                closeChoiceBox();
+                if (o) setMyMove(mon, mi, o);
+            });
+        });
+        currentChoiceBox = box;
+        currentChoiceAnchor = anchorEl;
+        const input = box.querySelector('#move-search-input');
+        input.addEventListener('input', ()=>onMoveSearch(box, mon, mi, input.value));
+    }
+    function onMoveSearch(box, mon, mi, q) {
+        const resultsEl = box.querySelector('.drop-search-results');
+        q = (q||'').trim().toLowerCase();
+        if (!q) { resultsEl.innerHTML = '<div class="drop-hint">输入技能名搜索所有宝可梦的技能</div>'; return; }
+        loadAllMoves().then(all=>{
+            const matched = all.filter(m=>{
+                const zh=(m.name_zh||'').toLowerCase();
+                const en=(m.name||'').toLowerCase();
+                const slug=(m.slug||'').toLowerCase();
+                return zh.includes(q)||en.includes(q)||slug.includes(q);
+            }).slice(0,30);
+            if (!matched.length) { resultsEl.innerHTML = '<div class="drop-hint">未找到匹配技能</div>'; return; }
+            resultsEl.innerHTML = matched.map(m=>{
+                const isStatus = m.category==='status' || !(Number(m.power)>0);
+                return `<div class="opt" data-slug="${esc(m.slug)}"><span>${esc(m.name_zh||m.name)}</span><span class="drop-meta">${isStatus?'变化':'威力 '+esc(m.power)}</span></div>`;
+            }).join('');
+            resultsEl.querySelectorAll('.opt').forEach(el=>{
+                el.addEventListener('click', ()=>{
+                    const m = matched.find(x=>x.slug===el.dataset.slug);
+                    if (!m) return;
+                    closeChoiceBox();
+                    setMyMove(mon, mi, m);
+                });
+            });
+        }).catch(e=>{
+            resultsEl.innerHTML = '<div class="drop-hint">加载全部技能失败：'+esc(e.message)+'</div>';
+        });
+    }
+    function openMyChoice(i, kind, ev) {
+        const mon = myTeam[i]; if (!mon) return;
+        const usage = enemiesMap[mon.slug];
+        const anchor = ev && ev.currentTarget;
+        if (kind === 'nature') {
+            const options = NATURE_EN.map(n=>({ label: NATURE_ZH[n], value: n, active: getNatureName(mon)===n }));
+            showChoiceBox(`切换性格（${mon.name_zh}）`, options, (val)=>{
+                mon.nature_en = [{ name: val }];
+                pokeCache.delete(mon); renderMyCards(); recomputeAllRows();
+            }, null, null, anchor);
+            return;
+        }
+        if (kind === 'item') {
+            const base = usage ? usage.items : (Array.isArray(mon.held_item)?mon.held_item.map(h=>({name:h.name, name_zh:h.name_zh||h.name})):[]);
+            const options = base.map(o=>({ label: (o.name_zh||o.name) + (o.pct? ' ('+o.pct.toFixed(0)+'%)':''), value: o, active: getItemName(mon)===o.name }));
+            if (!options.length) { alert('暂无道具候选，可在队伍页设置'); return; }
+            showChoiceBox(`切换道具（${mon.name_zh}）`, options, (val)=>{
+                mon.held_item = [{ name: val.name, name_zh: val.name_zh || val.name }]; mon.item = undefined;
+                pokeCache.delete(mon); renderMyCards(); recomputeAllRows();
+            }, null, null, anchor);
+            return;
+        }
+        if (kind === 'ability') {
+            const base = usage ? usage.abilities : (Array.isArray(mon.ability)?mon.ability.map(a=>({name:a.name, name_zh:a.name_zh||a.name})):[]);
+            const options = base.map(o=>({ label: (o.name_zh||o.name) + (o.pct? ' ('+o.pct.toFixed(0)+'%)':''), value: o, active: getAbilityName(mon)===o.name }));
+            if (!options.length) { alert('暂无特性候选，可在队伍页设置'); return; }
+            showChoiceBox(`切换特性（${mon.name_zh}）`, options, (val)=>{
+                mon.ability = [{ name: val.name, name_zh: val.name_zh || val.name }];
+                pokeCache.delete(mon); renderMyCards(); recomputeAllRows();
+            }, null, null, anchor);
+        }
+    }
+
+    // ===================== 通用候选选择下拉 =====================
+    let currentChoiceBox = null;
+    let currentChoiceAnchor = null;
+    function showChoiceBox(title, options, onSelect, afterRender, extraMoves, anchorEl) {
+        // 若已由同一个触发元素打开，则关闭（点按钮切换/收起）
+        if (currentChoiceBox && currentChoiceAnchor === anchorEl) {
+            closeChoiceBox();
+            return;
+        }
+        closeChoiceBox();
+        const box = document.createElement('div');
+        box.className = 'dropdown';
+        box.id = 'choice-box';
+        let html = '';
+        if (title) html += `<div class="grp-title">${esc(title)}</div>`;
+        html += options.map((o,i)=>`<div class="opt${o.active?' active':''}" data-idx="${i}"><span>${esc(o.label)}</span>${o.sub!=null?`<span class="pct">${o.sub}</span>`:''}</div>`).join('');
+        box.innerHTML = html;
+        document.body.appendChild(box);
+        box.style.display = 'block';
+        positionChoiceBox(box, anchorEl);
+        box.querySelectorAll('.opt').forEach((el)=>{
+            el.addEventListener('click', ()=>{
+                const o = options[parseInt(el.dataset.idx,10)];
+                closeChoiceBox();
+                if (onSelect) onSelect(o.value, o);
+            });
+        });
+        currentChoiceBox = box;
+        currentChoiceAnchor = anchorEl;
+    }
+    let currentAnchorEl = null;
+    function closeChoiceBox() {
+        if (currentChoiceBox) { currentChoiceBox.remove(); currentChoiceBox = null; }
+        currentChoiceAnchor = null;
+    }
+    // 将下拉框定位到触发元素（anchorEl）下方；超出视口则翻转到上方，并做左右/上下边界钳制
+    function positionChoiceBox(box, anchorEl) {
+        const gap = 6;
+        const margin = 8;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const bw = box.offsetWidth;
+        const bh = box.offsetHeight;
+        let left, top;
+        let placeBelow = true;
+        if (anchorEl && anchorEl.getBoundingClientRect) {
+            const r = anchorEl.getBoundingClientRect();
+            left = r.left;
+            // 水平：优先左对齐触发元素，越界则右移
+            if (left + bw > vw - margin) left = Math.max(margin, vw - margin - bw);
+            // 下方空间不足则翻转到上方
+            if (r.bottom + gap + bh > vh - margin && r.top - gap - bh > margin) {
+                placeBelow = false;
+            }
+            top = placeBelow ? (r.bottom + gap) : (r.top - gap - bh);
+        } else {
+            // 无锚点：水平居中、垂直居中（回退）
+            left = Math.max(margin, (vw - bw) / 2);
+            top = Math.max(margin, (vh - bh) / 2);
+        }
+        box.style.left = Math.max(margin, Math.min(vw - margin - bw, left)) + 'px';
+        box.style.top = Math.max(margin, Math.min(vh - margin - bh, top)) + 'px';
+    }
+    // 点击选择框外关闭；但点击我方卡片上的 chip 会用它来打开选择框，需豁免，否则会立刻关闭
+    document.addEventListener('click', (e)=>{
+        if (e.target.closest('#choice-box') || e.target.closest('#my-cards')) return;
+        closeChoiceBox();
+    });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeChoiceBox(); });
+
+    // ===================== 敌方数据加载 =====================
+    let enemiesFetched = false;
+    async function loadEnemies() {
+        enemiesFetched = false;
+        loadedRows = [];
+        const q = `season=${encodeURIComponent(currentSeason)}&format=${encodeURIComponent(currentFormat)}`;
+        try {
+            const res = await fetch(`/api/team-analysis/enemies?${q}`);
+            const data = await res.json();
+            if (!data.success) { throw new Error(data.error||'加载失败'); }
+            enemiesAll = data.enemies || [];
+            enemiesMap = {};
+            for (const e of enemiesAll) enemiesMap[e.slug] = e;
+            enemiesFetched = true;
+            rebuildTable();
+        } catch (e) {
+            document.getElementById('table-loading').textContent = '敌方数据加载失败: ' + e.message;
+        }
+    }
+    function onSeasonFormatChange() {
+        currentSeason = document.getElementById('season-select').value;
+        currentFormat = document.querySelector('input[name="format"]:checked').value;
+        window.__battleMode = currentFormat;
+        pokeCacheDeleteAll();
+        loadEnemies();
+    }
+    function pokeCacheDeleteAll() { /* 重建 pokedb 缓存 */ }
+
+    // ===================== 表格 =====================
+    let PAGE = 20;
+    function rebuildTable() {
+        const wrap = document.getElementById('bottom-section');
+        const tableWrap = document.getElementById('table-wrap');
+        if (tableWrap) tableWrap.remove();
+        const w = document.createElement('div');
+        w.id = 'table-wrap';
+        w.className = 'table-wrap';
+        w.innerHTML = buildTableHtml();
+        wrap.appendChild(w);
+        // 加载首批
+        loadMoreRows();
+    }
+    function buildTableHtml() {
+        const my = myTeam;
+        const headerMy = headerCellsHtml(my);
+        const thOpp = `<th class="group-opp"></th>`;
+        return `
+        <table class="damage-table" id="damage-table">
+            <colgroup>
+                <col><col><col><col><col><col>
+                <col class="col-enemy">
+                <col><col><col><col><col><col>
+            </colgroup>
+            <thead>
+                <tr>${headerMy}${thOpp}${headerMy}</tr>
+            </thead>
+            <tbody id="damage-tbody"></tbody>
+        </table>
+        <div class="load-more-wrap"><button class="load-more-btn" id="load-more-btn" onclick="loadMoreRows()">加载更多 (${loadedRows.length}/${enemiesAll.length})</button></div>`;
+    }
+    function headerCellsHtml(my) {
+        return (my||[]).map((mon,i)=>`<th class="group-my"><div class="header-mon">${myHeaderImg(mon,i)}</div></th>`).join('');
+    }
+    function updateTableHeader() {
+        const tr = document.querySelector('#damage-table thead tr');
+        if (!tr) return;
+        tr.innerHTML = headerCellsHtml(myTeam) + '<th class="group-opp"></th>' + headerCellsHtml(myTeam);
+    }
+    function myHeaderImg(mon, i) {
+        if (!mon) return '<div style="width:42px;height:42px"></div>';
+        const sp = spritePath(mon.sprite);
+        return sp?`<img src="/sprites/${esc(sp)}" alt="">`:'<div style="width:42px;height:42px"></div>';
+    }
+
+    function loadMoreRows() {
+        // 基于 enemiesAll 生成还缺的行
+        const total = enemiesAll.length;
+        if (loadedRows.length >= total) {
+            updateLoadBtn();
+            return;
+        }
+        const startIdx = loadedRows.length;
+        const batch = enemiesAll.slice(startIdx, startIdx + PAGE);
+        for (const enemy of batch) {
+            loadedRows.push(makeRow(enemy));
+        }
+        // 只追加新增的行，避免重建整表
+        const tbody = document.getElementById('damage-tbody');
+        if (!tbody) {
+            renderRows();
+            updateLoadBtn();
+            return;
+        }
+        const added = loadedRows.slice(startIdx);
+        tbody.insertAdjacentHTML('beforeend', added.map(row=>`<tr id="tr-${row.rowId}">${emptyRowsHtml(13)}</tr>`).join(''));
+        // 只计算新增的行（已加载行不再重算）
+        added.forEach((row)=>{ computeRowAsync(row); });
+        updateLoadBtn();
+    }
+
+    function makeRow(enemy) {
+        const row = {
+            enemy,
+            isCustom: false,
+            rowId: 'r-' + enemy.slug + '-' + (++currentCustomId),
+            build: makeDefaultBuild(enemy),
+            custom: false,
+        };
+        return row;
+    }
+    function makeDefaultBuild(enemy) {
+        const damaging = (enemy.moves||[]).filter(m=>m.damaging);
+        return {
+            form: enemy,
+            nature: (enemy.natures||[])[0] || null,
+            ability: (enemy.abilities||[])[0] || null,
+            item: (enemy.items||[])[0] || null,
+            ev: (enemy.evs||[])[0] || null,
+            moveIdxs: damaging.slice(0,4).map(m=>enemy.moves.indexOf(m)),
+        };
+    }
+
+    // 根据 build 生成可传入引擎的敌方 mon 对象
+    function enemyToMon(row) {
+        const b = row.build;
+        const form = b.form || row.enemy;
+        const base = form.base_stats || row.enemy.base_stats || {};
+        const ev = b.ev || {};
+        const nature = b.nature || {};
+        const nat = nature.name ? { name: nature.name } : null;
+        const stats = computeExactStats(base, ev, nature.name);
+        const moves = (b.moveIdxs||[]).map(i=>row.enemy.moves[i]).filter(Boolean);
+        return {
+            slug: form.slug || row.enemy.slug,
+            name: form.name_en || row.enemy.name_en,
+            name_zh: form.name_zh || row.enemy.name_zh,
+            types: form.types || row.enemy.types || [],
+            sprite: form.sprite || row.enemy.sprite || '',
+            base_stats: base,
+            stats: stats,
+            evs: { hp:ev.hp||0, attack:ev.atk||0, defense:ev.def||0, sp_atk:ev.spA||0, sp_def:ev.spD||0, speed:ev.spe||0 },
+            nature_en: nat ? [nat] : [],
+            ability: b.ability ? [{ name: b.ability.name, name_zh: b.ability.name_zh }] : [],
+            held_item: b.item ? [{ name: b.item.name, name_zh: b.item.name_zh }] : [],
+            moves: moves,
+            formLabel: form.name_zh || row.enemy.name_zh,
+        };
+    }
+    function computeExactStats(base, ev, natureName) {
+        const MULT = {
+            Hardy:{},Lonely:{attack:1.1,defense:0.9},Brave:{attack:1.1,speed:0.9},Adamant:{attack:1.1,sp_atk:0.9},Naughty:{attack:1.1,sp_def:0.9},
+            Bold:{defense:1.1,attack:0.9},Docile:{},Relaxed:{defense:1.1,speed:0.9},Impish:{defense:1.1,sp_atk:0.9},Lax:{defense:1.1,sp_def:0.9},
+            Timid:{speed:1.1,attack:0.9},Hasty:{speed:1.1,defense:0.9},Serious:{},Jolly:{speed:1.1,sp_atk:0.9},Naive:{speed:1.1,sp_def:0.9},
+            Modest:{sp_atk:1.1,attack:0.9},Mild:{sp_atk:1.1,defense:0.9},Quiet:{sp_atk:1.1,speed:0.9},Bashful:{},
+            Rash:{sp_atk:1.1,sp_def:0.9},Calm:{sp_def:1.1,attack:0.9},Gentle:{sp_def:1.1,defense:0.9},Sassy:{sp_def:1.1,speed:0.9},Careful:{sp_def:1.1,sp_atk:0.9},Quirky:{},
+        };
+        const nm = MULT[natureName] || {};
+        const stats = {};
+        for (const k of STAT_KEYS) {
+            const b = base[k] || 0;
+            const evv = k==='hp' ? (ev.hp||0) : (k==='attack'?(ev.atk||0):k==='defense'?(ev.def||0):k==='sp_atk'?(ev.spA||0):k==='sp_def'?(ev.spD||0):(ev.spe||0));
+            if (k==='hp') stats[k] = Math.max(1, b + 75 + evv);
+            else stats[k] = Math.max(1, Math.round((b + 20 + evv) * (nm[k]||1)));
+        }
+        return stats;
+    }
+
+    function enemyMiddleCell(row) {
+        const mon = row._mon || enemyToMon(row);
+        const sp = spritePath(mon.sprite);
+        const types = (mon.types||[]).map(t=>typeIcon(t,'type-chip',t)).join('');
+        const moves = (mon.moves||[]).slice(0,4);
+        const movesHtml = moves.length
+            ? moves.map(m=>{
+                const t=(m.type||'normal').toLowerCase();
+                return `<div class="mc-move move-chip type-${esc(t)}" onclick="openEditOverlay('${row.rowId}')" title="${esc(m.name_zh||m.name)}">${esc(m.name_zh||m.name)}${(m.category==='status'||!(Number(m.power)>0))?'':'<span class="move-stats">'+esc(m.power!=null?m.power:'-')+'</span>'}</div>`;
+            }).join('')
+            : '<div class="mc-move-null">无技能</div>';
+        // 底部属性 chips：横向展示（性格/道具/特性）
+        const nat = getNatureName(mon) ? natureToZh(getNatureName(mon)) : '-';
+        const it = getItemZh(mon);
+        const ab = getAbilityZh(mon);
+        const attrs = `
+            <div class="mc-attr" title="性格">${esc(nat)}</div>
+            <div class="mc-attr" title="道具">${esc(it)}</div>
+            <div class="mc-attr" title="特性">${esc(ab)}</div>`;
+        const dispName = mon.formLabel || mon.name_zh || mon.name || '';
+        const evo = enemyEvoButtonsHtml(row);
+        return `
+        <div class="enemy-cell" data-row="${row.rowId}">
+            <button class="add-config-btn" onclick="openEditOverlay('${row.rowId}')" title="复制该行配置，可微调后插入该行下方">＋配置</button>
+            <div class="enemy-card mc-card">
+                <div class="mc-body">
+                    <div class="mc-left">
+                        ${sp?`<img class="mc-sprite" src="/sprites/${esc(sp)}" alt="">`:'<div class="mc-sprite"></div>'}
+                        <div class="mc-name" title="${esc(mon.name_zh||mon.name)}">${esc(dispName)}</div>
+                        <div class="ec-types">${types}</div>
+                    </div>
+                    <div class="mc-right">${movesHtml}</div>
+                </div>
+                <div class="mc-attrs">${attrs}</div>
+                <div class="mc-evs" title="努力值"><span class="evs-speed" title="速度种族值">${esc((mon.base_stats&&mon.base_stats.speed)!=null?mon.base_stats.speed:'')}</span><span class="evs-detail">${esc(evoString(mon))}</span></div>
+                ${evo?`<div class="enemy-evo">${evo}</div>`:''}
+            </div>
+        </div>`;
+    }
+    function enemyEvoButtonsHtml(row) {
+        const enemy = row.enemy;
+        const forms = enemyForms(enemy);
+        if (!forms || forms.length <= 1) return '';
+        const cur = (row.build.form&&row.build.form.slug) || enemy.slug;
+        return forms.map((f,ei)=>{
+            const active = (f.slug||f.form)===cur ? ' active':'';
+            const label = f.form ? f.form.replace(/-/g,' ') : '原';
+            return `<button class="evo-button${active}" onclick="switchEnemyEvo('${row.rowId}',${ei})" title="${esc(f.name_zh||f.form||f.slug)}">${esc(label)}</button>`;
+        }).join('');
+    }
+
+    function renderRows() {
+        const tbody = document.getElementById('damage-tbody');
+        if (!tbody) return;
+        const html = loadedRows.map(row=>`<tr id="tr-${row.rowId}">${emptyRowsHtml(13)}</tr>`).join('');
+        tbody.innerHTML = html;
+        // 异步计算每行
+        loadedRows.forEach((row)=>{ computeRowAsync(row); });
+    }
+    function emptyRowsHtml(n){ return '<td></td>'.repeat(n); }
+
+    async function computeRowAsync(row) {
+        const tr = document.getElementById('tr-' + row.rowId);
+        if (!tr) return;
+        const my = myTeam;
+        const enemyMon = enemyToMon(row);
+        row._mon = enemyMon;
+        const cells = []; // 13 个：0-5 my->enemy, 6 enemy card, 7-12 enemy->my
+        // 逐个异步计算，边算边填
+        // 先填充中列（enemy 卡片）
+        const tdEnemy = tr.children[6];
+        if (tdEnemy) tdEnemy.innerHTML = enemyMiddleCell(row);
+        // 左 6：我方每只最高伤害
+        for (let i=0;i<6;i++){
+            const mon = my[i];
+            const td = tr.children[i];
+            if (!mon) { if(td) td.innerHTML = '<div class="dmg-cell"><div class="dmg-none">—</div></div>'; continue; }
+            td.className = 'col-my';
+        }
+        // 右 6：敌方对我方每只
+        for (let i=0;i<6;i++){
+            const td = tr.children[7+i];
+            if (td) { td.className='col-opp'; }
+        }
+        // 异步批量算
+        await new Promise(r=>setTimeout(r,0));
+        // 左
+        for (let i=0;i<6;i++){
+            const mon = my[i];
+            const td = tr.children[i];
+            if (!mon) continue;
+            const info = computeCell(mon, enemyMon);
+            if (td) td.innerHTML = damageCellHtml(info);
+        }
+        await new Promise(r=>setTimeout(r,0));
+        // 右
+        for (let i=0;i<6;i++){
+            const mon = my[i];
+            const td = tr.children[7+i];
+            if (!mon) continue;
+            const info = computeCell(enemyMon, mon);
+            if (td) td.innerHTML = damageCellHtml(info);
+        }
+    }
+
+    function updateLoadBtn() {
+        const btn = document.getElementById('load-more-btn');
+        if (!btn) return;
+        btn.textContent = `加载更多 (${loadedRows.length}/${enemiesAll.length})`;
+        if (loadedRows.length >= enemiesAll.length) btn.disabled = true;
+    }
+
+    // ===================== 全量重算 =====================
+    function recomputeAllRows() {
+        if (!enemiesFetched) return;
+        // 清掉所有已渲染行的计算依赖缓存，然后就地重算（不清空 DOM，避免滚动位置丢失）
+        for (const row of loadedRows) {
+            row._mon = undefined;
+        }
+        loadedRows.forEach(row => computeRowAsync(row));
+    }
+
+    // ===================== 敌方配置编辑 =====================
+    let editingRowId = null;
+    function findRow(id) { return loadedRows.find(r=>r.rowId===id); }
+    function openEditOverlay(rowId) {
+        const row = findRow(rowId);
+        if (!row) return;
+        editingRowId = rowId;
+        const enemy = row.enemy;
+        const b = row.build;
+        document.getElementById('edit-title').textContent = `配置敌方宝可梦：${enemy.name_zh||enemy.name} (Rank ${enemy.rank})`;
+        // 形态（含超进化）—— 单选
+        const forms = enemyForms(enemy);
+        const formIdx = Math.max(0, forms.findIndex(f=>(f.slug||f.form)===(b.form&&(b.form.slug||b.form.form))));
+        document.getElementById('edit-form').innerHTML = buildCkList(forms, 'name_zh', null, (o,i)=>i===formIdx);
+        setupCkColumn('edit-form', true);
+        // 性格 —— 单选
+        document.getElementById('edit-nature').innerHTML = buildCkList(enemy.natures||[], 'name_zh', 'pct', (o)=>o.name===(b.nature&&b.nature.name));
+        setupCkColumn('edit-nature', true);
+        // 特性 —— 单选
+        document.getElementById('edit-ability').innerHTML = buildCkList(enemy.abilities||[], 'name_zh', 'pct', (o)=>o.name===(b.ability&&b.ability.name));
+        setupCkColumn('edit-ability', true);
+        // 道具 —— 单选
+        document.getElementById('edit-item').innerHTML = buildCkList(enemy.items||[], 'name_zh', 'pct', (o)=>o.name===(b.item&&b.item.name));
+        setupCkColumn('edit-item', true);
+        // 努力值 —— 单选
+        document.getElementById('edit-ev').innerHTML = (enemy.evs||[]).map((e,i)=>{
+            const c = b.ev && e.pct===(b.ev.pct);
+            return `<label class="ck-item${c?' checked':''}"><input type="checkbox" data-i="${i}"${c?' checked':''}><span>HP ${e.hp} A ${e.atk} D ${e.def} SA ${e.spA} SD ${e.spD} S ${e.spe}${e.pct!=null?` <em class="pct">(${(e.pct).toFixed(1)}%)</em>`:''}</span></label>`;
+        }).join('');
+        setupCkColumn('edit-ev', true);
+        // 技能 —— 多选
+        const moveIdxs = b.moveIdxs||[];
+        document.getElementById('edit-moves').innerHTML = (enemy.moves||[]).map((m,i)=>{
+            if (!m.damaging) return '';
+            const c = moveIdxs.includes(i);
+            return `<label class="ck-item${c?' checked':''}"><input type="checkbox" data-i="${i}"${c?' checked':''}><span>${esc(m.name_zh||m.name)}${m.pct!=null?` <em class="pct">(${(m.pct).toFixed(0)}%)</em>`:''}</span></label>`;
+        }).join('');
+        setupCkColumn('edit-moves', false);
+        document.getElementById('edit-overlay').style.display = 'flex';
+    }
+    function enemyForms(enemy) {
+        return (enemy.forms && enemy.forms.length) ? enemy.forms
+            : [{ slug:enemy.slug, form:'', name_zh:enemy.name_zh, types:enemy.types, base_stats:enemy.base_stats, sprite:enemy.sprite }];
+    }
+    function buildCkList(items, labelKey, pctKey, isChecked) {
+        return items.map((o,i)=>{
+            const c = isChecked(o,i);
+            return `<label class="ck-item${c?' checked':''}"><input type="checkbox" data-i="${i}"${c?' checked':''}><span>${esc(o[labelKey]||o.form||o.name||'')}${pctKey&&o[pctKey]!=null?` <em class="pct">(${(o[pctKey]).toFixed(0)}%)</em>`:''}</span></label>`;
+        }).join('');
+    }
+    function refreshCkClasses(id) {
+        const box = document.getElementById(id);
+        if (!box) return;
+        box.querySelectorAll('label.ck-item').forEach(l=>{
+            l.classList.toggle('checked', !!l.querySelector('input').checked);
+        });
+    }
+    function setupCkColumn(id, single) {
+        const box = document.getElementById(id);
+        if (!box) return;
+        box.querySelectorAll('input').forEach(inp=>{
+            inp.addEventListener('change', ()=>{
+                if (single && inp.checked) {
+                    box.querySelectorAll('input').forEach(x=>{ if (x!==inp) x.checked=false; });
+                } else if (single && !inp.checked) {
+                    inp.checked = true; // 单选项禁止取消
+                }
+                refreshCkClasses(id);
+            });
+        });
+    }
+    function checkedIdx(id) {
+        const c = document.querySelectorAll('#'+id+' input:checked');
+        return c.length ? parseInt(c[0].dataset.i,10) : -1;
+    }
+    function checkedIdxs(id) {
+        return Array.from(document.querySelectorAll('#'+id+' input:checked')).map(c=>parseInt(c.dataset.i,10));
+    }
+    function closeEditOverlay() {
+        document.getElementById('edit-overlay').style.display = 'none';
+        editingRowId = null;
+    }
+    function collectEditBuild() {
+        const row = findRow(editingRowId);
+        if (!row) return null;
+        const enemy = row.enemy;
+        const forms = enemyForms(enemy);
+        const formIdx = checkedIdx('edit-form');
+        const natureIdx = checkedIdx('edit-nature');
+        const abilityIdx = checkedIdx('edit-ability');
+        const itemIdx = checkedIdx('edit-item');
+        const evIdx = checkedIdx('edit-ev');
+        const moveIdxs = checkedIdxs('edit-moves');
+        return {
+            form: (formIdx>=0 && forms[formIdx]) || enemy,
+            nature: (natureIdx>=0 ? (enemy.natures||[])[natureIdx] : null) || null,
+            ability: (abilityIdx>=0 ? (enemy.abilities||[])[abilityIdx] : null) || null,
+            item: (itemIdx>=0 ? (enemy.items||[])[itemIdx] : null) || null,
+            ev: (evIdx>=0 ? (enemy.evs||[])[evIdx] : null) || null,
+            moveIdxs: moveIdxs,
+        };
+    }
+    function switchEnemyEvo(rowId, ei) {
+        const row = findRow(rowId);
+        if (!row) return;
+        const enemy = row.enemy;
+        const forms = enemyForms(enemy);
+        if (!forms[ei]) return;
+        row.build.form = forms[ei];
+        row._mon = undefined;
+        // 只重算该行，避免重建整表/重算全部行
+        const tr = document.getElementById('tr-' + row.rowId);
+        if (tr) tr.innerHTML = emptyRowsHtml(13);
+        computeRowAsync(row);
+        updateLoadBtn();
+    }
+    function saveEdit(mode) {
+        const srcRow = findRow(editingRowId);
+        if (!srcRow) return;
+        const build = collectEditBuild();
+        const existingIdx = loadedRows.indexOf(srcRow);
+        if (mode === 'insert') {
+            // 复制该行数据为新行，插入到该行下方
+            const newRow = {
+                enemy: srcRow.enemy,
+                isCustom: true,
+                custom: true,
+                rowId: 'c-' + (++currentCustomId),
+                build: JSON.parse(JSON.stringify(build)),
+            };
+            loadedRows.splice(existingIdx + 1, 0, newRow);
+        } else {
+            srcRow.build = JSON.parse(JSON.stringify(build));
+            srcRow._mon = undefined;
+        }
+        closeEditOverlay();
+        renderRows();
+        updateLoadBtn();
+        // 若 insert 增加了行号，滚动到新行
+        if (mode==='insert') {
+            const tr = document.getElementById('tr-' + (existingIdx>=0 ? loadedRows[existingIdx+1].rowId : ''));
+            if (tr) setTimeout(()=>tr.scrollIntoView({block:'center'}), 50);
+        }
+    }
+
+    // ===================== 初始化 =====================
+    window.addEventListener('load', async ()=>{
+        await loadSeasonsFormats();
+        await loadTeamSlots();
+        await loadEnemies();
+    });
+    </script>
+    <script src="./team-analysis-picker.js"></script>
+</body>
+</html>

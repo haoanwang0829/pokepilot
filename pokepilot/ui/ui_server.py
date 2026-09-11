@@ -8,17 +8,29 @@
 import argparse
 import io
 import json
+import re
 import shutil
+import sqlite3
 import threading
+from datetime import datetime
 from math import floor
 from pathlib import Path
 from flask import Flask, send_file, request, jsonify, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 from pokepilot.detect_team.my_team.parse_team import parse_team_init
-from pokepilot.detect_team.opponent_team.detect_opponents import detect_opponents_team
+from pokepilot.detect_team.opponent_team.detect_opponents import (
+    detect_opponents_team, detect_opponents_team_with_cards)
+from pokepilot.detect_team.opponent_team.team_matcher import (
+    match_teams_from_slugs, _load_roster_indexes,
+    _parse_date as _parse_team_date, resolve_showdown_name)
+from pokepilot.data.build_team_detail import _parse_pre_text as _parse_showdown_pre
 from pokepilot.common.pokemon_detect import get_detector as _get_detector
 from pokepilot.common.pokemon_builder import PokemonBuilder
+from pokepilot.common.pokemon import Pokemon
+from pokepilot.data.roster_db import get_roster_db
+from pokepilot.data.pokedb import get_pokedb
+from pokepilot.data.usage_db import get_usage_db
 
 _ROOT = Path(__file__).parent
 PROJECT_ROOT = _ROOT.parent.parent
@@ -29,6 +41,7 @@ OPP_SCREENSHOTS_DIR = PROJECT_ROOT / "screenshots" / "opp_team"
 SPRITES_DIR = PROJECT_ROOT / "sprites"
 TEAM_DIR = PROJECT_ROOT / "data" / "my_team"
 OPP_TEAM_DIR = PROJECT_ROOT / "data" / "opp_team"
+DB_PATH = PROJECT_ROOT / "db" / "db.db"
 
 _NATURE_ZH = {
     "Hardy": "勤奋", "Lonely": "寂寞", "Brave": "勇敢", "Adamant": "固执",
@@ -48,6 +61,327 @@ def _to_int(value, default=0):
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _build_matched_teams_payload(match_result: dict) -> tuple:
+    """把 match_teams_from_slugs 的结果转成 API 用的 (form_ids, matched_teams)"""
+    matched_teams = []
+    for mt in match_result.get("teams", []):
+        matched_teams.append({
+            "team_id": mt.get("team_id", ""),
+            "date_shared": mt.get("date_shared", ""),
+            "title": mt.get("title", ""),
+            "team": {
+                "trainer_name": "",
+                "roster": [p if isinstance(p, dict) else p.to_dict()
+                           for p in mt.get("team", {}).get("roster", [])],
+            },
+        })
+    return match_result.get("form_ids"), matched_teams
+
+
+# --------------------------------------------------------------------------
+# 队伍库（/team 页面）数据访问
+# --------------------------------------------------------------------------
+
+def _slugify_name(s: str) -> str:
+    """招式/道具/特性名 → 小写连字符 slug（与 PokeDB 键一致）"""
+    return (s or "").lower().replace(" ", "-").replace("'", "").replace(".", "").replace("é", "e")
+
+
+def _norm_name(s: str) -> str:
+    """归一化名称（小写、去非字母数字），用于物种级匹配"""
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def _resolve_species_dexes(name: str, roster_rows: list, pokedb) -> list[int]:
+    """把中文/英文宝可梦名解析为该物种的全部 dex 号；解析不到返回 None。
+
+    roster_rows: by_slug 索引的 values（含 name/id），name 为英文小写物种名。
+    """
+    raw = (name or "").strip()
+    if not raw:
+        return None
+    has_cjk = any("\u4e00" <= ch <= "\u9fff" for ch in raw)
+    en = pokedb.name_zh_to_en(raw) if has_cjk else raw
+    target = _norm_name(en)
+    if not target:
+        return None
+    dexes = sorted({int(r["id"]) for r in roster_rows if _norm_name(r["name"]) == target})
+    if not dexes:
+        # 英文前缀兜底（如 "drag" → Dragonite）
+        dexes = sorted({int(r["id"]) for r in roster_rows
+                        if _norm_name(r["name"]).startswith(target)})
+    return dexes or None
+
+
+def _dexes_in_form_ids(form_ids: str) -> set:
+    """把 form_ids（"0149-0,0478-0,..."）拆成队伍含有的 dex 号集合（int）"""
+    out = set()
+    if not form_ids:
+        return out
+    for part in form_ids.split(","):
+        if "-" in part:
+            try:
+                out.add(int(part.split("-", 1)[0]))
+            except ValueError:
+                continue
+    return out
+
+
+def _team_date_key(date_str: str, team_id: str):
+    """按分享时间降序的排序键：有日期的排前，日期新的排前，无日期按 team_id 兜底"""
+    d = _parse_team_date(date_str)
+    return (d is not None, d or datetime.min, team_id or "")
+
+
+def _build_team_library_item(row, roster_by_form: dict, name_zh_map: dict,
+                             move_map: dict, item_map: dict, ability_map: dict) -> dict:
+    """把 Team+team_detail 的一行组装成前端展示用的队伍条目"""
+    paste = {}
+    if row["paste_info"]:
+        try:
+            paste = json.loads(row["paste_info"])
+        except (ValueError, TypeError):
+            paste = {}
+
+    def _zh(mp, raw):
+        md = mp.get(_slugify_name(raw)) or {}
+        return md.get("name_zh") or raw
+
+    roster = []
+    for p in paste.get("pokemon", []):
+        re_ = roster_by_form.get(p.get("dex_form") or "")
+        if not re_:
+            continue
+        slug = re_["slug"]
+        moves = [{
+            "name": m,
+            "name_zh": _zh(move_map, m),
+            "type": (move_map.get(_slugify_name(m)) or {}).get("type", "Normal"),
+        } for m in p.get("moves", [])]
+        roster.append({
+            "name": p.get("name", re_["name"]),
+            "name_zh": name_zh_map.get(slug) or slug,
+            "slug": slug,
+            "form": re_.get("form") or "",
+            "sprite": f"sprites/champions/{re_['sprite']}" if re_.get("sprite") else "",
+            "types": re_.get("types", []),
+            "item": p.get("item", ""),
+            "item_zh": _zh(item_map, p.get("item", "")),
+            "ability": p.get("ability", ""),
+            "ability_zh": _zh(ability_map, p.get("ability", "")),
+            "nature": p.get("nature", ""),
+            "moves": moves,
+            "evs": p.get("evs", {}),
+        })
+
+    return {
+        "team_id": row["Team_ID"] or "",
+        "title": row["Team_Description"] or paste.get("title", ""),
+        "replica_code": row["Replica_Code"] or "",
+        "date_shared": row["Date_Shared"] or "",
+        "owner": row["Owner"] or "",
+        "event": row["Tournament_Event"] or "",
+        "rank": row["Rank"] or "",
+        "link": row["Link_to_Source"] or "",
+        "roster": roster,
+    }
+
+
+def _query_team_library(filters: list[str], page: int, page_size: int) -> dict:
+    """队伍库筛选：宝可梦名（物种级）AND 过滤，按 Date_Shared 降序分页。
+
+    filters: 非空的宝可梦名（中文/英文），每一项都需被队伍包含。
+    """
+    pokedb = get_pokedb()
+    indexes = _load_roster_indexes()
+    roster_rows = list(indexes["by_slug"].values())
+
+    # 名称 → 物种 dex 集合；解析不到直接报错，避免静默忽略输入
+    resolved, unresolved = [], []
+    for f in filters:
+        dexes = _resolve_species_dexes(f, roster_rows, pokedb)
+        if not dexes:
+            unresolved.append(f)
+        else:
+            resolved.append(set(dexes))
+    if unresolved:
+        return {"success": False, "error": "未找到宝可梦: " + "、".join(unresolved)}
+
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT t.Team_ID, t.Team_Description, t.Replica_Code, t.Date_Shared,"
+            "       t.Owner, t.Tournament_Event, t.Rank, t.Link_to_Source,"
+            "       d.form_ids, d.paste_info"
+            "  FROM Team t JOIN team_detail d ON t.Team_ID = d.team_id"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    matched = []
+    for r in rows:
+        present = _dexes_in_form_ids(r["form_ids"])
+        if not present:
+            continue
+        if any(not (ds & present) for ds in resolved):
+            continue
+        matched.append(r)
+
+    matched.sort(key=lambda r: _team_date_key(r["Date_Shared"], r["Team_ID"]), reverse=True)
+
+    total = len(matched)
+    start = (page - 1) * page_size
+    page_rows = matched[start:start + page_size]
+
+    name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_pokemon().items()}
+    move_map = pokedb.get_all_moves()
+    item_map = pokedb.get_all_items()
+    ability_map = pokedb.get_all_abilities()
+
+    return {
+        "success": True,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "teams": [_build_team_library_item(r, indexes["by_form_id"], name_zh_map,
+                                           move_map, item_map, ability_map)
+                  for r in page_rows],
+    }
+
+
+# --------------------------------------------------------------------------
+# 队伍库新增（/team/add 页面）数据访问
+# --------------------------------------------------------------------------
+
+def _parse_paste_entries(text: str):
+    """把 Showdown 队伍文本按空行分块逐只解析。
+
+    返回 (entries, resolved, unresolved)
+      entries:    解析出的原始条目列表
+      resolved:   [(entry, roster_entry), ...]（名字能对上 roster 的）
+      unresolved: [entry, ...]（名字无法解析到 roster 的）
+    """
+    blocks = re.split(r"\n\s*\n", (text or "").strip())
+    entries = []
+    for b in blocks:
+        b = b.strip()
+        if not b:
+            continue
+        e = _parse_showdown_pre(b)
+        if e.get("name"):
+            entries.append(e)
+    if not entries:
+        return [], [], []
+    indexes = _load_roster_indexes()
+    by_slug = indexes["by_slug"]
+    resolved, unresolved = [], []
+    for e in entries:
+        r = by_slug.get(_slugify_name(e["name"])) or resolve_showdown_name(e["name"], by_slug)
+        if r:
+            resolved.append((e, r))
+        else:
+            unresolved.append(e)
+    return entries, resolved, unresolved
+
+
+def _parse_paste_preview(resolved) -> list[dict]:
+    """把解析结果转成前端预览条目（带中文名/精灵图/属性）。"""
+    pokedb = get_pokedb()
+    poke_zh = {k: v.get("name_zh", "") for k, v in pokedb.get_all_pokemon().items()}
+    out = []
+    for e, r in resolved:
+        out.append({
+            "name": e.get("name", r["name"]),
+            "name_zh": poke_zh.get(r["slug"], r["name"]),
+            "slug": r["slug"],
+            "form_id": r["form_id"],
+            "form": r.get("form") or "",
+            "sprite": f"sprites/champions/{r['sprite']}" if r.get("sprite") else "",
+            "types": r.get("types", []),
+            "item": e.get("item", ""),
+            "ability": e.get("ability", ""),
+            "nature": e.get("nature", ""),
+            "level": e.get("level", 0),
+            "evs": e.get("evs", {}),
+            "moves": e.get("moves", []),
+            "gender": e.get("gender", ""),
+        })
+    return out
+
+
+_EV_ZH_LABELS = {
+    "hp": "HP", "attack": "攻击", "defense": "防御",
+    "sp_atk": "特攻", "sp_def": "特防", "speed": "速度",
+}
+
+
+def _build_teaminfo_block(meta: dict, resolved: list, zh_maps: dict) -> str:
+    """生成追加到 teaminfo.txt 的可读队伍信息文本块。"""
+    def _zh(mp, raw):
+        return (mp.get(_slugify_name(raw)) or {}).get("name_zh", "") or raw
+
+    lines = [
+        f"==================== {meta['team_id']} ====================",
+        f"队伍ID: {meta['team_id']}",
+        f"队伍名称: {meta['name'] or '-'}",
+        f"队伍描述: {meta['description'] or '-'}",
+        f"来源连接: {meta['source_link'] or '-'}",
+        f"冠军队伍码: {meta['replica_code'] or '-'}",
+        f"所有者: {meta['owner'] or '-'}",
+        f"赛事: {meta['event'] or '-'}",
+        f"名次: {meta['rank'] or '-'}",
+        f"分享日期: {meta['date_shared']}",
+        f"Pokepaste: {meta['pokepaste'] or '-'}",
+        "────────────────────────────────────",
+    ]
+    for i, (e, r) in enumerate(resolved, 1):
+        lines.append(f"【{i}】{_zh(zh_maps['pokemon'], r['name'])} {r['name']}")
+        if e.get("item"):
+            lines.append(f"  道具: {_zh(zh_maps['item'], e['item'])} {e['item']}")
+        if e.get("ability"):
+            lines.append(f"  特性: {_zh(zh_maps['ability'], e['ability'])} {e['ability']}")
+        if e.get("nature"):
+            lines.append(f"  性格: {_NATURE_ZH.get(e['nature'], e['nature'])} {e['nature']}")
+        evs = e.get("evs") or {}
+        if evs:
+            ev_txt = " / ".join(
+                f"{_EV_ZH_LABELS.get(k, k)} {v}" for k, v in evs.items() if v)
+            lines.append(f"  EV: {ev_txt}")
+        moves = e.get("moves") or []
+        if moves:
+            lines.append(f"  招式: {_zh(zh_maps['move'], moves[0])} {moves[0]}")
+            for m in moves[1:]:
+                lines.append(f"        {_zh(zh_maps['move'], m)} {m}")
+    return "\n".join(lines)
+
+
+def _write_teaminfo(block: str) -> None:
+    """把队伍信息块追加到项目根目录 teaminfo.txt。"""
+    path = PROJECT_ROOT / "teaminfo.txt"
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(block + "\n\n")
+
+
+def _upsert_team_row(conn, team_id: str, col_vals: dict) -> bool:
+    """写入/覆盖 Team 表的一行（Team 表无主键，先查后写），返回是否已存在。"""
+    exists = conn.execute(
+        'SELECT COUNT(*) FROM "Team" WHERE "Team_ID" = ?', (team_id,)).fetchone()[0]
+    if exists:
+        keys = list(col_vals)
+        sets = ", ".join(f'"{k}" = ?' for k in keys)
+        conn.execute(
+            f'UPDATE "Team" SET {sets} WHERE "Team_ID" = ?',
+            [col_vals[k] for k in keys] + [team_id])
+    else:
+        cols = ", ".join(f'"{k}"' for k in list(col_vals) + ["Team_ID"])
+        ph = ", ".join("?" for _ in list(col_vals) + ["Team_ID"])
+        conn.execute(
+            f'INSERT INTO "Team" ({cols}) VALUES ({ph})',
+            [col_vals[k] for k in col_vals] + [team_id])
+    return bool(exists)
 
 
 def _stat_min_max(value):
@@ -258,8 +592,20 @@ def create_app():
         response.headers["Expires"] = "0"
         return response
 
+    _data_prewarmed = False
+
     @app.route("/data", methods=["GET"])
     def data_page():
+        nonlocal _data_prewarmed
+        if not _data_prewarmed:
+            _data_prewarmed = True
+            def _warm():
+                try:
+                    get_usage_db().get_all()
+                    get_pokedb().get_all_pokemon()
+                except Exception:
+                    pass
+            threading.Thread(target=_warm, daemon=True).start()
         html_file = _ROOT / "data" / "index.html"
         response = send_file(html_file, mimetype="text/html")
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -276,38 +622,61 @@ def create_app():
         response.headers["Expires"] = "0"
         return response
 
+    @app.route("/team", methods=["GET"])
+    def team_library_page():
+        html_file = _ROOT / "team" / "index.html"
+        response = send_file(html_file, mimetype="text/html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    @app.route("/team/add", methods=["GET"])
+    def team_add_page():
+        html_file = _ROOT / "team" / "add.html"
+        response = send_file(html_file, mimetype="text/html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    @app.route("/teamAnalysis", methods=["GET"])
+    def team_analysis_page():
+        html_file = _ROOT / "teamAnalysis.html"
+        response = send_file(html_file, mimetype="text/html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
     @app.route("/api/data/pokemon-detail/<slug>", methods=["GET"])
     def pokemon_data_detail(slug):
         try:
-            cache_path = PROJECT_ROOT / "data" / "pokechamdb_cache.json"
-            roster_path = PROJECT_ROOT / "data" / "champions_roster.json"
-            pokedb_path = PROJECT_ROOT / "data" / "pokedb_cache.json"
-
-            pokechamdb = json.loads(cache_path.read_text(encoding="utf-8"))
+            season = request.args.get("season")
+            fmt = request.args.get("format")
+            pokechamdb = get_usage_db().get_all(season=season, format=fmt)
             raw = pokechamdb.get(slug)
             if not raw:
                 return jsonify({"success": False, "error": f"slug '{slug}' not found"}), 404
 
-            roster_data = json.loads(roster_path.read_text(encoding="utf-8"))
-            pokedb = json.loads(pokedb_path.read_text(encoding="utf-8"))
-
-            roster_by_slug = {p["slug"]: p for p in roster_data.get("pokemon", [])}
-            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("pokemon", {}).items()}
-            move_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("moves", {}).items()}
-            item_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("items", {}).items()}
-            ability_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("abilities", {}).items()}
+            pokedb = get_pokedb()
+            roster_by_slug = {p["slug"]: p for p in get_roster_db().get_all()}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_pokemon().items()}
+            move_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_moves().items()}
+            item_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_items().items()}
+            ability_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_abilities().items()}
 
             entry = roster_by_slug.get(slug)
             sprite = ""
             if entry and entry.get("sprite"):
                 sprite = f"sprites/champions/{entry['sprite']}"
             name_zh = name_zh_map.get(slug, slug)
-            base_stats = pokedb.get("pokemon", {}).get(slug, {}).get("base_stats", {})
+            base_stats = (pokedb.get_pokemon(slug) or {}).get("base_stats", {})
 
             def _slug(s): return s.lower().replace(" ", "-").replace("'", "").replace(".", "")
             def _is_damaging(name):
                 ms = _slug(name)
-                md = pokedb.get("moves", {}).get(ms, {})
+                md = pokedb.get_move(ms) or {}
                 p = md.get("power")
                 return p is not None and p > 0
             def _tr(items, m):
@@ -316,14 +685,14 @@ def create_app():
             # Build evoforms list
             base_name = (entry or {}).get("name", slug)
             evoforms = []
-            for pk in roster_data.get("pokemon", []):
+            for pk in get_roster_db().get_all():
                 if pk.get("name", "").lower() != base_name:
                     continue
                 if pk["slug"] == slug:
                     continue
                 form_val = pk.get("form")
                 if form_val and form_val in _EVOFORM_TYPES:
-                    pd = pokedb.get("pokemon", {}).get(pk["slug"], {})
+                    pd = pokedb.get_pokemon(pk["slug"]) or {}
                     evoforms.append({
                         "slug_name": pk["slug"],
                         "form_name": form_val,
@@ -354,19 +723,32 @@ def create_app():
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
+    @app.route("/api/data/seasons", methods=["GET"])
+    def data_seasons():
+        try:
+            seasons = get_usage_db().get_seasons()
+            return jsonify({"success": True, "seasons": seasons})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/data/formats", methods=["GET"])
+    def data_formats():
+        try:
+            formats = get_usage_db().get_formats()
+            return jsonify({"success": True, "formats": formats})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
     @app.route("/api/data/pokemon-list", methods=["GET"])
     def pokemon_data_list():
         try:
-            cache_path = PROJECT_ROOT / "data" / "pokechamdb_cache.json"
-            roster_path = PROJECT_ROOT / "data" / "champions_roster.json"
-            pokedb_path = PROJECT_ROOT / "data" / "pokedb_cache.json"
+            season = request.args.get("season")
+            fmt = request.args.get("format")
+            pokechamdb = get_usage_db().get_all(season=season, format=fmt)
+            pokedb = get_pokedb()
 
-            pokechamdb = json.loads(cache_path.read_text(encoding="utf-8"))
-            roster_data = json.loads(roster_path.read_text(encoding="utf-8"))
-            pokedb = json.loads(pokedb_path.read_text(encoding="utf-8"))
-
-            roster_by_slug = {p["slug"]: p for p in roster_data.get("pokemon", [])}
-            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("pokemon", {}).items()}
+            roster_by_slug = {p["slug"]: p for p in get_roster_db().get_all()}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_pokemon().items()}
 
             entries = []
             for slug, data in pokechamdb.items():
@@ -386,6 +768,226 @@ def create_app():
             for idx, p in enumerate(entries, start=1):
                 p["index"] = idx
             return jsonify({"success": True, "pokemon": entries})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/data/roster-list", methods=["GET"])
+    def roster_data_list():
+        """返回 champions_roster 表中所有参赛（过签）宝可梦，供对手/我方切换。
+        每只含基础信息（slug/name_zh/sprite/types/base_stats/forms）+ 可用时合并使用率默认
+        配置（natures/abilities/items/evs/moves），方便前端直接构建默认队伍卡。"""
+        try:
+            season = request.args.get("season")
+            fmt = request.args.get("format")
+            pokedb = get_pokedb()
+            roster = get_roster_db().get_all()
+            roster_by_slug = {p["slug"]: p for p in roster}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_pokemon().items()}
+            ability_map = {k: v for k, v in pokedb.get_all_abilities().items()}
+            pokedb_moves = pokedb.get_all_moves()
+
+            usage = get_usage_db().get_all(season=season, format=fmt) or {}
+
+            def _slug(s):
+                return (s or "").lower().replace(" ", "-").replace("'", "").replace(".", "")
+
+            def _ability_info(ablug):
+                a = ability_map.get(_slug(ablug), {})
+                return {"name": a.get("name", ablug), "name_zh": a.get("name_zh", ablug)}
+
+            def _move_info(name):
+                md = pokedb_moves.get(_slug(name), {})
+                power = md.get("power")
+                return {
+                    "name": name,
+                    "name_zh": md.get("name_zh", name),
+                    "power": power,
+                    "damaging": power is not None and power > 0,
+                    "category": md.get("category", "status"),
+                    "type": md.get("type", "Normal"),
+                    "priority": md.get("priority", 0),
+                }
+
+            def _build_forms(slug):
+                entry = roster_by_slug.get(slug)
+                if not entry:
+                    return []
+                base_name = entry.get("name") or slug
+                forms = []
+                for pk in roster:
+                    if (pk.get("name") or "").lower() != base_name.lower():
+                        continue
+                    pd = pokedb.get_pokemon(pk["slug"]) or {}
+                    forms.append({
+                        "slug": pk["slug"],
+                        "form": pk.get("form", ""),
+                        "name_zh": name_zh_map.get(pk["slug"], base_name),
+                        "types": pk.get("types", []),
+                        "base_stats": pd.get("base_stats", {}),
+                        "abilities": [_ability_info(a) for a in (pd.get("abilities", []) or [])],
+                        "sprite": f"sprites/champions/{pk['sprite']}" if pk.get("sprite") else "",
+                    })
+                return forms
+
+            entries = []
+            for pk in roster:
+                slug = pk["slug"]
+                pd = pokedb.get_pokemon(slug) or {}
+                raw = usage.get(slug)
+                entry = {
+                    "slug": slug,
+                    "form": pk.get("form", "") or "",
+                    "name_zh": name_zh_map.get(slug, slug),
+                    "sprite": f"sprites/champions/{pk['sprite']}" if pk.get("sprite") else "",
+                    "types": pk.get("types", []),
+                    "base_stats": pd.get("base_stats", {}),
+                    "forms": _build_forms(slug),
+                    "has_usage": bool(raw),
+                }
+                if raw:
+                    entry["natures"] = [{"name": n.get("name", ""), "name_zh": n.get("name_zh", ""), "pct": n.get("pct", 0)} for n in raw.get("natures", [])]
+                    entry["abilities"] = [{"name": a.get("name", ""), "name_zh": a.get("name_zh", ""), "pct": a.get("pct", 0)} for a in raw.get("abilities", [])]
+                    entry["items"] = [{"name": i.get("name", ""), "name_zh": i.get("name_zh", ""), "pct": i.get("pct", 0)} for i in raw.get("items", [])]
+                    entry["evs"] = [{"hp": e.get("hp", 0), "atk": e.get("atk", 0), "def": e.get("def", 0),
+                                    "spA": e.get("spA", 0), "spD": e.get("spD", 0), "spe": e.get("spe", 0),
+                                    "pct": e.get("pct", 0)} for e in raw.get("evs", [])]
+                    entry["moves"] = [_move_info(m.get("name", "")) for m in raw.get("moves", [])]
+                else:
+                    # 无使用率：仅给 PokeDB 的基础能力（不造默认招式/道具）
+                    entry["natures"] = []
+                    entry["abilities"] = [_ability_info(a) for a in (pd.get("abilities", []) or [])]
+                    entry["items"] = []
+                    entry["evs"] = []
+                    entry["moves"] = []
+                entries.append(entry)
+
+            # 排序：有使用率的按 rank 排前，无使用率的按 name_zh 兜底
+            return jsonify({"success": True, "pokemon": entries, "rosterList": True})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/data/all-moves", methods=["GET"])
+    def all_moves():
+        """返回图鉴全部技能（PokeDB moves 表），供我方技能搜索挑选使用。
+        技能形状与 enemies 的 moves 同构（name/name_zh/type/power/category/priority）。"""
+        try:
+            pokedb_moves = get_pokedb().get_all_moves()
+            seen = set()
+            out = []
+            for slug, m in pokedb_moves.items():
+                name = (m.get("name") or "").strip()
+                key = name or slug
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append({
+                    "slug": slug,
+                    "name": name,
+                    "name_zh": m.get("name_zh", "") or name or slug,
+                    "type": m.get("type", "Normal"),
+                    "power": m.get("power"),
+                    "category": m.get("category", "status"),
+                    "priority": m.get("priority", 0),
+                })
+            return jsonify({"success": True, "moves": out, "total": len(out)})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/team-analysis/enemies", methods=["GET"])
+    def team_analysis_enemies():
+        """战队对抗分析页：返回某 (赛季, 格式) 下全部敌方宝可梦的构建数据。
+        每只按对战数据 rank 排序，默认 rank-1 的性格/特性/道具/努力值/技能（英文名 + 中文名），
+        并附多形态(forms)、基础能力、克制属性、技能威力信息，供前端做伤害计算与切换。"""
+        try:
+            season = request.args.get("season") or None
+            fmt = request.args.get("format") or None
+            usage = get_usage_db().get_all(season=season, format=fmt)
+            if not usage:
+                return jsonify({"success": False, "error": "该赛季/格式暂无对战数据"}), 404
+
+            pokedb = get_pokedb()
+            roster = get_roster_db().get_all()
+            roster_by_slug = {p["slug"]: p for p in roster}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_pokemon().items()}
+            pokedb_moves = pokedb.get_all_moves()
+
+            def _slug(s):
+                return (s or "").lower().replace(" ", "-").replace("'", "").replace(".", "")
+
+            def _en_name(raw):
+                return (raw or "").strip()
+
+            def _build_forms(slug):
+                """同一 base name 的所有形态（含当前），供前端形态切换。"""
+                entry = roster_by_slug.get(slug)
+                if not entry:
+                    return []
+                base_name = entry.get("name") or slug
+                forms = []
+                for pk in roster:
+                    if (pk.get("name") or "").lower() != base_name.lower():
+                        continue
+                    pd = pokedb.get_pokemon(pk["slug"]) or {}
+                    forms.append({
+                        "slug": pk["slug"],
+                        "form": pk.get("form", ""),
+                        "name_zh": name_zh_map.get(pk["slug"], base_name),
+                        "types": pk.get("types", []),
+                        "base_stats": pd.get("base_stats", {}),
+                        "abilities": [a for a in (pd.get("abilities", []) or [])],
+                        "sprite": f"sprites/champions/{pk['sprite']}" if pk.get("sprite") else "",
+                    })
+                return forms
+
+            def _build_move(m):
+                ms = _slug(m.get("name", ""))
+                md = pokedb_moves.get(ms, {})
+                power = md.get("power")
+                damaging = power is not None and power > 0
+                return {
+                    "name": m.get("name", ""),
+                    "name_zh": m.get("name_zh", ""),
+                    "pct": m.get("pct", 0),
+                    "damaging": damaging,
+                    "power": power,
+                    "category": md.get("category", "status"),
+                    "type": md.get("type", "Normal"),
+                    "priority": md.get("priority", 0),
+                }
+
+            enemies = []
+            for slug, raw in usage.items():
+                entry = roster_by_slug.get(slug)
+                base_stats = (pokedb.get_pokemon(slug) or {}).get("base_stats", {})
+                sprite = f"sprites/champions/{entry['sprite']}" if entry and entry.get("sprite") else ""
+                enemies.append({
+                    "slug": slug,
+                    "rank": raw.get("rank"),
+                    "name_en": _en_name(raw.get("name_en", slug)),
+                    "name_zh": raw.get("name_zh", name_zh_map.get(slug, slug)),
+                    "types": (entry.get("types", []) if entry else []),
+                    "sprite": sprite,
+                    "base_stats": base_stats,
+                    "forms": _build_forms(slug),
+                    "natures": [{"name": n.get("name", ""), "name_zh": n.get("name_zh", ""), "pct": n.get("pct", 0)} for n in raw.get("natures", [])],
+                    "abilities": [{"name": a.get("name", ""), "name_zh": a.get("name_zh", ""), "pct": a.get("pct", 0)} for a in raw.get("abilities", [])],
+                    "items": [{"name": i.get("name", ""), "name_zh": i.get("name_zh", ""), "pct": i.get("pct", 0)} for i in raw.get("items", [])],
+                    "evs": [{"hp": e.get("hp", 0), "atk": e.get("atk", 0), "def": e.get("def", 0),
+                             "spA": e.get("spA", 0), "spD": e.get("spD", 0), "spe": e.get("spe", 0),
+                             "pct": e.get("pct", 0)} for e in raw.get("evs", [])],
+                    "moves": [_build_move(m) for m in raw.get("moves", [])],
+                })
+            enemies.sort(key=lambda x: (x["rank"] if x["rank"] is not None else 9999))
+            for idx, e in enumerate(enemies, start=1):
+                e["index"] = idx
+
+            return jsonify({
+                "success": True,
+                "season": season or get_usage_db().DEFAULT_SEASON,
+                "format": fmt or get_usage_db().DEFAULT_FORMAT,
+                "total": len(enemies),
+                "enemies": enemies,
+            })
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
@@ -454,17 +1056,14 @@ def create_app():
     @app.route("/api/data/pokemon-damage-rankings/<slug>", methods=["GET"])
     def pokemon_damage_rankings(slug):
         try:
-            cache_path = PROJECT_ROOT / "data" / "pokechamdb_cache.json"
-            roster_path = PROJECT_ROOT / "data" / "champions_roster.json"
-            pokedb_path = PROJECT_ROOT / "data" / "pokedb_cache.json"
+            season = request.args.get("season")
+            fmt = request.args.get("format")
+            pokechamdb = get_usage_db().get_all(season=season, format=fmt)
+            pokedb = get_pokedb()
 
-            pokechamdb = json.loads(cache_path.read_text(encoding="utf-8"))
-            roster_data = json.loads(roster_path.read_text(encoding="utf-8"))
-            pokedb = json.loads(pokedb_path.read_text(encoding="utf-8"))
-
-            roster_by_slug = {p["slug"]: p for p in roster_data.get("pokemon", [])}
-            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get("pokemon", {}).items()}
-            pokedb_moves = pokedb.get("moves", {})
+            roster_by_slug = {p["slug"]: p for p in get_roster_db().get_all()}
+            name_zh_map = {k: v.get("name_zh", "") for k, v in pokedb.get_all_pokemon().items()}
+            pokedb_moves = pokedb.get_all_moves()
             move_zh_map = {k: v.get("name_zh", "") for k, v in pokedb_moves.items()}
 
             my_raw = pokechamdb.get(slug)
@@ -472,7 +1071,7 @@ def create_app():
                 return jsonify({"success": False, "error": f"slug '{slug}' not found"}), 404
 
             my_roster = roster_by_slug.get(slug, {})
-            my_base = pokedb.get("pokemon", {}).get(slug, {}).get("base_stats", {})
+            my_base = (pokedb.get_pokemon(slug) or {}).get("base_stats", {})
 
             # Accept query params for current Pokemon's EVs and nature
             my_ev = {}
@@ -533,7 +1132,7 @@ def create_app():
                 opp_roster = roster_by_slug.get(opp_slug)
                 if not opp_roster:
                     continue
-                opp_base = pokedb.get("pokemon", {}).get(opp_slug, {}).get("base_stats", {})
+                opp_base = (pokedb.get_pokemon(opp_slug) or {}).get("base_stats", {})
                 if not opp_base:
                     continue
 
@@ -655,6 +1254,153 @@ def create_app():
                 pass
         return jsonify({"success": True, "teams": teams})
 
+    @app.route("/api/teams/library", methods=["GET"])
+    def teams_library():
+        """队伍库：按宝可梦名（中文/英文，物种级）AND 筛选，按 Date_Shared 降序分页。
+        参数: p1~p6=宝可梦名, page=页码, page_size=每页条数。"""
+        try:
+            filters = []
+            for i in range(1, 7):
+                v = (request.args.get(f"p{i}", "") or "").strip()
+                if v:
+                    filters.append(v)
+            page = max(1, _to_int(request.args.get("page"), 1))
+            page_size = min(200, max(1, _to_int(request.args.get("page_size"), 20)))
+            return jsonify(_query_team_library(filters, page, page_size))
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/teams/library/parse", methods=["POST"])
+    def teams_library_parse():
+        """解析粘贴的 Showdown 队伍文本 → 预览（含中文名/精灵图/未解析列表）。"""
+        try:
+            body = request.get_json(silent=True) or {}
+            entries, resolved, unresolved = _parse_paste_entries(body.get("paste") or "")
+            return jsonify({
+                "success": True,
+                "pokemon": _parse_paste_preview(resolved),
+                "form_ids": ",".join(r["form_id"] for _, r in resolved),
+                "evs_present": any(e.get("evs") for e, _ in resolved),
+                "count": len(entries),
+                "unresolved": [{"name": u.get("name", "")} for u in unresolved],
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/teams/library/add", methods=["POST"])
+    def teams_library_add():
+        """新增/覆盖队伍：解析文本 → 写 Team + team_detail → 追加 teaminfo.txt。"""
+        try:
+            body = request.get_json(silent=True) or {}
+            team_id = (body.get("team_id") or "").strip()
+            name = (body.get("name") or "").strip()
+            paste = (body.get("paste") or "").strip()
+            if not team_id or not name:
+                return jsonify({"success": False, "error": "队伍ID和队伍名称必填"}), 400
+            if not paste:
+                return jsonify({"success": False, "error": "请粘贴 Showdown 队伍文本"}), 400
+
+            entries, resolved, unresolved = _parse_paste_entries(paste)
+            if unresolved:
+                bad = "、".join(u.get("name", "?") for u in unresolved)
+                return jsonify({"success": False, "error": f"无法解析的宝可梦: {bad}"}), 400
+            if not resolved:
+                return jsonify({"success": False, "error": "未解析出任何宝可梦"}), 400
+
+            replica_code = (body.get("replica_code") or "").strip()
+            evs_present = any(e.get("evs") for e, _ in resolved)
+            date_shared = (body.get("date_shared") or "").strip() \
+                or datetime.now().strftime("%Y-%m-%d")
+            pokemon_names = [e.get("name", "") for e, _ in resolved]
+            items = [e.get("item", "") for e, _ in resolved]
+
+            col_vals = {
+                "Team_Description": (body.get("description") or "").strip(),
+                "Full_Name": name,
+                "Pokepaste": (body.get("pokepaste") or "").strip(),
+                "EVs": "Yes" if evs_present else "No",
+                "Extracted_paste": "Extracted",
+                "Replica_Status": "Y" if replica_code else "X",
+                "Replica_Code": replica_code,
+                "Date_Shared": date_shared,
+                "Tournament_Event": (body.get("event") or "").strip(),
+                "Rank": (body.get("rank") or "").strip(),
+                "Link_to_Source": (body.get("source_link") or "").strip(),
+                "Report_Video": "",
+                "Other_Links": "",
+                "Owner": (body.get("owner") or "").strip(),
+            }
+            for i in range(6):
+                col_vals[f"Pokemon_{i + 1}"] = pokemon_names[i] if i < len(pokemon_names) else ""
+                col_vals[f"Item_{i + 1}"] = items[i] if i < len(items) else ""
+
+            paste_info = {
+                "title": name,
+                "format": (body.get("format") or "").strip(),
+                "pokemon": [
+                    {
+                        "name": e.get("name", ""),
+                        "gender": e.get("gender", ""),
+                        "item": e.get("item", ""),
+                        "ability": e.get("ability", ""),
+                        "level": e.get("level", 0),
+                        "evs": e.get("evs", {}),
+                        "nature": e.get("nature", ""),
+                        "moves": e.get("moves", []),
+                        "dex_form": r["form_id"],
+                    }
+                    for e, r in resolved
+                ],
+            }
+            form_ids = ",".join(r["form_id"] for _, r in resolved)
+
+            conn = sqlite3.connect(str(DB_PATH))
+            try:
+                overwrote = _upsert_team_row(conn, team_id, col_vals)
+                conn.execute(
+                    """
+                    INSERT INTO "team_detail" ("team_id", "form_ids", "paste_info")
+                    VALUES (?, ?, ?)
+                    ON CONFLICT("team_id") DO UPDATE SET
+                        "form_ids"   = excluded."form_ids",
+                        "paste_info" = excluded."paste_info"
+                    """,
+                    (team_id, form_ids, json.dumps(paste_info, ensure_ascii=False)),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            meta = {
+                "team_id": team_id, "name": name,
+                "description": col_vals["Team_Description"],
+                "source_link": col_vals["Link_to_Source"],
+                "replica_code": replica_code,
+                "owner": col_vals["Owner"],
+                "event": col_vals["Tournament_Event"],
+                "rank": col_vals["Rank"],
+                "date_shared": date_shared,
+                "pokepaste": col_vals["Pokepaste"],
+            }
+            zh_maps = {
+                "pokemon": get_pokedb().get_all_pokemon(),
+                "move": get_pokedb().get_all_moves(),
+                "item": get_pokedb().get_all_items(),
+                "ability": get_pokedb().get_all_abilities(),
+            }
+            _write_teaminfo(_build_teaminfo_block(meta, resolved, zh_maps))
+
+            return jsonify({
+                "success": True,
+                "team_id": team_id,
+                "overwrote": overwrote,
+                "date_shared": date_shared,
+                "count": len(resolved),
+                "teaminfo_written": True,
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
     @app.route("/api/teams/load/<slot_id>", methods=["POST"])
     def load_team_slot(slot_id):
         src = TEAM_DIR / f"{slot_id}.json"
@@ -672,15 +1418,27 @@ def create_app():
         body = request.json or {}
         slot_id = body.get("slot_id")
         slot_name = body.get("slot_name", "")
+        # 兼容两种 roster 传法：顶层 roster（当前前端）与 team.roster（旧前端缓存）
+        roster = body.get("roster")
+        if roster is None:
+            team = body.get("team") or {}
+            roster = team.get("roster")
         try:
-            temp = TEAM_DIR / "temp.json"
-            with open(temp, encoding="utf-8") as f:
-                data = json.load(f)
+            if roster is not None:
+                # 与 /api/teams/build 写入 temp.json 的扁平格式保持一致：
+                # {trainer_name, roster[, slot_name]}，这样 /load 返回 {team: {...}} 后前端读 data.team.roster 才对。
+                data = {"trainer_name": "", "roster": roster}
+            else:
+                # 前端未携带 roster（旧请求）时不回退 temp.json——那会把加载的槽位整份复制成新槽位。
+                raise ValueError("请求未携带 roster 数据")
             if slot_id:
                 dst = TEAM_DIR / f"{slot_id}.json"
-                with open(dst, encoding="utf-8") as f:
-                    existing = json.load(f)
-                data["slot_name"] = existing.get("slot_name", slot_id)
+                if dst.exists():
+                    with open(dst, encoding="utf-8") as f:
+                        existing = json.load(f)
+                    data["slot_name"] = existing.get("slot_name", slot_id)
+                else:
+                    data["slot_name"] = slot_name or slot_id
             else:
                 nums = [int(p.stem) for p in TEAM_DIR.glob("*.json") if p.stem.isdigit()]
                 new_id = max(nums, default=0) + 1
@@ -715,6 +1473,10 @@ def create_app():
                 return jsonify({"success": False, "error": "缺少截图。请先截取页面1（moves）和页面2（stats）"}), 400
 
             detect_cards, move_cards, stat_cards = parse_team_init(str(moves_path), str(stats_path), debug=True)
+
+            # 校验前移：对 OCR 草稿做中文名模糊纠错，draft.json 保存经过校验的一版
+            builder = PokemonBuilder()
+            move_cards = builder.correct_move_cards(move_cards)
 
             draft = {
                 "detect_cards": detect_cards,
@@ -829,6 +1591,37 @@ def create_app():
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
+    @app.route("/api/pokemon/calc-evs/<slug>", methods=["POST"])
+    def pokemon_calc_evs(slug):
+        """按「种族值 + 最终能力值 + 性格」反推加点，供草稿校对页联动展示。
+
+        body: {stats: {hp..speed}, nature: "attack↑/speed↓"(可为空), evs?: {..OCR读数}}
+        性格非空 → 按该性格重算全部加点；性格为空 → 数值推断（同时返回推断性格）
+        """
+        try:
+            body = request.get_json(silent=True) or {}
+            stats = body.get("stats") or {}
+            builder = PokemonBuilder()
+            base_stats = (builder.db.get_pokemon(slug) or {}).get("base_stats") or {}
+            if not base_stats:
+                return jsonify({"success": False, "error": f"slug '{slug}' 无种族值数据"}), 404
+            if not stats:
+                return jsonify({"success": False, "error": "缺少能力值"}), 400
+
+            nature_in = (body.get("nature") or "").strip()
+            if nature_in:
+                pokemon = Pokemon(name=slug, name_zh="", index=0,
+                                  stats=stats, base_stats=base_stats, nature=nature_in)
+                evs = builder.calc_ev_from_stats(pokemon)
+                return jsonify({"success": True, "nature": nature_in, "evs": evs})
+
+            nature, evs, warnings = builder.infer_nature_and_evs(
+                base_stats, stats, body.get("evs") or {})
+            return jsonify({"success": True, "nature": nature, "evs": evs,
+                            "warnings": warnings})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
     @app.route("/api/pokemon/rebuild", methods=["POST"])
     def rebuild_pokemon():
         """根据 slug 重建宝可梦完整数据（对手队伍场景）"""
@@ -855,28 +1648,87 @@ def create_app():
 
     @app.route("/api/teams/generate-opponent", methods=["POST"])
     def generate_opponent_team():
-        """从对方队伍截图生成队伍，保存到 data/opp_team/temp.json"""
+        """从对方队伍截图生成队伍，保存到 data/opp_team/temp.json。
+        同时按识别出的 6 只宝可梦匹配已收录队伍（team_detail.form_ids），
+        按 Team.Date_Shared 降序最多返回 5 个，供前端切换。"""
         try:
             screenshot_path = OPP_SCREENSHOTS_DIR / "team.png"
 
             if not screenshot_path.exists():
                 return jsonify({"success": False, "error": "缺少对方队伍截图。请先截取对方队伍"}), 400
 
-            team = detect_opponents_team(str(screenshot_path), debug=True)
+            team, detect_cards = detect_opponents_team_with_cards(str(screenshot_path), debug=True)
 
-            output_path = OPP_TEAM_DIR / "temp.json"
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+            # 用识别出的 slug 匹配已收录队伍（失败不阻塞队伍生成，退化为现有逻辑）
+            match_result = {"matched": False, "form_ids": None, "teams": []}
+            try:
+                match_result = match_teams_from_slugs(
+                    [c.get("slug", "") for c in detect_cards],
+                    builder=PokemonBuilder())
+            except Exception as e:
+                print(f"[warn] 已收录队伍匹配失败，跳过: {e}")
+
             team_data = {
                 "trainer_name": team.get("trainer_name", ""),
                 "roster": [p.to_dict() if hasattr(p, 'to_dict') else p for p in team.get("roster", [])]
             }
+            form_ids, matched_teams = _build_matched_teams_payload(match_result)
+
+            output_path = OPP_TEAM_DIR / "temp.json"
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            team_data["form_ids"] = form_ids
+            team_data["matched_teams"] = matched_teams
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(team_data, f, ensure_ascii=False, indent=2)
 
             return jsonify({
                 "success": True,
                 "team": team_data,
-                "slot": "temp"
+                "slot": "temp",
+                "form_ids": form_ids,
+                "matched_teams": matched_teams,
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/teams/match-opponent", methods=["POST"])
+    def match_opponent_team():
+        """前端手动修正对方宝可梦后，根据 6 只 slug 重新匹配已收录队伍。
+        body: {"slugs": ["dragonite", ...]}；返回 {form_ids, matched_teams}。
+        同步刷新 data/opp_team/temp.json 中的匹配结果（保留原 roster）。"""
+        try:
+            body = request.get_json(silent=True) or {}
+            slugs = body.get("slugs") or []
+            if not slugs:
+                return jsonify({"success": False, "error": "缺少 slugs"}), 400
+
+            match_result = {"matched": False, "form_ids": None, "teams": []}
+            try:
+                match_result = match_teams_from_slugs(slugs, builder=PokemonBuilder())
+            except Exception as e:
+                print(f"[warn] 已收录队伍匹配失败，跳过: {e}")
+
+            form_ids, matched_teams = _build_matched_teams_payload(match_result)
+
+            # 同步刷新 temp.json 的匹配结果（保留原 roster）
+            output_path = OPP_TEAM_DIR / "temp.json"
+            try:
+                if output_path.exists():
+                    team_data = json.loads(output_path.read_text(encoding="utf-8"))
+                else:
+                    team_data = {"trainer_name": "", "roster": []}
+                team_data["form_ids"] = form_ids
+                team_data["matched_teams"] = matched_teams
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(
+                    json.dumps(team_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception as e:
+                print(f"[warn] temp.json 刷新失败: {e}")
+
+            return jsonify({
+                "success": True,
+                "form_ids": form_ids,
+                "matched_teams": matched_teams,
             })
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
@@ -1035,8 +1887,8 @@ def main():
     threading.Thread(target=_get_detector, daemon=True).start()
 
     app = create_app()
-    print(f"🎥 采集卡预览服务器启动: http://localhost:{args.port}")
-    print(f"📁 截图保存位置: {SCREENSHOTS_DIR}")
+    print(f">> 采集卡预览服务器启动: http://localhost:{args.port}")
+    print(f"[dir] 截图保存位置: {SCREENSHOTS_DIR}")
     app.run(host="0.0.0.0", port=args.port, debug=args.debug, use_reloader=False)
 
 

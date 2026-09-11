@@ -10,17 +10,8 @@ import argparse
 import cv2
 import numpy as np
 from pathlib import Path
-import easyocr
 
-
-_reader_cache: dict[str, easyocr.Reader] = {}
-
-def get_reader(lang: str) -> easyocr.Reader:
-    if lang not in _reader_cache:
-        langs = ["ch_sim", "en"] if lang == "ch" else ["en"]
-        print(f"加载 EasyOCR 模型（{langs}）...")
-        _reader_cache[lang] = easyocr.Reader(langs, gpu=False)
-    return _reader_cache[lang]
+from pokepilot.tools.ocr_engine import get_reader
 
 
 def run(image_path: str, lang: str = "en") -> None:
@@ -28,7 +19,9 @@ def run(image_path: str, lang: str = "en") -> None:
     if img is None:
         raise FileNotFoundError(image_path)
 
-    reader  = get_reader(lang)
+    langs = ["ch_sim", "en"] if lang == "ch" else ["en"]
+    print(f"加载 EasyOCR 模型（{langs}）...")
+    reader = get_reader(langs)
     results = reader.readtext(image_path)
     # results: list of (box, text, conf)
     # box: [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]

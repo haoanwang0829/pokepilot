@@ -1,0 +1,6318 @@
+{
+  "meta": {
+    "source": "extracted from db/db.db (champions_usage tables)",
+    "generated_at": "2026-08-17T13:26:37.187800+00:00"
+  },
+  "pokemon": {
+    "abomasnow": {
+      "en": "Abomasnow",
+      "ja": "ユキノオー",
+      "zh": "暴雪王"
+    },
+    "absol": {
+      "en": "Absol",
+      "ja": "アブソル",
+      "zh": "阿勃梭鲁"
+    },
+    "aegislash": {
+      "en": "Aegislash",
+      "ja": "ギルガルド",
+      "zh": "坚盾剑怪"
+    },
+    "aerodactyl": {
+      "en": "Aerodactyl",
+      "ja": "プテラ",
+      "zh": "化石翼龙"
+    },
+    "aggron": {
+      "en": "Aggron",
+      "ja": "ボスゴドラ",
+      "zh": "波士可多拉"
+    },
+    "alakazam": {
+      "en": "Alakazam",
+      "ja": "フーディン",
+      "zh": "胡地"
+    },
+    "alcremie": {
+      "en": "Alcremie",
+      "ja": "マホイップ",
+      "zh": "霜奶仙"
+    },
+    "altaria": {
+      "en": "Altaria",
+      "ja": "チルタリス",
+      "zh": "七夕青鸟"
+    },
+    "ampharos": {
+      "en": "Ampharos",
+      "ja": "デンリュウ",
+      "zh": "电龙"
+    },
+    "annihilape": {
+      "en": "Annihilape",
+      "ja": "コノヨザル",
+      "zh": "弃世猴"
+    },
+    "appletun": {
+      "en": "Appletun",
+      "ja": "タルップル",
+      "zh": "丰蜜龙"
+    },
+    "araquanid": {
+      "en": "Araquanid",
+      "ja": "オニシズクモ",
+      "zh": "滴蛛霸"
+    },
+    "arbok": {
+      "en": "Arbok",
+      "ja": "アーボック",
+      "zh": "阿柏怪"
+    },
+    "arcanine": {
+      "en": "Arcanine",
+      "ja": "ウインディ",
+      "zh": "风速狗"
+    },
+    "arcanine-hisui": {
+      "en": "Arcanine Hisui",
+      "ja": "ヒスイウインディ",
+      "zh": "风速狗（洗翠）"
+    },
+    "archaludon": {
+      "en": "Archaludon",
+      "ja": "ブリジュラス",
+      "zh": "铝钢桥龙"
+    },
+    "ariados": {
+      "en": "Ariados",
+      "ja": "アリアドス",
+      "zh": "阿利多斯"
+    },
+    "armarouge": {
+      "en": "Armarouge",
+      "ja": "グレンアルマ",
+      "zh": "红莲铠骑"
+    },
+    "aromatisse": {
+      "en": "Aromatisse",
+      "ja": "フレフワン",
+      "zh": "芳香精"
+    },
+    "audino": {
+      "en": "Audino",
+      "ja": "タブンネ",
+      "zh": "差不多娃娃"
+    },
+    "aurorus": {
+      "en": "Aurorus",
+      "ja": "アマルルガ",
+      "zh": "冰雪巨龙"
+    },
+    "avalugg": {
+      "en": "Avalugg",
+      "ja": "クレベース",
+      "zh": "冰岩怪"
+    },
+    "avalugg-hisui": {
+      "en": "Avalugg Hisui",
+      "ja": "ヒスイクレベース",
+      "zh": "冰岩怪（洗翠）"
+    },
+    "azumarill": {
+      "en": "Azumarill",
+      "ja": "マリルリ",
+      "zh": "玛力露丽"
+    },
+    "banette": {
+      "en": "Banette",
+      "ja": "ジュペッタ",
+      "zh": "诅咒娃娃"
+    },
+    "barbaracle": {
+      "en": "Barbaracle",
+      "ja": "ガメノデス",
+      "zh": "龟足巨铠"
+    },
+    "basculegion": {
+      "en": "Basculegion",
+      "ja": "イダイトウ",
+      "zh": "幽尾玄鱼"
+    },
+    "basculegion-female": {
+      "en": "Basculegion Female",
+      "ja": "イダイトウ(メス)",
+      "zh": "幽尾玄鱼（雌性）"
+    },
+    "bastiodon": {
+      "en": "Bastiodon",
+      "ja": "トリデプス",
+      "zh": "护城龙"
+    },
+    "beartic": {
+      "en": "Beartic",
+      "ja": "ツンベアー",
+      "zh": "冻原熊"
+    },
+    "beedrill": {
+      "en": "Beedrill",
+      "ja": "スピアー",
+      "zh": "大针蜂"
+    },
+    "bellibolt": {
+      "en": "Bellibolt",
+      "ja": "ハラバリー",
+      "zh": "电肚蛙"
+    },
+    "blastoise": {
+      "en": "Blastoise",
+      "ja": "カメックス",
+      "zh": "水箭龟"
+    },
+    "blaziken": {
+      "en": "Blaziken",
+      "ja": "バシャーモ",
+      "zh": "火焰鸡"
+    },
+    "camerupt": {
+      "en": "Camerupt",
+      "ja": "バクーダ",
+      "zh": "喷火驼"
+    },
+    "castform": {
+      "en": "Castform",
+      "ja": "ポワルン",
+      "zh": "飘浮泡泡"
+    },
+    "ceruledge": {
+      "en": "Ceruledge",
+      "ja": "ソウブレイズ",
+      "zh": "苍炎刃鬼"
+    },
+    "chandelure": {
+      "en": "Chandelure",
+      "ja": "シャンデラ",
+      "zh": "水晶灯火灵"
+    },
+    "charizard": {
+      "en": "Charizard",
+      "ja": "リザードン",
+      "zh": "喷火龙"
+    },
+    "chesnaught": {
+      "en": "Chesnaught",
+      "ja": "ブリガロン",
+      "zh": "布里卡隆"
+    },
+    "chimecho": {
+      "en": "Chimecho",
+      "ja": "チリーン",
+      "zh": "风铃铃"
+    },
+    "clawitzer": {
+      "en": "Clawitzer",
+      "ja": "ブロスター",
+      "zh": "钢炮臂虾"
+    },
+    "clefable": {
+      "en": "Clefable",
+      "ja": "ピクシー",
+      "zh": "皮可西"
+    },
+    "cofagrigus": {
+      "en": "Cofagrigus",
+      "ja": "デスカーン",
+      "zh": "死神棺"
+    },
+    "conkeldurr": {
+      "en": "Conkeldurr",
+      "ja": "ローブシン",
+      "zh": "修建老匠"
+    },
+    "corviknight": {
+      "en": "Corviknight",
+      "ja": "アーマーガア",
+      "zh": "钢铠鸦"
+    },
+    "crabominable": {
+      "en": "Crabominable",
+      "ja": "ケケンカニ",
+      "zh": "好胜毛蟹"
+    },
+    "decidueye": {
+      "en": "Decidueye",
+      "ja": "ジュナイパー",
+      "zh": "狙射树枭"
+    },
+    "decidueye-hisui": {
+      "en": "Decidueye Hisui",
+      "ja": "ヒスイジュナイパー",
+      "zh": "狙射树枭（洗翠）"
+    },
+    "dedenne": {
+      "en": "Dedenne",
+      "ja": "デデンネ",
+      "zh": "咚咚鼠"
+    },
+    "delphox": {
+      "en": "Delphox",
+      "ja": "マフォクシー",
+      "zh": "妖火红狐"
+    },
+    "diggersby": {
+      "en": "Diggersby",
+      "ja": "ホルード",
+      "zh": "掘地兔"
+    },
+    "ditto": {
+      "en": "Ditto",
+      "ja": "メタモン",
+      "zh": "百变怪"
+    },
+    "dragalge": {
+      "en": "Dragalge",
+      "ja": "ドラミドロ",
+      "zh": "毒藻龙"
+    },
+    "dragapult": {
+      "en": "Dragapult",
+      "ja": "ドラパルト",
+      "zh": "多龙巴鲁托"
+    },
+    "dragonite": {
+      "en": "Dragonite",
+      "ja": "カイリュー",
+      "zh": "快龙"
+    },
+    "drampa": {
+      "en": "Drampa",
+      "ja": "ジジーロン",
+      "zh": "老翁龙"
+    },
+    "eelektross": {
+      "en": "Eelektross",
+      "ja": "シビルドン",
+      "zh": "麻麻鳗鱼王"
+    },
+    "emboar": {
+      "en": "Emboar",
+      "ja": "エンブオー",
+      "zh": "炎武王"
+    },
+    "emolga": {
+      "en": "Emolga",
+      "ja": "エモンガ",
+      "zh": "电飞鼠"
+    },
+    "empoleon": {
+      "en": "Empoleon",
+      "ja": "エンペルト",
+      "zh": "帝王拿波"
+    },
+    "espathra": {
+      "en": "Espathra",
+      "ja": "クエスパトラ",
+      "zh": "超能艳鸵"
+    },
+    "espeon": {
+      "en": "Espeon",
+      "ja": "エーフィ",
+      "zh": "太阳伊布"
+    },
+    "excadrill": {
+      "en": "Excadrill",
+      "ja": "ドリュウズ",
+      "zh": "龙头地鼠"
+    },
+    "falinks": {
+      "en": "Falinks",
+      "ja": "タイレーツ",
+      "zh": "列阵兵"
+    },
+    "farigiraf": {
+      "en": "Farigiraf",
+      "ja": "リキキリン",
+      "zh": "奇麒麟"
+    },
+    "feraligatr": {
+      "en": "Feraligatr",
+      "ja": "オーダイル",
+      "zh": "大力鳄"
+    },
+    "flapple": {
+      "en": "Flapple",
+      "ja": "アップリュー",
+      "zh": "苹裹龙"
+    },
+    "flareon": {
+      "en": "Flareon",
+      "ja": "ブースター",
+      "zh": "火伊布"
+    },
+    "floette": {
+      "en": "Floette",
+      "ja": "フラエッテ",
+      "zh": "花叶蒂"
+    },
+    "florges": {
+      "en": "Florges",
+      "ja": "フラージェス",
+      "zh": "花洁夫人"
+    },
+    "forretress": {
+      "en": "Forretress",
+      "ja": "フォレトス",
+      "zh": "佛烈托斯"
+    },
+    "froslass": {
+      "en": "Froslass",
+      "ja": "ユキメノコ",
+      "zh": "雪妖女"
+    },
+    "furfrou": {
+      "en": "Furfrou",
+      "ja": "トリミアン",
+      "zh": "多丽米亚"
+    },
+    "gallade": {
+      "en": "Gallade",
+      "ja": "エルレイド",
+      "zh": "艾路雷朵"
+    },
+    "garbodor": {
+      "en": "Garbodor",
+      "ja": "ダストダス",
+      "zh": "灰尘山"
+    },
+    "garchomp": {
+      "en": "Garchomp",
+      "ja": "ガブリアス",
+      "zh": "烈咬陆鲨"
+    },
+    "gardevoir": {
+      "en": "Gardevoir",
+      "ja": "サーナイト",
+      "zh": "沙奈朵"
+    },
+    "garganacl": {
+      "en": "Garganacl",
+      "ja": "キョジオーン",
+      "zh": "盐石巨灵"
+    },
+    "gengar": {
+      "en": "Gengar",
+      "ja": "ゲンガー",
+      "zh": "耿鬼"
+    },
+    "gholdengo": {
+      "en": "Gholdengo",
+      "ja": "サーフゴー",
+      "zh": "赛富豪"
+    },
+    "glaceon": {
+      "en": "Glaceon",
+      "ja": "グレイシア",
+      "zh": "冰伊布"
+    },
+    "glalie": {
+      "en": "Glalie",
+      "ja": "オニゴーリ",
+      "zh": "冰鬼护"
+    },
+    "glimmora": {
+      "en": "Glimmora",
+      "ja": "キラフロル",
+      "zh": "晶光花"
+    },
+    "gliscor": {
+      "en": "Gliscor",
+      "ja": "グライオン",
+      "zh": "天蝎王"
+    },
+    "golurk": {
+      "en": "Golurk",
+      "ja": "ゴルーグ",
+      "zh": "泥偶巨人"
+    },
+    "goodra": {
+      "en": "Goodra",
+      "ja": "ヌメルゴン",
+      "zh": "黏美龙"
+    },
+    "goodra-hisui": {
+      "en": "Goodra Hisui",
+      "ja": "ヌメルゴン(ヒスイ)",
+      "zh": "黏美龙（洗翠）"
+    },
+    "gourgeist": {
+      "en": "Gourgeist",
+      "ja": "パンプジン(ちゅうだま)",
+      "zh": "南瓜怪人"
+    },
+    "gourgeist-large": {
+      "en": "Gourgeist Large",
+      "ja": "パンプジン(おおだま)",
+      "zh": "南瓜怪人（大尺寸）"
+    },
+    "gourgeist-small": {
+      "en": "Gourgeist Small",
+      "ja": "パンプジン(こだま)",
+      "zh": "南瓜怪人（小尺寸）"
+    },
+    "gourgeist-super": {
+      "en": "Gourgeist Super",
+      "ja": "パンプジン(ギガだま)",
+      "zh": "南瓜怪人（特大尺寸）"
+    },
+    "greninja": {
+      "en": "Greninja",
+      "ja": "ゲッコウガ",
+      "zh": "甲贺忍蛙"
+    },
+    "grimmsnarl": {
+      "en": "Grimmsnarl",
+      "ja": "オーロンゲ",
+      "zh": "长毛巨魔"
+    },
+    "gyarados": {
+      "en": "Gyarados",
+      "ja": "ギャラドス",
+      "zh": "暴鲤龙"
+    },
+    "hatterene": {
+      "en": "Hatterene",
+      "ja": "ブリムオン",
+      "zh": "布莉姆温"
+    },
+    "hawlucha": {
+      "en": "Hawlucha",
+      "ja": "ルチャブル",
+      "zh": "摔角鹰人"
+    },
+    "heliolisk": {
+      "en": "Heliolisk",
+      "ja": "エレザード",
+      "zh": "光电伞蜥"
+    },
+    "heracross": {
+      "en": "Heracross",
+      "ja": "ヘラクロス",
+      "zh": "赫拉克罗斯"
+    },
+    "hippowdon": {
+      "en": "Hippowdon",
+      "ja": "カバルドン",
+      "zh": "河马兽"
+    },
+    "houndoom": {
+      "en": "Houndoom",
+      "ja": "ヘルガー",
+      "zh": "黑鲁加"
+    },
+    "houndstone": {
+      "en": "Houndstone",
+      "ja": "ハカドッグ",
+      "zh": "墓扬犬"
+    },
+    "hydrapple": {
+      "en": "Hydrapple",
+      "ja": "カミツオロチ",
+      "zh": "蜜集大蛇"
+    },
+    "hydreigon": {
+      "en": "Hydreigon",
+      "ja": "サザンドラ",
+      "zh": "三首恶龙"
+    },
+    "incineroar": {
+      "en": "Incineroar",
+      "ja": "ガオガエン",
+      "zh": "炽焰咆哮虎"
+    },
+    "infernape": {
+      "en": "Infernape",
+      "ja": "ゴウカザル",
+      "zh": "烈焰猴"
+    },
+    "jolteon": {
+      "en": "Jolteon",
+      "ja": "サンダース",
+      "zh": "雷伊布"
+    },
+    "kangaskhan": {
+      "en": "Kangaskhan",
+      "ja": "ガルーラ",
+      "zh": "袋兽"
+    },
+    "kingambit": {
+      "en": "Kingambit",
+      "ja": "ドドゲザン",
+      "zh": "仆斩将军"
+    },
+    "kleavor": {
+      "en": "Kleavor",
+      "ja": "バサギリ",
+      "zh": "劈斧螳螂"
+    },
+    "klefki": {
+      "en": "Klefki",
+      "ja": "クレッフィ",
+      "zh": "钥圈儿"
+    },
+    "kommo-o": {
+      "en": "Kommo O",
+      "ja": "ジャラランガ",
+      "zh": "杖尾鳞甲龙"
+    },
+    "krookodile": {
+      "en": "Krookodile",
+      "ja": "ワルビアル",
+      "zh": "流氓鳄"
+    },
+    "leafeon": {
+      "en": "Leafeon",
+      "ja": "リーフィア",
+      "zh": "叶伊布"
+    },
+    "liepard": {
+      "en": "Liepard",
+      "ja": "レパルダス",
+      "zh": "酷豹"
+    },
+    "lopunny": {
+      "en": "Lopunny",
+      "ja": "ミミロップ",
+      "zh": "长耳兔"
+    },
+    "lucario": {
+      "en": "Lucario",
+      "ja": "ルカリオ",
+      "zh": "路卡利欧"
+    },
+    "luxray": {
+      "en": "Luxray",
+      "ja": "レントラー",
+      "zh": "伦琴猫"
+    },
+    "lycanroc": {
+      "en": "Lycanroc",
+      "ja": "ルガルガン",
+      "zh": "鬃岩狼人"
+    },
+    "lycanroc-dusk": {
+      "en": "Lycanroc Dusk",
+      "ja": "ルガルガン(たそがれ)",
+      "zh": "鬃岩狼人（黄昏的样子）"
+    },
+    "lycanroc-midnight": {
+      "en": "Lycanroc Midnight",
+      "ja": "ルガルガン(まよなか)",
+      "zh": "鬃岩狼人（黑夜的样子）"
+    },
+    "machamp": {
+      "en": "Machamp",
+      "ja": "カイリキー",
+      "zh": "怪力"
+    },
+    "malamar": {
+      "en": "Malamar",
+      "ja": "カラマネロ",
+      "zh": "乌贼王"
+    },
+    "mamoswine": {
+      "en": "Mamoswine",
+      "ja": "マンムー",
+      "zh": "象牙猪"
+    },
+    "manectric": {
+      "en": "Manectric",
+      "ja": "ライボルト",
+      "zh": "雷电兽"
+    },
+    "maushold": {
+      "en": "Maushold",
+      "ja": "イッカネズミ",
+      "zh": "一家鼠"
+    },
+    "mawile": {
+      "en": "Mawile",
+      "ja": "クチート",
+      "zh": "大嘴娃"
+    },
+    "medicham": {
+      "en": "Medicham",
+      "ja": "チャーレム",
+      "zh": "恰雷姆"
+    },
+    "meganium": {
+      "en": "Meganium",
+      "ja": "メガニウム",
+      "zh": "大竺葵"
+    },
+    "meowscarada": {
+      "en": "Meowscarada",
+      "ja": "マスカーニャ",
+      "zh": "魔幻假面喵"
+    },
+    "meowstic": {
+      "en": "Meowstic",
+      "ja": "ニャオニクス",
+      "zh": "超能妙喵"
+    },
+    "meowstic-female": {
+      "en": "Meowstic Female",
+      "ja": "ニャオニクス(メス)",
+      "zh": "超能妙喵（雌性）"
+    },
+    "metagross": {
+      "en": "Metagross",
+      "ja": "メタグロス",
+      "zh": "巨金怪"
+    },
+    "milotic": {
+      "en": "Milotic",
+      "ja": "ミロカロス",
+      "zh": "美纳斯"
+    },
+    "mimikyu": {
+      "en": "Mimikyu",
+      "ja": "ミミッキュ",
+      "zh": "谜拟Ｑ"
+    },
+    "morpeko": {
+      "en": "Morpeko",
+      "ja": "モルペコ",
+      "zh": "莫鲁贝可"
+    },
+    "mr-rime": {
+      "en": "Mr Rime",
+      "ja": "バリコオル",
+      "zh": "踏冰人偶"
+    },
+    "mudsdale": {
+      "en": "Mudsdale",
+      "ja": "バンバドロ",
+      "zh": "重泥挽马"
+    },
+    "musharna": {
+      "en": "Musharna",
+      "ja": "ムシャーナ",
+      "zh": "梦梦蚀"
+    },
+    "ninetales": {
+      "en": "Ninetales",
+      "ja": "キュウコン",
+      "zh": "九尾"
+    },
+    "ninetales-alola": {
+      "en": "Ninetales Alola",
+      "ja": "アローラキュウコン",
+      "zh": "九尾（阿罗拉）"
+    },
+    "noivern": {
+      "en": "Noivern",
+      "ja": "オンバーン",
+      "zh": "音波龙"
+    },
+    "oranguru": {
+      "en": "Oranguru",
+      "ja": "ヤレユータン",
+      "zh": "智挥猩"
+    },
+    "orthworm": {
+      "en": "Orthworm",
+      "ja": "ミミズズ",
+      "zh": "拖拖蚓"
+    },
+    "overqwil": {
+      "en": "Overqwil",
+      "ja": "ハリーマン",
+      "zh": "万针鱼"
+    },
+    "palafin": {
+      "en": "Palafin",
+      "ja": "イルカマン",
+      "zh": "海豚侠"
+    },
+    "pangoro": {
+      "en": "Pangoro",
+      "ja": "ゴロンダ",
+      "zh": "流氓熊猫"
+    },
+    "passimian": {
+      "en": "Passimian",
+      "ja": "ナゲツケサル",
+      "zh": "投掷猴"
+    },
+    "pelipper": {
+      "en": "Pelipper",
+      "ja": "ペリッパー",
+      "zh": "大嘴鸥"
+    },
+    "pidgeot": {
+      "en": "Pidgeot",
+      "ja": "ピジョット",
+      "zh": "大比鸟"
+    },
+    "pikachu": {
+      "en": "Pikachu",
+      "ja": "ピカチュウ",
+      "zh": "皮卡丘"
+    },
+    "pinsir": {
+      "en": "Pinsir",
+      "ja": "カイロス",
+      "zh": "凯罗斯"
+    },
+    "politoed": {
+      "en": "Politoed",
+      "ja": "ニョロトノ",
+      "zh": "蚊香蛙皇"
+    },
+    "polteageist": {
+      "en": "Polteageist",
+      "ja": "ポットデス",
+      "zh": "怖思壶"
+    },
+    "primarina": {
+      "en": "Primarina",
+      "ja": "アシレーヌ",
+      "zh": "西狮海壬"
+    },
+    "pyroar": {
+      "en": "Pyroar",
+      "ja": "カエンジシ",
+      "zh": "火炎狮"
+    },
+    "quaquaval": {
+      "en": "Quaquaval",
+      "ja": "ウェーニバル",
+      "zh": "狂欢浪舞鸭"
+    },
+    "qwilfish": {
+      "en": "Qwilfish",
+      "ja": "ハリーセン",
+      "zh": "千针鱼"
+    },
+    "raichu": {
+      "en": "Raichu",
+      "ja": "ライチュウ",
+      "zh": "雷丘"
+    },
+    "raichu-alola": {
+      "en": "Raichu Alola",
+      "ja": "アローラライチュウ",
+      "zh": "雷丘（阿罗拉）"
+    },
+    "rampardos": {
+      "en": "Rampardos",
+      "ja": "ラムパルド",
+      "zh": "战槌龙"
+    },
+    "reuniclus": {
+      "en": "Reuniclus",
+      "ja": "ランクルス",
+      "zh": "人造细胞卵"
+    },
+    "rhyperior": {
+      "en": "Rhyperior",
+      "ja": "ドサイドン",
+      "zh": "超甲狂犀"
+    },
+    "roserade": {
+      "en": "Roserade",
+      "ja": "ロズレイド",
+      "zh": "罗丝雷朵"
+    },
+    "rotom": {
+      "en": "Rotom",
+      "ja": "ロトム",
+      "zh": "洛托姆"
+    },
+    "rotom-fan": {
+      "en": "Rotom Fan",
+      "ja": "スピンロトム",
+      "zh": "旋转洛托姆"
+    },
+    "rotom-frost": {
+      "en": "Rotom Frost",
+      "ja": "フロストロトム",
+      "zh": "结冰洛托姆"
+    },
+    "rotom-heat": {
+      "en": "Rotom Heat",
+      "ja": "ヒートロトム",
+      "zh": "加热洛托姆"
+    },
+    "rotom-mow": {
+      "en": "Rotom Mow",
+      "ja": "カットロトム",
+      "zh": "切割洛托姆"
+    },
+    "rotom-wash": {
+      "en": "Rotom Wash",
+      "ja": "ウォッシュロトム",
+      "zh": "清洗洛托姆"
+    },
+    "runerigus": {
+      "en": "Runerigus",
+      "ja": "デスバーン",
+      "zh": "死神板"
+    },
+    "sableye": {
+      "en": "Sableye",
+      "ja": "ヤミラミ",
+      "zh": "勾魂眼"
+    },
+    "salazzle": {
+      "en": "Salazzle",
+      "ja": "エンニュート",
+      "zh": "焰后蜥"
+    },
+    "samurott": {
+      "en": "Samurott",
+      "ja": "ダイケンキ",
+      "zh": "大剑鬼"
+    },
+    "samurott-hisui": {
+      "en": "Samurott Hisui",
+      "ja": "ヒスイダイケンキ",
+      "zh": "大剑鬼（洗翠）"
+    },
+    "sandaconda": {
+      "en": "Silicobra",
+      "ja": "サダイジャ",
+      "zh": ""
+    },
+    "sceptile": {
+      "en": "Sceptile",
+      "ja": "ジュカイン",
+      "zh": "蜥蜴王"
+    },
+    "scizor": {
+      "en": "Scizor",
+      "ja": "ハッサム",
+      "zh": "巨钳螳螂"
+    },
+    "scolipede": {
+      "en": "Scolipede",
+      "ja": "ペンドラー",
+      "zh": "蜈蚣王"
+    },
+    "scovillain": {
+      "en": "Scovillain",
+      "ja": "スコヴィラン",
+      "zh": "狠辣椒"
+    },
+    "scrafty": {
+      "en": "Scrafty",
+      "ja": "ズルズキン",
+      "zh": "头巾混混"
+    },
+    "serperior": {
+      "en": "Serperior",
+      "ja": "ジャローダ",
+      "zh": "君主蛇"
+    },
+    "sharpedo": {
+      "en": "Sharpedo",
+      "ja": "サメハダー",
+      "zh": "巨牙鲨"
+    },
+    "simipour": {
+      "en": "Simipour",
+      "ja": "ヒヤッキー",
+      "zh": "冷水猿"
+    },
+    "simisage": {
+      "en": "Simisage",
+      "ja": "ヤナッキー",
+      "zh": "花椰猿"
+    },
+    "simisear": {
+      "en": "Simisear",
+      "ja": "バオッキー",
+      "zh": "爆香猿"
+    },
+    "sinistcha": {
+      "en": "Sinistcha",
+      "ja": "ヤバソチャ",
+      "zh": "来悲粗茶"
+    },
+    "skarmory": {
+      "en": "Skarmory",
+      "ja": "エアームド",
+      "zh": "盔甲鸟"
+    },
+    "skeledirge": {
+      "en": "Skeledirge",
+      "ja": "ラウドボーン",
+      "zh": "骨纹巨声鳄"
+    },
+    "slowbro": {
+      "en": "Slowbro",
+      "ja": "ヤドラン",
+      "zh": "呆壳兽"
+    },
+    "slowbro-galar": {
+      "en": "Slowbro Galar",
+      "ja": "ガラルヤドラン",
+      "zh": "呆壳兽（伽勒尔）"
+    },
+    "slowking": {
+      "en": "Slowking",
+      "ja": "ヤドキング",
+      "zh": "呆呆王"
+    },
+    "slowking-galar": {
+      "en": "Slowking Galar",
+      "ja": "ガラルヤドキング",
+      "zh": "呆呆王（伽勒尔）"
+    },
+    "slurpuff": {
+      "en": "Slurpuff",
+      "ja": "ペロリーム",
+      "zh": "胖甜妮"
+    },
+    "sneasler": {
+      "en": "Sneasler",
+      "ja": "オオニューラ",
+      "zh": "大狃拉"
+    },
+    "snorlax": {
+      "en": "Snorlax",
+      "ja": "カビゴン",
+      "zh": "卡比兽"
+    },
+    "spiritomb": {
+      "en": "Spiritomb",
+      "ja": "ミカルゲ",
+      "zh": "花岩怪"
+    },
+    "staraptor": {
+      "en": "Staraptor",
+      "ja": "ムクホーク",
+      "zh": "姆克鹰"
+    },
+    "starmie": {
+      "en": "Starmie",
+      "ja": "スターミー",
+      "zh": "宝石海星"
+    },
+    "steelix": {
+      "en": "Steelix",
+      "ja": "ハガネール",
+      "zh": "大钢蛇"
+    },
+    "stunfisk": {
+      "en": "Stunfisk",
+      "ja": "マッギョ",
+      "zh": "泥巴鱼"
+    },
+    "stunfisk-galar": {
+      "en": "Stunfisk Galar",
+      "ja": "ガラルマッギョ",
+      "zh": "泥巴鱼（伽勒尔）"
+    },
+    "swampert": {
+      "en": "Swampert",
+      "ja": "ラグラージ",
+      "zh": "巨沼怪"
+    },
+    "sylveon": {
+      "en": "Sylveon",
+      "ja": "ニンフィア",
+      "zh": "仙子伊布"
+    },
+    "talonflame": {
+      "en": "Talonflame",
+      "ja": "ファイアロー",
+      "zh": "烈箭鹰"
+    },
+    "tauros": {
+      "en": "Tauros",
+      "ja": "ケンタロス",
+      "zh": "肯泰罗"
+    },
+    "tauros-paldea-aqua": {
+      "en": "Tauros Paldea Aqua",
+      "ja": "パルデアケンタロス(水)",
+      "zh": "肯泰罗（水澜种）"
+    },
+    "tauros-paldea-blaze": {
+      "en": "Tauros Paldea Blaze",
+      "ja": "パルデアケンタロス(炎)",
+      "zh": "肯泰罗（火炽种）"
+    },
+    "tauros-paldea-combat": {
+      "en": "Tauros Paldea Combat",
+      "ja": "パルデアケンタロス(格闘)",
+      "zh": "肯泰罗（斗战种）"
+    },
+    "tinkaton": {
+      "en": "Tinkaton",
+      "ja": "デカヌチャン",
+      "zh": "巨锻匠"
+    },
+    "torkoal": {
+      "en": "Torkoal",
+      "ja": "コータス",
+      "zh": "煤炭龟"
+    },
+    "torterra": {
+      "en": "Torterra",
+      "ja": "ドダイトス",
+      "zh": "土台龟"
+    },
+    "toucannon": {
+      "en": "Toucannon",
+      "ja": "ドデカバシ",
+      "zh": "铳嘴大鸟"
+    },
+    "toxapex": {
+      "en": "Toxapex",
+      "ja": "ドヒドイデ",
+      "zh": "超坏星"
+    },
+    "toxicroak": {
+      "en": "Toxicroak",
+      "ja": "ドクロッグ",
+      "zh": "毒骷蛙"
+    },
+    "trevenant": {
+      "en": "Trevenant",
+      "ja": "オーロット",
+      "zh": "朽木妖"
+    },
+    "tsareena": {
+      "en": "Tsareena",
+      "ja": "アマージョ",
+      "zh": "甜冷美后"
+    },
+    "typhlosion": {
+      "en": "Typhlosion",
+      "ja": "バクフーン",
+      "zh": "火暴兽"
+    },
+    "typhlosion-hisui": {
+      "en": "Typhlosion Hisui",
+      "ja": "ヒスイバクフーン",
+      "zh": "火暴兽（洗翠）"
+    },
+    "tyranitar": {
+      "en": "Tyranitar",
+      "ja": "バンギラス",
+      "zh": "班基拉斯"
+    },
+    "tyrantrum": {
+      "en": "Tyrantrum",
+      "ja": "ガチゴラス",
+      "zh": "怪颚龙"
+    },
+    "umbreon": {
+      "en": "Umbreon",
+      "ja": "ブラッキー",
+      "zh": "月亮伊布"
+    },
+    "vanilluxe": {
+      "en": "Vanilluxe",
+      "ja": "バイバニラ",
+      "zh": "双倍多多冰"
+    },
+    "vaporeon": {
+      "en": "Vaporeon",
+      "ja": "シャワーズ",
+      "zh": "水伊布"
+    },
+    "venusaur": {
+      "en": "Venusaur",
+      "ja": "フシギバナ",
+      "zh": "妙蛙花"
+    },
+    "victreebel": {
+      "en": "Victreebel",
+      "ja": "ウツボット",
+      "zh": "大食花"
+    },
+    "vileplume": {
+      "en": "Vileplume",
+      "ja": "ラフレシア",
+      "zh": "霸王花"
+    },
+    "vivillon": {
+      "en": "Vivillon",
+      "ja": "ビビヨン",
+      "zh": "彩粉蝶"
+    },
+    "volcarona": {
+      "en": "Volcarona",
+      "ja": "ウルガモス",
+      "zh": "火神蛾"
+    },
+    "watchog": {
+      "en": "Watchog",
+      "ja": "ミルホッグ",
+      "zh": "步哨鼠"
+    },
+    "weavile": {
+      "en": "Weavile",
+      "ja": "マニューラ",
+      "zh": "玛狃拉"
+    },
+    "whimsicott": {
+      "en": "Whimsicott",
+      "ja": "エルフーン",
+      "zh": "风妖精"
+    },
+    "wyrdeer": {
+      "en": "Wyrdeer",
+      "ja": "アヤシシ",
+      "zh": "诡角鹿"
+    },
+    "zoroark": {
+      "en": "Zoroark",
+      "ja": "ゾロアーク",
+      "zh": "索罗亚克"
+    },
+    "zoroark-hisui": {
+      "en": "Zoroark Hisui",
+      "ja": "ゾロアーク(ヒスイ)",
+      "zh": "索罗亚克（洗翠）"
+    }
+  },
+  "moves": {
+    "blizzard": {
+      "en": "Blizzard",
+      "ja": "ふぶき",
+      "zh": "暴风雪"
+    },
+    "protect": {
+      "en": "Protect",
+      "ja": "まもる",
+      "zh": "守住"
+    },
+    "giga-drain": {
+      "en": "Giga Drain",
+      "ja": "ギガドレイン",
+      "zh": "终极吸取"
+    },
+    "energy-ball": {
+      "en": "Energy Ball",
+      "ja": "エナジーボール",
+      "zh": "能量球"
+    },
+    "aurora-veil": {
+      "en": "Aurora Veil",
+      "ja": "オーロラベール",
+      "zh": "极光幕"
+    },
+    "earth-power": {
+      "en": "Earth Power",
+      "ja": "だいちのちから",
+      "zh": "大地之力"
+    },
+    "ice-shard": {
+      "en": "Ice Shard",
+      "ja": "こおりのつぶて",
+      "zh": "冰砾"
+    },
+    "focus-blast": {
+      "en": "Focus Blast",
+      "ja": "きあいだま",
+      "zh": "真气弹"
+    },
+    "wood-hammer": {
+      "en": "Wood Hammer",
+      "ja": "ウッドハンマー",
+      "zh": "木槌"
+    },
+    "leech-seed": {
+      "en": "Leech Seed",
+      "ja": "やどりぎのタネ",
+      "zh": "寄生种子"
+    },
+    "leaf-storm": {
+      "en": "Leaf Storm",
+      "ja": "リーフストーム",
+      "zh": "飞叶风暴"
+    },
+    "earthquake": {
+      "en": "Earthquake",
+      "ja": "じしん",
+      "zh": "地震"
+    },
+    "sheer-cold": {
+      "en": "Sheer Cold",
+      "ja": "ぜったいれいど",
+      "zh": "绝对零度"
+    },
+    "grass-knot": {
+      "en": "Grass Knot",
+      "ja": "くさむすび",
+      "zh": "打草结"
+    },
+    "sucker-punch": {
+      "en": "Sucker Punch",
+      "ja": "ふいうち",
+      "zh": "突袭"
+    },
+    "night-slash": {
+      "en": "Night Slash",
+      "ja": "つじぎり",
+      "zh": "暗袭要害"
+    },
+    "close-combat": {
+      "en": "Close Combat",
+      "ja": "インファイト",
+      "zh": "近身战"
+    },
+    "psycho-cut": {
+      "en": "Psycho Cut",
+      "ja": "サイコカッター",
+      "zh": "精神利刃"
+    },
+    "knock-off": {
+      "en": "Knock Off",
+      "ja": "はたきおとす",
+      "zh": "拍落"
+    },
+    "play-rough": {
+      "en": "Play Rough",
+      "ja": "じゃれつく",
+      "zh": "嬉闹"
+    },
+    "swords-dance": {
+      "en": "Swords Dance",
+      "ja": "つるぎのまい",
+      "zh": "剑舞"
+    },
+    "detect": {
+      "en": "Detect",
+      "ja": "みきり",
+      "zh": "看穿"
+    },
+    "stone-edge": {
+      "en": "Stone Edge",
+      "ja": "ストーンエッジ",
+      "zh": "尖石攻击"
+    },
+    "ice-beam": {
+      "en": "Ice Beam",
+      "ja": "れいとうビーム",
+      "zh": "冰冻光束"
+    },
+    "will-o-wisp": {
+      "en": "Will O Wisp",
+      "ja": "おにび",
+      "zh": "磷火"
+    },
+    "rock-slide": {
+      "en": "Rock Slide",
+      "ja": "いわなだれ",
+      "zh": "岩崩"
+    },
+    "shadow-claw": {
+      "en": "Shadow Claw",
+      "ja": "シャドークロー",
+      "zh": "暗影爪"
+    },
+    "kings-shield": {
+      "en": "Kings Shield",
+      "ja": "キングシールド",
+      "zh": "王者盾牌"
+    },
+    "shadow-sneak": {
+      "en": "Shadow Sneak",
+      "ja": "かげうち",
+      "zh": "影子偷袭"
+    },
+    "poltergeist": {
+      "en": "Poltergeist",
+      "ja": "ポルターガイスト",
+      "zh": "灵骚"
+    },
+    "iron-head": {
+      "en": "Iron Head",
+      "ja": "アイアンヘッド",
+      "zh": "铁头"
+    },
+    "sacred-sword": {
+      "en": "Sacred Sword",
+      "ja": "せいなるつるぎ",
+      "zh": "圣剑"
+    },
+    "wide-guard": {
+      "en": "Wide Guard",
+      "ja": "ワイドガード",
+      "zh": "广域防守"
+    },
+    "shadow-ball": {
+      "en": "Shadow Ball",
+      "ja": "シャドーボール",
+      "zh": "暗影球"
+    },
+    "flash-cannon": {
+      "en": "Flash Cannon",
+      "ja": "ラスターカノン",
+      "zh": "加农光炮"
+    },
+    "steel-beam": {
+      "en": "Steel Beam",
+      "ja": "てっていこうせん",
+      "zh": "铁蹄光线"
+    },
+    "brick-break": {
+      "en": "Brick Break",
+      "ja": "かわらわり",
+      "zh": "劈瓦"
+    },
+    "substitute": {
+      "en": "Substitute",
+      "ja": "みがわり",
+      "zh": "替身"
+    },
+    "tailwind": {
+      "en": "Tailwind",
+      "ja": "おいかぜ",
+      "zh": "顺风"
+    },
+    "dual-wingbeat": {
+      "en": "Dual Wingbeat",
+      "ja": "ダブルウイング",
+      "zh": "双翼"
+    },
+    "ice-fang": {
+      "en": "Ice Fang",
+      "ja": "こおりのキバ",
+      "zh": "冰冻牙"
+    },
+    "taunt": {
+      "en": "Taunt",
+      "ja": "ちょうはつ",
+      "zh": "挑衅"
+    },
+    "psychic-fangs": {
+      "en": "Psychic Fangs",
+      "ja": "サイコファング",
+      "zh": "精神之牙"
+    },
+    "dragon-dance": {
+      "en": "Dragon Dance",
+      "ja": "りゅうのまい",
+      "zh": "龙之舞"
+    },
+    "stealth-rock": {
+      "en": "Stealth Rock",
+      "ja": "ステルスロック",
+      "zh": "隐形岩"
+    },
+    "crunch": {
+      "en": "Crunch",
+      "ja": "かみくだく",
+      "zh": "咬碎"
+    },
+    "sunny-day": {
+      "en": "Sunny Day",
+      "ja": "にほんばれ",
+      "zh": "大晴天"
+    },
+    "body-press": {
+      "en": "Body Press",
+      "ja": "ボディプレス",
+      "zh": "扑击"
+    },
+    "heavy-slam": {
+      "en": "Heavy Slam",
+      "ja": "ヘビーボンバー",
+      "zh": "重磅冲撞"
+    },
+    "iron-defense": {
+      "en": "Iron Defense",
+      "ja": "てっぺき",
+      "zh": "铁壁"
+    },
+    "ice-punch": {
+      "en": "Ice Punch",
+      "ja": "れいとうパンチ",
+      "zh": "冰冻拳"
+    },
+    "curse": {
+      "en": "Curse",
+      "ja": "のろい",
+      "zh": "咒术"
+    },
+    "metal-burst": {
+      "en": "Metal Burst",
+      "ja": "メタルバースト",
+      "zh": "金属爆炸"
+    },
+    "avalanche": {
+      "en": "Avalanche",
+      "ja": "ゆきなだれ",
+      "zh": "雪崩"
+    },
+    "head-smash": {
+      "en": "Head Smash",
+      "ja": "もろはのずつき",
+      "zh": "双刃头锤"
+    },
+    "rest": {
+      "en": "Rest",
+      "ja": "ねむる",
+      "zh": "睡觉"
+    },
+    "high-horsepower": {
+      "en": "High Horsepower",
+      "ja": "10まんばりき",
+      "zh": "十万马力"
+    },
+    "roar": {
+      "en": "Roar",
+      "ja": "ほえる",
+      "zh": "吼叫"
+    },
+    "psychic": {
+      "en": "Psychic",
+      "ja": "サイコキネシス",
+      "zh": "精神强念"
+    },
+    "expanding-force": {
+      "en": "Expanding Force",
+      "ja": "ワイドフォース",
+      "zh": "广域战力"
+    },
+    "dazzling-gleam": {
+      "en": "Dazzling Gleam",
+      "ja": "マジカルシャイン",
+      "zh": "魔法闪耀"
+    },
+    "guard-swap": {
+      "en": "Guard Swap",
+      "ja": "ガードスワップ",
+      "zh": "防守互换"
+    },
+    "light-screen": {
+      "en": "Light Screen",
+      "ja": "ひかりのかべ",
+      "zh": "光墙"
+    },
+    "reflect": {
+      "en": "Reflect",
+      "ja": "リフレクター",
+      "zh": "反射壁"
+    },
+    "encore": {
+      "en": "Encore",
+      "ja": "アンコール",
+      "zh": "再来一次"
+    },
+    "nasty-plot": {
+      "en": "Nasty Plot",
+      "ja": "わるだくみ",
+      "zh": "诡计"
+    },
+    "psyshock": {
+      "en": "Psyshock",
+      "ja": "サイコショック",
+      "zh": "精神冲击"
+    },
+    "trick-room": {
+      "en": "Trick Room",
+      "ja": "トリックルーム",
+      "zh": "戏法空间"
+    },
+    "psychic-terrain": {
+      "en": "Psychic Terrain",
+      "ja": "サイコフィールド",
+      "zh": "精神场地"
+    },
+    "decorate": {
+      "en": "Decorate",
+      "ja": "デコレーション",
+      "zh": "装饰"
+    },
+    "helping-hand": {
+      "en": "Helping Hand",
+      "ja": "てだすけ",
+      "zh": "帮助"
+    },
+    "mystical-fire": {
+      "en": "Mystical Fire",
+      "ja": "マジカルフレイム",
+      "zh": "魔法火焰"
+    },
+    "recover": {
+      "en": "Recover",
+      "ja": "じこさいせい",
+      "zh": "自我再生"
+    },
+    "draining-kiss": {
+      "en": "Draining Kiss",
+      "ja": "ドレインキッス",
+      "zh": "吸取之吻"
+    },
+    "baby-doll-eyes": {
+      "en": "Baby Doll Eyes",
+      "ja": "ベビードールアイ",
+      "zh": "圆瞳"
+    },
+    "calm-mind": {
+      "en": "Calm Mind",
+      "ja": "めいそう",
+      "zh": "冥想"
+    },
+    "acid-armor": {
+      "en": "Acid Armor",
+      "ja": "とける",
+      "zh": "溶化"
+    },
+    "alluring-voice": {
+      "en": "Alluring Voice",
+      "ja": "みわくのボイス",
+      "zh": "魅诱之声"
+    },
+    "stored-power": {
+      "en": "Stored Power",
+      "ja": "アシストパワー",
+      "zh": "辅助力量"
+    },
+    "psych-up": {
+      "en": "Psych Up",
+      "ja": "じこあんじ",
+      "zh": "自我暗示"
+    },
+    "hyper-voice": {
+      "en": "Hyper Voice",
+      "ja": "ハイパーボイス",
+      "zh": "巨声"
+    },
+    "roost": {
+      "en": "Roost",
+      "ja": "はねやすめ",
+      "zh": "羽栖"
+    },
+    "brave-bird": {
+      "en": "Brave Bird",
+      "ja": "ブレイブバード",
+      "zh": "勇鸟猛攻"
+    },
+    "draco-meteor": {
+      "en": "Draco Meteor",
+      "ja": "りゅうせいぐん",
+      "zh": "流星群"
+    },
+    "perish-song": {
+      "en": "Perish Song",
+      "ja": "ほろびのうた",
+      "zh": "终焉之歌"
+    },
+    "dragon-pulse": {
+      "en": "Dragon Pulse",
+      "ja": "りゅうのはどう",
+      "zh": "龙之波动"
+    },
+    "cotton-guard": {
+      "en": "Cotton Guard",
+      "ja": "コットンガード",
+      "zh": "棉花防守"
+    },
+    "flamethrower": {
+      "en": "Flamethrower",
+      "ja": "かえんほうしゃ",
+      "zh": "喷射火焰"
+    },
+    "fire-blast": {
+      "en": "Fire Blast",
+      "ja": "だいもんじ",
+      "zh": "大字爆炎"
+    },
+    "body-slam": {
+      "en": "Body Slam",
+      "ja": "のしかかり",
+      "zh": "泰山压顶"
+    },
+    "double-edge": {
+      "en": "Double Edge",
+      "ja": "すてみタックル",
+      "zh": "舍身冲撞"
+    },
+    "fire-spin": {
+      "en": "Fire Spin",
+      "ja": "ほのおのうず",
+      "zh": "火焰旋涡"
+    },
+    "thunderbolt": {
+      "en": "Thunderbolt",
+      "ja": "10まんボルト",
+      "zh": "十万伏特"
+    },
+    "parabolic-charge": {
+      "en": "Parabolic Charge",
+      "ja": "パラボラチャージ",
+      "zh": "抛物面充电"
+    },
+    "power-gem": {
+      "en": "Power Gem",
+      "ja": "パワージェム",
+      "zh": "力量宝石"
+    },
+    "volt-switch": {
+      "en": "Volt Switch",
+      "ja": "ボルトチェンジ",
+      "zh": "伏特替换"
+    },
+    "thunder": {
+      "en": "Thunder",
+      "ja": "かみなり",
+      "zh": "打雷"
+    },
+    "charge": {
+      "en": "Charge",
+      "ja": "じゅうでん",
+      "zh": "充电"
+    },
+    "rage-fist": {
+      "en": "Rage Fist",
+      "ja": "ふんどのこぶし",
+      "zh": "愤怒之拳"
+    },
+    "drain-punch": {
+      "en": "Drain Punch",
+      "ja": "ドレインパンチ",
+      "zh": "吸取拳"
+    },
+    "bulk-up": {
+      "en": "Bulk Up",
+      "ja": "ビルドアップ",
+      "zh": "健美"
+    },
+    "coaching": {
+      "en": "Coaching",
+      "ja": "コーチング",
+      "zh": "指导"
+    },
+    "u-turn": {
+      "en": "U Turn",
+      "ja": "とんぼがえり",
+      "zh": "急速折返"
+    },
+    "thunder-punch": {
+      "en": "Thunder Punch",
+      "ja": "かみなりパンチ",
+      "zh": "雷电拳"
+    },
+    "phantom-force": {
+      "en": "Phantom Force",
+      "ja": "ゴーストダイブ",
+      "zh": "潜灵奇袭"
+    },
+    "rock-tomb": {
+      "en": "Rock Tomb",
+      "ja": "がんせきふうじ",
+      "zh": "岩石封锁"
+    },
+    "apple-acid": {
+      "en": "Apple Acid",
+      "ja": "りんごさん",
+      "zh": "苹果酸"
+    },
+    "fissure": {
+      "en": "Fissure",
+      "ja": "じわれ",
+      "zh": "地裂"
+    },
+    "recycle": {
+      "en": "Recycle",
+      "ja": "リサイクル",
+      "zh": "回收利用"
+    },
+    "amnesia": {
+      "en": "Amnesia",
+      "ja": "きおくじょうほう",
+      "zh": "瞬间失忆"
+    },
+    "liquidation": {
+      "en": "Liquidation",
+      "ja": "アクアブレイク",
+      "zh": "水流裂破"
+    },
+    "leech-life": {
+      "en": "Leech Life",
+      "ja": "きゅうけつ",
+      "zh": "汲取"
+    },
+    "lunge": {
+      "en": "Lunge",
+      "ja": "とびかかる",
+      "zh": "猛扑"
+    },
+    "poison-jab": {
+      "en": "Poison Jab",
+      "ja": "どくづき",
+      "zh": "毒击"
+    },
+    "sticky-web": {
+      "en": "Sticky Web",
+      "ja": "ねばねばネット",
+      "zh": "黏黏网"
+    },
+    "mirror-coat": {
+      "en": "Mirror Coat",
+      "ja": "ミラーコート",
+      "zh": "镜面反射"
+    },
+    "rain-dance": {
+      "en": "Rain Dance",
+      "ja": "あまごい",
+      "zh": "求雨"
+    },
+    "skitter-smack": {
+      "en": "Skitter Smack",
+      "ja": "こそこそスラッシュ",
+      "zh": "爬击"
+    },
+    "icy-wind": {
+      "en": "Icy Wind",
+      "ja": "こごえるかぜ",
+      "zh": "冰冻之风"
+    },
+    "bite": {
+      "en": "Bite",
+      "ja": "かみつく",
+      "zh": "咬住"
+    },
+    "surf": {
+      "en": "Surf",
+      "ja": "なみのり",
+      "zh": "冲浪"
+    },
+    "endeavor": {
+      "en": "Endeavor",
+      "ja": "がむしゃら",
+      "zh": "蛮干"
+    },
+    "entrainment": {
+      "en": "Entrainment",
+      "ja": "なかまづくり",
+      "zh": "找伙伴"
+    },
+    "wrap": {
+      "en": "Wrap",
+      "ja": "まきつく",
+      "zh": "紧束"
+    },
+    "scary-face": {
+      "en": "Scary Face",
+      "ja": "こわいかお",
+      "zh": "可怕面孔"
+    },
+    "pounce": {
+      "en": "Pounce",
+      "ja": "おどりかかる",
+      "zh": "虫扑"
+    },
+    "gunk-shot": {
+      "en": "Gunk Shot",
+      "ja": "ダストシュート",
+      "zh": "垃圾射击"
+    },
+    "glare": {
+      "en": "Glare",
+      "ja": "へびにらみ",
+      "zh": "大蛇瞪眼"
+    },
+    "coil": {
+      "en": "Coil",
+      "ja": "とぐろをまく",
+      "zh": "盘蜷"
+    },
+    "breaking-swipe": {
+      "en": "Breaking Swipe",
+      "ja": "ワイドブレイカー",
+      "zh": "广域破坏"
+    },
+    "toxic-spikes": {
+      "en": "Toxic Spikes",
+      "ja": "どくびし",
+      "zh": "毒菱"
+    },
+    "dragon-tail": {
+      "en": "Dragon Tail",
+      "ja": "ドラゴンテール",
+      "zh": "龙尾"
+    },
+    "toxic": {
+      "en": "Toxic",
+      "ja": "どくどく",
+      "zh": "剧毒"
+    },
+    "switcheroo": {
+      "en": "Switcheroo",
+      "ja": "すりかえ",
+      "zh": "掉包"
+    },
+    "snarl": {
+      "en": "Snarl",
+      "ja": "バークアウト",
+      "zh": "大声咆哮"
+    },
+    "poison-fang": {
+      "en": "Poison Fang",
+      "ja": "どくどくのキバ",
+      "zh": "剧毒牙"
+    },
+    "pain-split": {
+      "en": "Pain Split",
+      "ja": "いたみわけ",
+      "zh": "分担痛楚"
+    },
+    "flare-blitz": {
+      "en": "Flare Blitz",
+      "ja": "フレアドライブ",
+      "zh": "闪焰冲锋"
+    },
+    "extreme-speed": {
+      "en": "Extreme Speed",
+      "ja": "しんそく",
+      "zh": "神速"
+    },
+    "wild-charge": {
+      "en": "Wild Charge",
+      "ja": "ワイルドボルト",
+      "zh": "疯狂伏特"
+    },
+    "outrage": {
+      "en": "Outrage",
+      "ja": "げきりん",
+      "zh": "逆鳞"
+    },
+    "morning-sun": {
+      "en": "Morning Sun",
+      "ja": "あさのひざし",
+      "zh": "晨光"
+    },
+    "flame-charge": {
+      "en": "Flame Charge",
+      "ja": "ニトロチャージ",
+      "zh": "蓄能焰袭"
+    },
+    "heat-wave": {
+      "en": "Heat Wave",
+      "ja": "ねっぷう",
+      "zh": "热风"
+    },
+    "bulldoze": {
+      "en": "Bulldoze",
+      "ja": "じならし",
+      "zh": "重踏"
+    },
+    "burn-up": {
+      "en": "Burn Up",
+      "ja": "もえつきる",
+      "zh": "燃尽"
+    },
+    "electro-shot": {
+      "en": "Electro Shot",
+      "ja": "エレクトロビーム",
+      "zh": "电光束"
+    },
+    "aura-sphere": {
+      "en": "Aura Sphere",
+      "ja": "はどうだん",
+      "zh": "波导弹"
+    },
+    "dark-pulse": {
+      "en": "Dark Pulse",
+      "ja": "あくのはどう",
+      "zh": "恶之波动"
+    },
+    "foul-play": {
+      "en": "Foul Play",
+      "ja": "イカサマ",
+      "zh": "移花接木"
+    },
+    "rage-powder": {
+      "en": "Rage Powder",
+      "ja": "いかりのこな",
+      "zh": "愤怒粉"
+    },
+    "string-shot": {
+      "en": "String Shot",
+      "ja": "いとをはく",
+      "zh": "吐丝"
+    },
+    "struggle-bug": {
+      "en": "Struggle Bug",
+      "ja": "むしのていこう",
+      "zh": "虫之抵抗"
+    },
+    "toxic-thread": {
+      "en": "Toxic Thread",
+      "ja": "どくのいと",
+      "zh": "毒丝"
+    },
+    "first-impression": {
+      "en": "First Impression",
+      "ja": "であいがしら",
+      "zh": "迎头一击"
+    },
+    "cross-poison": {
+      "en": "Cross Poison",
+      "ja": "クロスポイズン",
+      "zh": "十字毒刃"
+    },
+    "megahorn": {
+      "en": "Megahorn",
+      "ja": "メガホーン",
+      "zh": "超级角击"
+    },
+    "armor-cannon": {
+      "en": "Armor Cannon",
+      "ja": "アーマーキャノン",
+      "zh": "铠农炮"
+    },
+    "destiny-bond": {
+      "en": "Destiny Bond",
+      "ja": "みちづれ",
+      "zh": "同命"
+    },
+    "endure": {
+      "en": "Endure",
+      "ja": "こらえる",
+      "zh": "挺住"
+    },
+    "ally-switch": {
+      "en": "Ally Switch",
+      "ja": "サイドチェンジ",
+      "zh": "交换场地"
+    },
+    "moonblast": {
+      "en": "Moonblast",
+      "ja": "ムーンフォース",
+      "zh": "月亮之力"
+    },
+    "heal-pulse": {
+      "en": "Heal Pulse",
+      "ja": "いやしのはどう",
+      "zh": "治愈波动"
+    },
+    "misty-explosion": {
+      "en": "Misty Explosion",
+      "ja": "ミストバースト",
+      "zh": "薄雾炸裂"
+    },
+    "misty-terrain": {
+      "en": "Misty Terrain",
+      "ja": "ミストフィールド",
+      "zh": "薄雾场地"
+    },
+    "fake-tears": {
+      "en": "Fake Tears",
+      "ja": "うそなき",
+      "zh": "假哭"
+    },
+    "disable": {
+      "en": "Disable",
+      "ja": "かなしばり",
+      "zh": "定身法"
+    },
+    "wish": {
+      "en": "Wish",
+      "ja": "ねがいごと",
+      "zh": "祈愿"
+    },
+    "life-dew": {
+      "en": "Life Dew",
+      "ja": "いのちのしずく",
+      "zh": "生命水滴"
+    },
+    "simple-beam": {
+      "en": "Simple Beam",
+      "ja": "シンプルビーム",
+      "zh": "单纯光束"
+    },
+    "yawn": {
+      "en": "Yawn",
+      "ja": "あくび",
+      "zh": "哈欠"
+    },
+    "healing-wish": {
+      "en": "Healing Wish",
+      "ja": "いやしのねがい",
+      "zh": "治愈之愿"
+    },
+    "ancient-power": {
+      "en": "Ancient Power",
+      "ja": "げんしのちから",
+      "zh": "原始之力"
+    },
+    "freeze-dry": {
+      "en": "Freeze Dry",
+      "ja": "フリーズドライ",
+      "zh": "冷冻干燥"
+    },
+    "round": {
+      "en": "Round",
+      "ja": "りんしょう",
+      "zh": "轮唱"
+    },
+    "thunder-wave": {
+      "en": "Thunder Wave",
+      "ja": "でんじは",
+      "zh": "电磁波"
+    },
+    "hyper-beam": {
+      "en": "Hyper Beam",
+      "ja": "はかいこうせん",
+      "zh": "破坏光线"
+    },
+    "mountain-gale": {
+      "en": "Mountain Gale",
+      "ja": "ひょうざんおろし",
+      "zh": "冰山风"
+    },
+    "ice-spinner": {
+      "en": "Ice Spinner",
+      "ja": "アイススピナー",
+      "zh": "冰旋"
+    },
+    "rock-blast": {
+      "en": "Rock Blast",
+      "ja": "ロックブラスト",
+      "zh": "岩石爆击"
+    },
+    "rapid-spin": {
+      "en": "Rapid Spin",
+      "ja": "こうそくスピン",
+      "zh": "高速旋转"
+    },
+    "icicle-spear": {
+      "en": "Icicle Spear",
+      "ja": "つららばり",
+      "zh": "冰锥"
+    },
+    "icicle-crash": {
+      "en": "Icicle Crash",
+      "ja": "つららおとし",
+      "zh": "冰柱坠击"
+    },
+    "frost-breath": {
+      "en": "Frost Breath",
+      "ja": "こおりのいぶき",
+      "zh": "冰息"
+    },
+    "aqua-jet": {
+      "en": "Aqua Jet",
+      "ja": "アクアジェット",
+      "zh": "水流喷射"
+    },
+    "belly-drum": {
+      "en": "Belly Drum",
+      "ja": "はらだいこ",
+      "zh": "腹鼓"
+    },
+    "superpower": {
+      "en": "Superpower",
+      "ja": "ばかぢから",
+      "zh": "蛮力"
+    },
+    "waterfall": {
+      "en": "Waterfall",
+      "ja": "たきのぼり",
+      "zh": "攀瀑"
+    },
+    "charm": {
+      "en": "Charm",
+      "ja": "あまえる",
+      "zh": "撒娇"
+    },
+    "whirlpool": {
+      "en": "Whirlpool",
+      "ja": "うずしお",
+      "zh": "潮旋"
+    },
+    "skill-swap": {
+      "en": "Skill Swap",
+      "ja": "スキルスワップ",
+      "zh": "特性互换"
+    },
+    "shell-smash": {
+      "en": "Shell Smash",
+      "ja": "からをやぶる",
+      "zh": "破壳"
+    },
+    "aqua-cutter": {
+      "en": "Aqua Cutter",
+      "ja": "アクアカッター",
+      "zh": "水波刀"
+    },
+    "cross-chop": {
+      "en": "Cross Chop",
+      "ja": "クロスチョップ",
+      "zh": "十字劈"
+    },
+    "last-respects": {
+      "en": "Last Respects",
+      "ja": "おはかまいり",
+      "zh": "扫墓"
+    },
+    "muddy-water": {
+      "en": "Muddy Water",
+      "ja": "だくりゅう",
+      "zh": "浊流"
+    },
+    "flip-turn": {
+      "en": "Flip Turn",
+      "ja": "クイックターン",
+      "zh": "快速折返"
+    },
+    "wave-crash": {
+      "en": "Wave Crash",
+      "ja": "ウェーブタックル",
+      "zh": "波动冲"
+    },
+    "hydro-pump": {
+      "en": "Hydro Pump",
+      "ja": "ハイドロポンプ",
+      "zh": "水炮"
+    },
+    "agility": {
+      "en": "Agility",
+      "ja": "こうそくいどう",
+      "zh": "高速移动"
+    },
+    "soak": {
+      "en": "Soak",
+      "ja": "みずびたし",
+      "zh": "浸水"
+    },
+    "smack-down": {
+      "en": "Smack Down",
+      "ja": "うちおとす",
+      "zh": "击落"
+    },
+    "counter": {
+      "en": "Counter",
+      "ja": "カウンター",
+      "zh": "双倍奉还"
+    },
+    "throat-chop": {
+      "en": "Throat Chop",
+      "ja": "じごくづき",
+      "zh": "深渊突刺"
+    },
+    "drill-run": {
+      "en": "Drill Run",
+      "ja": "ドリルライナー",
+      "zh": "直冲钻"
+    },
+    "fell-stinger": {
+      "en": "Fell Stinger",
+      "ja": "とどめばり",
+      "zh": "致命针刺"
+    },
+    "x-scissor": {
+      "en": "X Scissor",
+      "ja": "エックスシザー",
+      "zh": "十字剪"
+    },
+    "pin-missile": {
+      "en": "Pin Missile",
+      "ja": "ミサイルばり",
+      "zh": "飞弹针"
+    },
+    "slack-off": {
+      "en": "Slack Off",
+      "ja": "なまける",
+      "zh": "偷懒"
+    },
+    "weather-ball": {
+      "en": "Weather Ball",
+      "ja": "ウェザーボール",
+      "zh": "气象球"
+    },
+    "acid-spray": {
+      "en": "Acid Spray",
+      "ja": "アシッドボム",
+      "zh": "酸液炸弹"
+    },
+    "electric-terrain": {
+      "en": "Electric Terrain",
+      "ja": "エレキフィールド",
+      "zh": "电气场地"
+    },
+    "electroweb": {
+      "en": "Electroweb",
+      "ja": "エレキネット",
+      "zh": "电网"
+    },
+    "mud-shot": {
+      "en": "Mud Shot",
+      "ja": "マッドショット",
+      "zh": "泥巴射击"
+    },
+    "water-spout": {
+      "en": "Water Spout",
+      "ja": "しおふき",
+      "zh": "喷水"
+    },
+    "fake-out": {
+      "en": "Fake Out",
+      "ja": "ねこだまし",
+      "zh": "击掌奇袭"
+    },
+    "water-pulse": {
+      "en": "Water Pulse",
+      "ja": "みずのはどう",
+      "zh": "水之波动"
+    },
+    "blaze-kick": {
+      "en": "Blaze Kick",
+      "ja": "ほのおのキック",
+      "zh": "火焰踢"
+    },
+    "high-jump-kick": {
+      "en": "High Jump Kick",
+      "ja": "とびひざげり",
+      "zh": "飞膝踢"
+    },
+    "baton-pass": {
+      "en": "Baton Pass",
+      "ja": "バトンタッチ",
+      "zh": "接棒"
+    },
+    "ブプレイズキック": {
+      "en": "ブプレイズキック",
+      "ja": "ブプレイズキック",
+      "zh": ""
+    },
+    "eruption": {
+      "en": "Eruption",
+      "ja": "ふんか",
+      "zh": "喷火"
+    },
+    "solar-beam": {
+      "en": "Solar Beam",
+      "ja": "ソーラービーム",
+      "zh": "日光束"
+    },
+    "stomping-tantrum": {
+      "en": "Stomping Tantrum",
+      "ja": "じだんだ",
+      "zh": "跺脚"
+    },
+    "hurricane": {
+      "en": "Hurricane",
+      "ja": "ぼうふう",
+      "zh": "暴风"
+    },
+    "scald": {
+      "en": "Scald",
+      "ja": "ねっとう",
+      "zh": "热水"
+    },
+    "thief": {
+      "en": "Thief",
+      "ja": "どろぼう",
+      "zh": "小偷"
+    },
+    "facade": {
+      "en": "Facade",
+      "ja": "からげんき",
+      "zh": "硬撑"
+    },
+    "bitter-blade": {
+      "en": "Bitter Blade",
+      "ja": "むねんのつるぎ",
+      "zh": "悔念剑"
+    },
+    "solar-blade": {
+      "en": "Solar Blade",
+      "ja": "ソーラーブレード",
+      "zh": "日光刃"
+    },
+    "overheat": {
+      "en": "Overheat",
+      "ja": "オーバーヒート",
+      "zh": "过热"
+    },
+    "trick": {
+      "en": "Trick",
+      "ja": "トリック",
+      "zh": "戏法"
+    },
+    "minimize": {
+      "en": "Minimize",
+      "ja": "ちいさくなる",
+      "zh": "变小"
+    },
+    "air-slash": {
+      "en": "Air Slash",
+      "ja": "エアスラッシュ",
+      "zh": "空气之刃"
+    },
+    "dragon-claw": {
+      "en": "Dragon Claw",
+      "ja": "ドラゴンクロー",
+      "zh": "龙爪"
+    },
+    "scorching-sands": {
+      "en": "Scorching Sands",
+      "ja": "ねっさのだいち",
+      "zh": "热沙大地"
+    },
+    "spiky-shield": {
+      "en": "Spiky Shield",
+      "ja": "ニードルガード",
+      "zh": "尖刺防守"
+    },
+    "seed-bomb": {
+      "en": "Seed Bomb",
+      "ja": "タネばくだん",
+      "zh": "种子炸弹"
+    },
+    "synthesis": {
+      "en": "Synthesis",
+      "ja": "こうごうせい",
+      "zh": "光合作用"
+    },
+    "grassy-glide": {
+      "en": "Grassy Glide",
+      "ja": "グラススライダー",
+      "zh": "青草滑梯"
+    },
+    "boomburst": {
+      "en": "Boomburst",
+      "ja": "ばくおんぱ",
+      "zh": "爆音波"
+    },
+    "cosmic-power": {
+      "en": "Cosmic Power",
+      "ja": "コスモパワー",
+      "zh": "宇宙力量"
+    },
+    "psychic-noise": {
+      "en": "Psychic Noise",
+      "ja": "サイコノイズ",
+      "zh": "精神噪音"
+    },
+    "sludge-bomb": {
+      "en": "Sludge Bomb",
+      "ja": "ヘドロばくだん",
+      "zh": "污泥炸弹"
+    },
+    "terrain-pulse": {
+      "en": "Terrain Pulse",
+      "ja": "フィールドのちから",
+      "zh": "大地波动"
+    },
+    "sludge-wave": {
+      "en": "Sludge Wave",
+      "ja": "ヘドロウェーブ",
+      "zh": "污泥波"
+    },
+    "follow-me": {
+      "en": "Follow Me",
+      "ja": "このゆびとまれ",
+      "zh": "看我嘛"
+    },
+    "moonlight": {
+      "en": "Moonlight",
+      "ja": "つきのひかり",
+      "zh": "月光"
+    },
+    "charge-beam": {
+      "en": "Charge Beam",
+      "ja": "チャージビーム",
+      "zh": "充电光束"
+    },
+    "hex": {
+      "en": "Hex",
+      "ja": "たたりめ",
+      "zh": "祸不单行"
+    },
+    "memento": {
+      "en": "Memento",
+      "ja": "おきみやげ",
+      "zh": "临别礼物"
+    },
+    "haze": {
+      "en": "Haze",
+      "ja": "くろいきり",
+      "zh": "黑雾"
+    },
+    "mach-punch": {
+      "en": "Mach Punch",
+      "ja": "マッハパンチ",
+      "zh": "音速拳"
+    },
+    "fire-punch": {
+      "en": "Fire Punch",
+      "ja": "ほのおのパンチ",
+      "zh": "火焰拳"
+    },
+    "power-trip": {
+      "en": "Power Trip",
+      "ja": "つけあがる",
+      "zh": "嚣张"
+    },
+    "defog": {
+      "en": "Defog",
+      "ja": "きりばらい",
+      "zh": "清除浓雾"
+    },
+    "ice-hammer": {
+      "en": "Ice Hammer",
+      "ja": "アイスハンマー",
+      "zh": "冰锤"
+    },
+    "crabhammer": {
+      "en": "Crabhammer",
+      "ja": "クラブハンマー",
+      "zh": "蟹钳锤"
+    },
+    "bubble": {
+      "en": "Bubble",
+      "ja": "あわ",
+      "zh": "泡沫"
+    },
+    "triple-arrows": {
+      "en": "Triple Arrows",
+      "ja": "3ぼんのや",
+      "zh": "三连箭"
+    },
+    "leaf-blade": {
+      "en": "Leaf Blade",
+      "ja": "リーフブレード",
+      "zh": "叶刃"
+    },
+    "upper-hand": {
+      "en": "Upper Hand",
+      "ja": "はやてがえし",
+      "zh": "快手还击"
+    },
+    "spirit-shackle": {
+      "en": "Spirit Shackle",
+      "ja": "かげぬい",
+      "zh": "缝影"
+    },
+    "nuzzle": {
+      "en": "Nuzzle",
+      "ja": "ほっぺすりすり",
+      "zh": "蹭蹭脸颊"
+    },
+    "super-fang": {
+      "en": "Super Fang",
+      "ja": "いかりのまえば",
+      "zh": "愤怒门牙"
+    },
+    "eerie-impulse": {
+      "en": "Eerie Impulse",
+      "ja": "かいでんぱ",
+      "zh": "怪异电波"
+    },
+    "rising-voltage": {
+      "en": "Rising Voltage",
+      "ja": "ライジングボルト",
+      "zh": "电力上升"
+    },
+    "quick-attack": {
+      "en": "Quick Attack",
+      "ja": "でんこうせっか",
+      "zh": "电光一闪"
+    },
+    "self-destruct": {
+      "en": "Self Destruct",
+      "ja": "じばく",
+      "zh": "玉石俱碎"
+    },
+    "transform": {
+      "en": "Transform",
+      "ja": "へんしん",
+      "zh": "变身"
+    },
+    "dragon-darts": {
+      "en": "Dragon Darts",
+      "ja": "ドラゴンアロー",
+      "zh": "龙箭"
+    },
+    "beat-up": {
+      "en": "Beat Up",
+      "ja": "ふくろだたき",
+      "zh": "围攻"
+    },
+    "low-kick": {
+      "en": "Low Kick",
+      "ja": "けたぐり",
+      "zh": "踢倒"
+    },
+    "discharge": {
+      "en": "Discharge",
+      "ja": "ほうでん",
+      "zh": "放电"
+    },
+    "supercell-slam": {
+      "en": "Supercell Slam",
+      "ja": "サンダーダイブ",
+      "zh": "闪电强袭"
+    },
+    "storm-throw": {
+      "en": "Storm Throw",
+      "ja": "やまあらし",
+      "zh": "山岚摔"
+    },
+    "speed-swap": {
+      "en": "Speed Swap",
+      "ja": "スピードシェア",
+      "zh": "速度互换"
+    },
+    "vacuum-wave": {
+      "en": "Vacuum Wave",
+      "ja": "しんくうは",
+      "zh": "真空波"
+    },
+    "hydro-cannon": {
+      "en": "Hydro Cannon",
+      "ja": "ハイドロカノン",
+      "zh": "加农水炮"
+    },
+    "lumina-crash": {
+      "en": "Lumina Crash",
+      "ja": "ルミナコリジョン",
+      "zh": "琉光冲激"
+    },
+    "hypnosis": {
+      "en": "Hypnosis",
+      "ja": "さいみんじゅつ",
+      "zh": "催眠术"
+    },
+    "feather-dance": {
+      "en": "Feather Dance",
+      "ja": "フェザーダンス",
+      "zh": "羽毛舞"
+    },
+    "horn-drill": {
+      "en": "Horn Drill",
+      "ja": "つのドリル",
+      "zh": "角钻"
+    },
+    "no-retreat": {
+      "en": "No Retreat",
+      "ja": "もうしんのかまえ",
+      "zh": "背水一战"
+    },
+    "twin-beam": {
+      "en": "Twin Beam",
+      "ja": "ツインビーム",
+      "zh": "双光束"
+    },
+    "imprison": {
+      "en": "Imprison",
+      "ja": "ふういん",
+      "zh": "封印"
+    },
+    "thrash": {
+      "en": "Thrash",
+      "ja": "あばれる",
+      "zh": "大闹一番"
+    },
+    "grav-apple": {
+      "en": "Grav Apple",
+      "ja": "グラビティアップル",
+      "zh": "万有引力"
+    },
+    "dragon-rush": {
+      "en": "Dragon Rush",
+      "ja": "ドラゴンダイブ",
+      "zh": "龙之俯冲"
+    },
+    "acrobatics": {
+      "en": "Acrobatics",
+      "ja": "アクロバット",
+      "zh": "杂技"
+    },
+    "trailblaze": {
+      "en": "Trailblaze",
+      "ja": "くさわけ",
+      "zh": "起草"
+    },
+    "aerial-ace": {
+      "en": "Aerial Ace",
+      "ja": "つばめがえし",
+      "zh": "燕返"
+    },
+    "grassy-terrain": {
+      "en": "Grassy Terrain",
+      "ja": "グラスフィールド",
+      "zh": "青草场地"
+    },
+    "temper-flare": {
+      "en": "Temper Flare",
+      "ja": "やけっぱち",
+      "zh": "豁出去"
+    },
+    "light-of-ruin": {
+      "en": "Light Of Ruin",
+      "ja": "はめつのひかり",
+      "zh": "破灭之光"
+    },
+    "pollen-puff": {
+      "en": "Pollen Puff",
+      "ja": "かふんだんご",
+      "zh": "花粉团"
+    },
+    "gyro-ball": {
+      "en": "Gyro Ball",
+      "ja": "ジャイロボール",
+      "zh": "陀螺球"
+    },
+    "explosion": {
+      "en": "Explosion",
+      "ja": "だいばくはつ",
+      "zh": "大爆炸"
+    },
+    "spikes": {
+      "en": "Spikes",
+      "ja": "まきびし",
+      "zh": "撒菱"
+    },
+    "last-resort": {
+      "en": "Last Resort",
+      "ja": "ラストリゾート",
+      "zh": "珍藏"
+    },
+    "fire-fang": {
+      "en": "Fire Fang",
+      "ja": "ほのおのキバ",
+      "zh": "火焰牙"
+    },
+    "triple-axel": {
+      "en": "Triple Axel",
+      "ja": "トリプルアクセル",
+      "zh": "三旋击"
+    },
+    "stockpile": {
+      "en": "Stockpile",
+      "ja": "たくわえる",
+      "zh": "蓄力"
+    },
+    "fling": {
+      "en": "Fling",
+      "ja": "なげつける",
+      "zh": "投掷"
+    },
+    "clear-smog": {
+      "en": "Clear Smog",
+      "ja": "クリアスモッグ",
+      "zh": "清除之烟"
+    },
+    "scale-shot": {
+      "en": "Scale Shot",
+      "ja": "スケイルショット",
+      "zh": "鳞射"
+    },
+    "salt-cure": {
+      "en": "Salt Cure",
+      "ja": "しおづけ",
+      "zh": "盐腌"
+    },
+    "make-it-rain": {
+      "en": "Make It Rain",
+      "ja": "ゴールドラッシュ",
+      "zh": "淘金潮"
+    },
+    "snowscape": {
+      "en": "Snowscape",
+      "ja": "ゆきげしき",
+      "zh": "雪景"
+    },
+    "double-team": {
+      "en": "Double Team",
+      "ja": "かげぶんしん",
+      "zh": "影子分身"
+    },
+    "mortal-spin": {
+      "en": "Mortal Spin",
+      "ja": "キラースピン",
+      "zh": "晶光转转"
+    },
+    "venoshock": {
+      "en": "Venoshock",
+      "ja": "ベノムショック",
+      "zh": "毒液冲击"
+    },
+    "rock-polish": {
+      "en": "Rock Polish",
+      "ja": "ロックカット",
+      "zh": "岩石打磨"
+    },
+    "headlong-rush": {
+      "en": "Headlong Rush",
+      "ja": "ぶちかまし",
+      "zh": "突飞猛扑"
+    },
+    "shadow-punch": {
+      "en": "Shadow Punch",
+      "ja": "シャドーパンチ",
+      "zh": "暗影拳"
+    },
+    "dynamic-punch": {
+      "en": "Dynamic Punch",
+      "ja": "ばくれつパンチ",
+      "zh": "爆裂拳"
+    },
+    "shelter": {
+      "en": "Shelter",
+      "ja": "たてこもる",
+      "zh": "闭关"
+    },
+    "trick-or-treat": {
+      "en": "Trick Or Treat",
+      "ja": "ハロウィン",
+      "zh": "万圣夜"
+    },
+    "power-whip": {
+      "en": "Power Whip",
+      "ja": "パワーウィップ",
+      "zh": "强力鞭打"
+    },
+    "water-shuriken": {
+      "en": "Water Shuriken",
+      "ja": "みずしゅりけん",
+      "zh": "飞水手里剑"
+    },
+    "extrasensory": {
+      "en": "Extrasensory",
+      "ja": "じんつうりき",
+      "zh": "神通力"
+    },
+    "parting-shot": {
+      "en": "Parting Shot",
+      "ja": "すてゼリフ",
+      "zh": "抛下狠话"
+    },
+    "spirit-break": {
+      "en": "Spirit Break",
+      "ja": "ソウルクラッシュ",
+      "zh": "灵魂冲击"
+    },
+    "aqua-tail": {
+      "en": "Aqua Tail",
+      "ja": "アクアテール",
+      "zh": "水流尾"
+    },
+    "lash-out": {
+      "en": "Lash Out",
+      "ja": "ぶちまける",
+      "zh": "泄愤"
+    },
+    "magic-powder": {
+      "en": "Magic Powder",
+      "ja": "まほうのこな",
+      "zh": "魔法粉"
+    },
+    "flying-press": {
+      "en": "Flying Press",
+      "ja": "フライングプレス",
+      "zh": "飞身重压"
+    },
+    "shed-tail": {
+      "en": "Shed Tail",
+      "ja": "しっぽきり",
+      "zh": "断尾"
+    },
+    "bullet-seed": {
+      "en": "Bullet Seed",
+      "ja": "タネマシンガン",
+      "zh": "种子机关枪"
+    },
+    "feint": {
+      "en": "Feint",
+      "ja": "フェイント",
+      "zh": "佯攻"
+    },
+    "whirlwind": {
+      "en": "Whirlwind",
+      "ja": "ふきとばし",
+      "zh": "吹飞"
+    },
+    "howl": {
+      "en": "Howl",
+      "ja": "とおぼえ",
+      "zh": "长嚎"
+    },
+    "fickle-beam": {
+      "en": "Fickle Beam",
+      "ja": "ぐるぐるレーザー",
+      "zh": "随机光"
+    },
+    "syrup-bomb": {
+      "en": "Syrup Bomb",
+      "ja": "シロップばくだん",
+      "zh": "糖浆炸弹"
+    },
+    "darkest-lariat": {
+      "en": "Darkest Lariat",
+      "ja": "DDラリアット",
+      "zh": "ＤＤ金勾臂"
+    },
+    "copycat": {
+      "en": "Copycat",
+      "ja": "まねっこ",
+      "zh": "仿效"
+    },
+    "electro-ball": {
+      "en": "Electro Ball",
+      "ja": "エレクトロボール",
+      "zh": "电球"
+    },
+    "mud-slap": {
+      "en": "Mud Slap",
+      "ja": "どろかけ",
+      "zh": "掷泥"
+    },
+    "hammer-arm": {
+      "en": "Hammer Arm",
+      "ja": "ハンマーアーム",
+      "zh": "臂锤"
+    },
+    "kowtow-cleave": {
+      "en": "Kowtow Cleave",
+      "ja": "ドゲザン",
+      "zh": "仆刀"
+    },
+    "low-sweep": {
+      "en": "Low Sweep",
+      "ja": "ローキック",
+      "zh": "下盘踢"
+    },
+    "assurance": {
+      "en": "Assurance",
+      "ja": "ダメおし",
+      "zh": "恶意追击"
+    },
+    "guillotine": {
+      "en": "Guillotine",
+      "ja": "ハサミギロチン",
+      "zh": "极落钳"
+    },
+    "stone-axe": {
+      "en": "Stone Axe",
+      "ja": "がんせきアックス",
+      "zh": "岩斧"
+    },
+    "sandstorm": {
+      "en": "Sandstorm",
+      "ja": "すなあらし",
+      "zh": "沙暴"
+    },
+    "magnet-rise": {
+      "en": "Magnet Rise",
+      "ja": "でんじふゆう",
+      "zh": "电磁飘浮"
+    },
+    "clanging-scales": {
+      "en": "Clanging Scales",
+      "ja": "スケイルノイズ",
+      "zh": "鳞片噪音"
+    },
+    "clangorous-soul": {
+      "en": "Clangorous Soul",
+      "ja": "ソウルビート",
+      "zh": "魂舞烈音爆"
+    },
+    "giga-impact": {
+      "en": "Giga Impact",
+      "ja": "ギガインパクト",
+      "zh": "终极冲击"
+    },
+    "after-you": {
+      "en": "After You",
+      "ja": "おさきにどうぞ",
+      "zh": "您先请"
+    },
+    "mega-kick": {
+      "en": "Mega Kick",
+      "ja": "メガトンキック",
+      "zh": "百万吨重踢"
+    },
+    "meteor-mash": {
+      "en": "Meteor Mash",
+      "ja": "コメットパンチ",
+      "zh": "彗星拳"
+    },
+    "bullet-punch": {
+      "en": "Bullet Punch",
+      "ja": "バレットパンチ",
+      "zh": "子弹拳"
+    },
+    "final-gambit": {
+      "en": "Final Gambit",
+      "ja": "いのちがけ",
+      "zh": "搏命"
+    },
+    "accelerock": {
+      "en": "Accelerock",
+      "ja": "アクセルロック",
+      "zh": "冲岩"
+    },
+    "iron-tail": {
+      "en": "Iron Tail",
+      "ja": "アイアンテール",
+      "zh": "铁尾"
+    },
+    "topsy-turvy": {
+      "en": "Topsy Turvy",
+      "ja": "ひっくりかえす",
+      "zh": "颠倒"
+    },
+    "zen-headbutt": {
+      "en": "Zen Headbutt",
+      "ja": "しねんのずつき",
+      "zh": "意念头锤"
+    },
+    "population-bomb": {
+      "en": "Population Bomb",
+      "ja": "ねずみざん",
+      "zh": "鼠数儿"
+    },
+    "tidy-up": {
+      "en": "Tidy Up",
+      "ja": "おかたづけ",
+      "zh": "大扫除"
+    },
+    "プレイズキック": {
+      "en": "プレイズキック",
+      "ja": "プレイズキック",
+      "zh": ""
+    },
+    "flower-trick": {
+      "en": "Flower Trick",
+      "ja": "トリックフラワー",
+      "zh": "千变万花"
+    },
+    "gravity": {
+      "en": "Gravity",
+      "ja": "じゅうりょく",
+      "zh": "重力"
+    },
+    "aura-wheel": {
+      "en": "Aura Wheel",
+      "ja": "オーラぐるま",
+      "zh": "气场轮"
+    },
+    "reversal": {
+      "en": "Reversal",
+      "ja": "きしかいせい",
+      "zh": "绝处逢生"
+    },
+    "future-sight": {
+      "en": "Future Sight",
+      "ja": "みらいよち",
+      "zh": "预知未来"
+    },
+    "power-swap": {
+      "en": "Power Swap",
+      "ja": "パワースワップ",
+      "zh": "力量互换"
+    },
+    "instruct": {
+      "en": "Instruct",
+      "ja": "さいはい",
+      "zh": "号令"
+    },
+    "barb-barrage": {
+      "en": "Barb Barrage",
+      "ja": "どくばりセンボン",
+      "zh": "毒千针"
+    },
+    "poison-sting": {
+      "en": "Poison Sting",
+      "ja": "どくばり",
+      "zh": "毒针"
+    },
+    "jet-punch": {
+      "en": "Jet Punch",
+      "ja": "ジェットパンチ",
+      "zh": "喷射拳"
+    },
+    "comeuppance": {
+      "en": "Comeuppance",
+      "ja": "ほうふく",
+      "zh": "复仇"
+    },
+    "volt-tackle": {
+      "en": "Volt Tackle",
+      "ja": "ボルテッカー",
+      "zh": "伏特攻击"
+    },
+    "strength-sap": {
+      "en": "Strength Sap",
+      "ja": "ちからをすいとる",
+      "zh": "吸取力量"
+    },
+    "sparkling-aria": {
+      "en": "Sparkling Aria",
+      "ja": "うたかたのアリア",
+      "zh": "泡影的咏叹调"
+    },
+    "aqua-step": {
+      "en": "Aqua Step",
+      "ja": "アクアステップ",
+      "zh": "流水旋舞"
+    },
+    "acupressure": {
+      "en": "Acupressure",
+      "ja": "ツボをつく",
+      "zh": "点穴"
+    },
+    "zap-cannon": {
+      "en": "Zap Cannon",
+      "ja": "でんじほう",
+      "zh": "电磁炮"
+    },
+    "sleep-powder": {
+      "en": "Sleep Powder",
+      "ja": "ねむりごな",
+      "zh": "催眠粉"
+    },
+    "quash": {
+      "en": "Quash",
+      "ja": "さきおくり",
+      "zh": "延后"
+    },
+    "dragon-cheer": {
+      "en": "Dragon Cheer",
+      "ja": "ドラゴンエール",
+      "zh": "龙声鼓舞"
+    },
+    "ceaseless-edge": {
+      "en": "Ceaseless Edge",
+      "ja": "ひけん・ちえなみ",
+      "zh": "秘剑・千重涛"
+    },
+    "razor-shell": {
+      "en": "Razor Shell",
+      "ja": "シェルブレード",
+      "zh": "贝壳刃"
+    },
+    "sand-tomb": {
+      "en": "Sand Tomb",
+      "ja": "すなじごく",
+      "zh": "流沙深渊"
+    },
+    "quick-guard": {
+      "en": "Quick Guard",
+      "ja": "クイックガード",
+      "zh": "快速防守"
+    },
+    "bug-bite": {
+      "en": "Bug Bite",
+      "ja": "むしくい",
+      "zh": "虫咬"
+    },
+    "spicy-extract": {
+      "en": "Spicy Extract",
+      "ja": "からいちゃくち",
+      "zh": "辣椒精华"
+    },
+    "jealous-flames": {
+      "en": "Jealous Flames",
+      "ja": "しっとのほのお",
+      "zh": "妒火"
+    },
+    "shaka-shaka-cannon": {
+      "en": "Shaka Shaka Cannon",
+      "ja": "シャカシャカほう",
+      "zh": "刷刷茶炮"
+    },
+    "torch-song": {
+      "en": "Torch Song",
+      "ja": "フレアソング",
+      "zh": "闪焰高歌"
+    },
+    "shell-side-arm": {
+      "en": "Shell Side Arm",
+      "ja": "シェルアームズ",
+      "zh": "臂贝武器"
+    },
+    "chilly-reception": {
+      "en": "Chilly Reception",
+      "ja": "さむいギャグ",
+      "zh": "冷笑话"
+    },
+    "eerie-spell": {
+      "en": "Eerie Spell",
+      "ja": "ぶきみなじゅもん",
+      "zh": "诡异咒语"
+    },
+    "dire-claw": {
+      "en": "Dire Claw",
+      "ja": "フェイタルクロー",
+      "zh": "克命爪"
+    },
+    "heat-crash": {
+      "en": "Heat Crash",
+      "ja": "ヒートスタンプ",
+      "zh": "高温重压"
+    },
+    "snap-trap": {
+      "en": "Snap Trap",
+      "ja": "トラバサミ",
+      "zh": "捕兽夹"
+    },
+    "dig": {
+      "en": "Dig",
+      "ja": "あなをほる",
+      "zh": "挖洞"
+    },
+    "raging-bull": {
+      "en": "Raging Bull",
+      "ja": "レイジングブル",
+      "zh": "怒牛"
+    },
+    "sleep-talk": {
+      "en": "Sleep Talk",
+      "ja": "ねごと",
+      "zh": "梦话"
+    },
+    "snore": {
+      "en": "Snore",
+      "ja": "いびき",
+      "zh": "打鼾"
+    },
+    "gigaton-hammer": {
+      "en": "Gigaton Hammer",
+      "ja": "デカハンマー",
+      "zh": "巨力锤"
+    },
+    "lava-plume": {
+      "en": "Lava Plume",
+      "ja": "ふんえん",
+      "zh": "喷烟"
+    },
+    "beak-blast": {
+      "en": "Beak Blast",
+      "ja": "くちばしキャノン",
+      "zh": "鸟嘴加农炮"
+    },
+    "baneful-bunker": {
+      "en": "Baneful Bunker",
+      "ja": "トーチカ",
+      "zh": "碉堡"
+    },
+    "infestation": {
+      "en": "Infestation",
+      "ja": "まとわりつく",
+      "zh": "纠缠不休"
+    },
+    "payback": {
+      "en": "Payback",
+      "ja": "しっぺがえし",
+      "zh": "以牙还牙"
+    },
+    "chilling-water": {
+      "en": "Chilling Water",
+      "ja": "ひやみず",
+      "zh": "泼冷水"
+    },
+    "horn-leech": {
+      "en": "Horn Leech",
+      "ja": "ウッドホーン",
+      "zh": "木角"
+    },
+    "forests-curse": {
+      "en": "Forests Curse",
+      "ja": "もりののろい",
+      "zh": "森林咒术"
+    },
+    "ingrain": {
+      "en": "Ingrain",
+      "ja": "ねをはる",
+      "zh": "扎根"
+    },
+    "trop-kick": {
+      "en": "Trop Kick",
+      "ja": "トロピカルキック",
+      "zh": "热带踢"
+    },
+    "infernal-parade": {
+      "en": "Infernal Parade",
+      "ja": "じごくのパレード",
+      "zh": "群魔乱舞"
+    },
+    "ひやっきやこう": {
+      "en": "ひやっきやこう",
+      "ja": "ひやっきやこう",
+      "zh": ""
+    },
+    "thunder-fang": {
+      "en": "Thunder Fang",
+      "ja": "かみなりのキバ",
+      "zh": "雷电牙"
+    },
+    "quiver-dance": {
+      "en": "Quiver Dance",
+      "ja": "ちょうのまい",
+      "zh": "蝶舞"
+    },
+    "bug-buzz": {
+      "en": "Bug Buzz",
+      "ja": "むしのさざめき",
+      "zh": "虫鸣"
+    },
+    "fiery-dance": {
+      "en": "Fiery Dance",
+      "ja": "ほのおのまい",
+      "zh": "火之舞"
+    },
+    "attract": {
+      "en": "Attract",
+      "ja": "メロメロ",
+      "zh": "迷人"
+    },
+    "tickle": {
+      "en": "Tickle",
+      "ja": "くすぐる",
+      "zh": "挠痒"
+    },
+    "psyshield-bash": {
+      "en": "Psyshield Bash",
+      "ja": "バリアーラッシュ",
+      "zh": "屏障猛攻"
+    },
+    "bitter-malice": {
+      "en": "Bitter Malice",
+      "ja": "うらみつらみ",
+      "zh": "冤冤相报"
+    },
+    "night-daze": {
+      "en": "Night Daze",
+      "ja": "ナイトバースト",
+      "zh": "暗黑爆破"
+    }
+  },
+  "items": {
+    "abomasite": {
+      "en": "Abomasite",
+      "ja": "ユキノオナイト",
+      "zh": "暴雪王进化石"
+    },
+    "focus-sash": {
+      "en": "Focus Sash",
+      "ja": "きあいのタスキ",
+      "zh": "气势披带"
+    },
+    "never-melt-ice": {
+      "en": "Never Melt Ice",
+      "ja": "とけないこおり",
+      "zh": "不融冰"
+    },
+    "quick-claw": {
+      "en": "Quick Claw",
+      "ja": "せんせいのツメ",
+      "zh": "先制之爪"
+    },
+    "occa-berry": {
+      "en": "Occa Berry",
+      "ja": "オッカのみ",
+      "zh": "巧可果"
+    },
+    "leftovers": {
+      "en": "Leftovers",
+      "ja": "たべのこし",
+      "zh": "吃剩的东西"
+    },
+    "choice-scarf": {
+      "en": "Choice Scarf",
+      "ja": "こだわりスカーフ",
+      "zh": "讲究围巾"
+    },
+    "sitrus-berry": {
+      "en": "Sitrus Berry",
+      "ja": "オボンのみ",
+      "zh": "文柚果"
+    },
+    "shell-bell": {
+      "en": "Shell Bell",
+      "ja": "かいがらのすず",
+      "zh": "贝壳之铃"
+    },
+    "bright-powder": {
+      "en": "Bright Powder",
+      "ja": "ひかりのこな",
+      "zh": "光粉"
+    },
+    "miracle-seed": {
+      "en": "Miracle Seed",
+      "ja": "きせきのタネ",
+      "zh": "奇迹种子"
+    },
+    "lum-berry": {
+      "en": "Lum Berry",
+      "ja": "ラムのみ",
+      "zh": "木子果"
+    },
+    "mental-herb": {
+      "en": "Mental Herb",
+      "ja": "メンタルハーブ",
+      "zh": "心灵香草"
+    },
+    "light-clay": {
+      "en": "Light Clay",
+      "ja": "ひかりのねんど",
+      "zh": "光之黏土"
+    },
+    "life-orb": {
+      "en": "Life Orb",
+      "ja": "いのちのたま",
+      "zh": "生命宝珠"
+    },
+    "expert-belt": {
+      "en": "Expert Belt",
+      "ja": "たつじんのおび",
+      "zh": "达人带"
+    },
+    "absolite": {
+      "en": "Absolite",
+      "ja": "アブソルナイト",
+      "zh": "阿勃梭鲁进化石"
+    },
+    "scope-lens": {
+      "en": "Scope Lens",
+      "ja": "ピントレンズ",
+      "zh": "焦点镜"
+    },
+    "black-glasses": {
+      "en": "Black Glasses",
+      "ja": "くろいメガネ",
+      "zh": "黑色眼镜"
+    },
+    "chople-berry": {
+      "en": "Chople Berry",
+      "ja": "ヨプのみ",
+      "zh": "莲蒲果"
+    },
+    "kings-rock": {
+      "en": "Kings Rock",
+      "ja": "おうじゃのしるし",
+      "zh": "王者之证"
+    },
+    "white-herb": {
+      "en": "White Herb",
+      "ja": "しろいハーブ",
+      "zh": "白色香草"
+    },
+    "roseli-berry": {
+      "en": "Roseli Berry",
+      "ja": "ロゼルのみ",
+      "zh": "洛玫果"
+    },
+    "muscle-band": {
+      "en": "Muscle Band",
+      "ja": "ちからのハチマキ",
+      "zh": "力量头带"
+    },
+    "oran-berry": {
+      "en": "Oran Berry",
+      "ja": "オレンのみ",
+      "zh": "橙橙果"
+    },
+    "spell-tag": {
+      "en": "Spell Tag",
+      "ja": "のろいのおふだ",
+      "zh": "诅咒之符"
+    },
+    "colbur-berry": {
+      "en": "Colbur Berry",
+      "ja": "ナモのみ",
+      "zh": "刺耳果"
+    },
+    "metal-coat": {
+      "en": "Metal Coat",
+      "ja": "メタルコート",
+      "zh": "金属膜"
+    },
+    "kasib-berry": {
+      "en": "Kasib Berry",
+      "ja": "カシブのみ",
+      "zh": "佛柑果"
+    },
+    "black-belt": {
+      "en": "Black Belt",
+      "ja": "くろおび",
+      "zh": "黑带"
+    },
+    "shuca-berry": {
+      "en": "Shuca Berry",
+      "ja": "シュカのみ",
+      "zh": "腰木果"
+    },
+    "chesto-berry": {
+      "en": "Chesto Berry",
+      "ja": "カゴのみ",
+      "zh": "零余果"
+    },
+    "aerodactylite": {
+      "en": "Aerodactylite",
+      "ja": "プテラナイト",
+      "zh": "化石翼龙进化石"
+    },
+    "hard-stone": {
+      "en": "Hard Stone",
+      "ja": "かたいいし",
+      "zh": "硬石头"
+    },
+    "sharp-beak": {
+      "en": "Sharp Beak",
+      "ja": "するどいくちばし",
+      "zh": "锐利鸟嘴"
+    },
+    "charti-berry": {
+      "en": "Charti Berry",
+      "ja": "ヨロギのみ",
+      "zh": "草蚕果"
+    },
+    "wide-lens": {
+      "en": "Wide Lens",
+      "ja": "こうかくレンズ",
+      "zh": "广角镜"
+    },
+    "aggronite": {
+      "en": "Aggronite",
+      "ja": "ボスゴドラナイト",
+      "zh": "波士可多拉进化石"
+    },
+    "light-ball": {
+      "en": "Light Ball",
+      "ja": "でんきだま",
+      "zh": "电气球"
+    },
+    "focus-band": {
+      "en": "Focus Band",
+      "ja": "きあいのハチマキ",
+      "zh": "气势头带"
+    },
+    "alakazite": {
+      "en": "Alakazite",
+      "ja": "フーディナイト",
+      "zh": "胡地进化石"
+    },
+    "twisted-spoon": {
+      "en": "Twisted Spoon",
+      "ja": "まがったスプーン",
+      "zh": "弯曲的汤匙"
+    },
+    "wise-glasses": {
+      "en": "Wise Glasses",
+      "ja": "ものしりメガネ",
+      "zh": "博识眼镜"
+    },
+    "kebia-berry": {
+      "en": "Kebia Berry",
+      "ja": "ビアーのみ",
+      "zh": "通通果"
+    },
+    "fairy-feather": {
+      "en": "Fairy Feather",
+      "ja": "ようせいのハネ",
+      "zh": "妖精之羽"
+    },
+    "babiri-berry": {
+      "en": "Babiri Berry",
+      "ja": "リリバのみ",
+      "zh": "霹霹果"
+    },
+    "iron-ball": {
+      "en": "Iron Ball",
+      "ja": "くろいてっきゅう",
+      "zh": "黑色铁球"
+    },
+    "big-root": {
+      "en": "Big Root",
+      "ja": "おおきなねっこ",
+      "zh": "大根茎"
+    },
+    "metronome": {
+      "en": "Metronome",
+      "ja": "メトロノーム",
+      "zh": "节拍器"
+    },
+    "altarianite": {
+      "en": "Altarianite",
+      "ja": "チルタリスナイト",
+      "zh": "七夕青鸟进化石"
+    },
+    "haban-berry": {
+      "en": "Haban Berry",
+      "ja": "ハバンのみ",
+      "zh": "莓榴果"
+    },
+    "yache-berry": {
+      "en": "Yache Berry",
+      "ja": "ヤチェのみ",
+      "zh": "番荔果"
+    },
+    "dragon-fang": {
+      "en": "Dragon Fang",
+      "ja": "りゅうのキバ",
+      "zh": "龙之牙"
+    },
+    "ampharosite": {
+      "en": "Ampharosite",
+      "ja": "デンリュウナイト",
+      "zh": "电龙进化石"
+    },
+    "magnet": {
+      "en": "Magnet",
+      "ja": "じしゃく",
+      "zh": "磁铁"
+    },
+    "mystic-water": {
+      "en": "Mystic Water",
+      "ja": "しんぴのしずく",
+      "zh": "神秘水滴"
+    },
+    "coba-berry": {
+      "en": "Coba Berry",
+      "ja": "バコウのみ",
+      "zh": "棱瓜果"
+    },
+    "wacan-berry": {
+      "en": "Wacan Berry",
+      "ja": "ソクノのみ",
+      "zh": "烛木果"
+    },
+    "poison-barb": {
+      "en": "Poison Barb",
+      "ja": "どくバリ",
+      "zh": "毒针"
+    },
+    "payapa-berry": {
+      "en": "Payapa Berry",
+      "ja": "ウタンのみ",
+      "zh": "福禄果"
+    },
+    "charcoal": {
+      "en": "Charcoal",
+      "ja": "もくたん",
+      "zh": "木炭"
+    },
+    "passho-berry": {
+      "en": "Passho Berry",
+      "ja": "イトケのみ",
+      "zh": "千香果"
+    },
+    "silk-scarf": {
+      "en": "Silk Scarf",
+      "ja": "シルクのスカーフ",
+      "zh": "丝绸围巾"
+    },
+    "silver-powder": {
+      "en": "Silver Powder",
+      "ja": "ぎんのこな",
+      "zh": "银粉"
+    },
+    "lopunnite": {
+      "en": "Lopunnite",
+      "ja": "ミミロップナイト",
+      "zh": "长耳兔进化石"
+    },
+    "audinite": {
+      "en": "Audinite",
+      "ja": "タブンネナイト",
+      "zh": "差不多娃娃进化石"
+    },
+    "froslassite": {
+      "en": "Froslassite",
+      "ja": "ユキメノコナイト",
+      "zh": "雪妖女进化石"
+    },
+    "icy-rock": {
+      "en": "Icy Rock",
+      "ja": "つめたいいわ",
+      "zh": "冰冷岩石"
+    },
+    "zoom-lens": {
+      "en": "Zoom Lens",
+      "ja": "フォーカスレンズ",
+      "zh": "对焦镜"
+    },
+    "leppa-berry": {
+      "en": "Leppa Berry",
+      "ja": "ヒメリのみ",
+      "zh": "苹野果"
+    },
+    "banettite": {
+      "en": "Banettite",
+      "ja": "ジュペッタナイト",
+      "zh": "诅咒娃娃进化石"
+    },
+    "gengarite": {
+      "en": "Gengarite",
+      "ja": "ゲンガナイト",
+      "zh": "耿鬼进化石"
+    },
+    "sablenite": {
+      "en": "Sablenite",
+      "ja": "ヤミラミナイト",
+      "zh": "勾魂眼进化石"
+    },
+    "barbaraclite": {
+      "en": "Barbaraclite",
+      "ja": "ガメノデスナイト",
+      "zh": "龟足巨铠进化石"
+    },
+    "beedrillite": {
+      "en": "Beedrillite",
+      "ja": "スピアナイト",
+      "zh": "大针蜂进化石"
+    },
+    "blastoisinite": {
+      "en": "Blastoisinite",
+      "ja": "カメックスナイト",
+      "zh": "水箭龟进化石"
+    },
+    "rindo-berry": {
+      "en": "Rindo Berry",
+      "ja": "リンドのみ",
+      "zh": "罗子果"
+    },
+    "blazikenite": {
+      "en": "Blazikenite",
+      "ja": "バシャーモナイト",
+      "zh": "火焰鸡进化石"
+    },
+    "cameruptite": {
+      "en": "Cameruptite",
+      "ja": "バクーダナイト",
+      "zh": "喷火驼进化石"
+    },
+    "soft-sand": {
+      "en": "Soft Sand",
+      "ja": "やわらかいすな",
+      "zh": "柔软沙子"
+    },
+    "meganiumite": {
+      "en": "Meganiumite",
+      "ja": "メガニウムナイト",
+      "zh": "大竺葵进化石"
+    },
+    "garchompite": {
+      "en": "Garchompite",
+      "ja": "ガブリアスナイト",
+      "zh": "烈咬陆鲨进化石"
+    },
+    "chandelurite": {
+      "en": "Chandelurite",
+      "ja": "シャンデラナイト",
+      "zh": "水晶灯火灵进化石"
+    },
+    "charizardite-y": {
+      "en": "Charizardite Y",
+      "ja": "リザードナイトY",
+      "zh": "喷火龙进化石Ｙ"
+    },
+    "charizardite-x": {
+      "en": "Charizardite X",
+      "ja": "リザードナイトX",
+      "zh": "喷火龙进化石Ｘ"
+    },
+    "dragonitite": {
+      "en": "Dragonitite",
+      "ja": "カイリュナイト",
+      "zh": "快龙进化石"
+    },
+    "manectite": {
+      "en": "Manectite",
+      "ja": "ライボルトナイト",
+      "zh": "雷电兽进化石"
+    },
+    "tyranitarite": {
+      "en": "Tyranitarite",
+      "ja": "バンギラスナイト",
+      "zh": "班基拉斯进化石"
+    },
+    "chesnaughtite": {
+      "en": "Chesnaughtite",
+      "ja": "ブリガロナイト",
+      "zh": "布里卡隆进化石"
+    },
+    "chimechite": {
+      "en": "Chimechite",
+      "ja": "チリーンナイト",
+      "zh": "风铃铃进化石"
+    },
+    "clefablite": {
+      "en": "Clefablite",
+      "ja": "ピクシナイト",
+      "zh": "皮可西进化石"
+    },
+    "crabominite": {
+      "en": "Crabominite",
+      "ja": "ケケンカニナイト",
+      "zh": "好胜毛蟹进化石"
+    },
+    "greninjaite": {
+      "en": "Greninjaite",
+      "ja": "ゲッコウガナイト",
+      "zh": "甲贺忍蛙进化石"
+    },
+    "staraptornite": {
+      "en": "Staraptornite",
+      "ja": "ムクホークナイト",
+      "zh": "姆克鹰进化石"
+    },
+    "delphoxite": {
+      "en": "Delphoxite",
+      "ja": "マフォクシナイト",
+      "zh": "妖火红狐进化石"
+    },
+    "kangaskhanite": {
+      "en": "Kangaskhanite",
+      "ja": "ガルーラナイト",
+      "zh": "袋兽进化石"
+    },
+    "dragalgite": {
+      "en": "Dragalgite",
+      "ja": "ドラミドナイト",
+      "zh": "毒藻龙进化石"
+    },
+    "drampite": {
+      "en": "Drampite",
+      "ja": "ジジーロナイト",
+      "zh": "老翁龙进化石"
+    },
+    "eelektrossite": {
+      "en": "Eelektrossite",
+      "ja": "シビルドナイト",
+      "zh": "麻麻鳗鱼王进化石"
+    },
+    "damp-rock": {
+      "en": "Damp Rock",
+      "ja": "しめったいわ",
+      "zh": "潮湿岩石"
+    },
+    "emboarite": {
+      "en": "Emboarite",
+      "ja": "エンブオナイト",
+      "zh": "炎武王进化石"
+    },
+    "excadrillite": {
+      "en": "Excadrillite",
+      "ja": "ドリュウズナイト",
+      "zh": "龙头地鼠进化石"
+    },
+    "falinksite": {
+      "en": "Falinksite",
+      "ja": "タイレーツナイト",
+      "zh": "列阵兵进化石"
+    },
+    "feraligatrite": {
+      "en": "Feraligatrite",
+      "ja": "オーダイルナイト",
+      "zh": "大力鳄进化石"
+    },
+    "floettite": {
+      "en": "Floettite",
+      "ja": "フラエッテナイト",
+      "zh": "花叶蒂进化石"
+    },
+    "heracronite": {
+      "en": "Heracronite",
+      "ja": "ヘラクロスナイト",
+      "zh": "赫拉克罗斯进化石"
+    },
+    "galladite": {
+      "en": "Galladite",
+      "ja": "エルレイドナイト",
+      "zh": "艾路雷朵进化石"
+    },
+    "gardevoirite": {
+      "en": "Gardevoirite",
+      "ja": "サーナイトナイト",
+      "zh": "沙奈朵进化石"
+    },
+    "glalitite": {
+      "en": "Glalitite",
+      "ja": "オニゴーリナイト",
+      "zh": "冰鬼护进化石"
+    },
+    "glimmorite": {
+      "en": "Glimmorite",
+      "ja": "キラフロルナイト",
+      "zh": "晶光花进化石"
+    },
+    "golurkite": {
+      "en": "Golurkite",
+      "ja": "ゴルーグナイト",
+      "zh": "泥偶巨人进化石"
+    },
+    "gyaradosite": {
+      "en": "Gyaradosite",
+      "ja": "ギャラドスナイト",
+      "zh": "暴鲤龙进化石"
+    },
+    "hawluchite": {
+      "en": "Hawluchite",
+      "ja": "ルチャブルナイト",
+      "zh": "摔角鹰人进化石"
+    },
+    "persim-berry": {
+      "en": "Persim Berry",
+      "ja": "キーのみ",
+      "zh": "柿仔果"
+    },
+    "smooth-rock": {
+      "en": "Smooth Rock",
+      "ja": "さらさらいわ",
+      "zh": "沙沙岩石"
+    },
+    "houndoominite": {
+      "en": "Houndoominite",
+      "ja": "ヘルガナイト",
+      "zh": "黑鲁加进化石"
+    },
+    "heat-rock": {
+      "en": "Heat Rock",
+      "ja": "あついいわ",
+      "zh": "炽热岩石"
+    },
+    "lucarionite": {
+      "en": "Lucarionite",
+      "ja": "ルカリオナイト",
+      "zh": "路卡利欧进化石"
+    },
+    "scizorite": {
+      "en": "Scizorite",
+      "ja": "ハッサムナイト",
+      "zh": "巨钳螳螂进化石"
+    },
+    "malamarite": {
+      "en": "Malamarite",
+      "ja": "カラマネナイト",
+      "zh": "乌贼王进化石"
+    },
+    "tanga-berry": {
+      "en": "Tanga Berry",
+      "ja": "タンガのみ",
+      "zh": "扁樱果"
+    },
+    "mawilite": {
+      "en": "Mawilite",
+      "ja": "クチートナイト",
+      "zh": "大嘴娃进化石"
+    },
+    "medichamite": {
+      "en": "Medichamite",
+      "ja": "チャーレムナイト",
+      "zh": "恰雷姆进化石"
+    },
+    "venusaurite": {
+      "en": "Venusaurite",
+      "ja": "フシギバナイト",
+      "zh": "妙蛙花进化石"
+    },
+    "meowsticite": {
+      "en": "Meowsticite",
+      "ja": "ニャオニクスナイト",
+      "zh": "超能妙喵进化石"
+    },
+    "metagrossite": {
+      "en": "Metagrossite",
+      "ja": "メタグロスナイト",
+      "zh": "巨金怪进化石"
+    },
+    "pidgeotite": {
+      "en": "Pidgeotite",
+      "ja": "ピジョットナイト",
+      "zh": "大比鸟进化石"
+    },
+    "raichunite-y": {
+      "en": "Raichunite Y",
+      "ja": "ライチュウナイトY",
+      "zh": "雷丘进化石Ｙ"
+    },
+    "pinsirite": {
+      "en": "Pinsirite",
+      "ja": "カイロスナイト",
+      "zh": "凯罗斯进化石"
+    },
+    "pyroarite": {
+      "en": "Pyroarite",
+      "ja": "カエンジシナイト",
+      "zh": "火炎狮进化石"
+    },
+    "raichunite-x": {
+      "en": "Raichunite X",
+      "ja": "ライチュウナイトX",
+      "zh": "雷丘进化石Ｘ"
+    },
+    "sceptilite": {
+      "en": "Sceptilite",
+      "ja": "ジュカインナイト",
+      "zh": "蜥蜴王进化石"
+    },
+    "scolipedite": {
+      "en": "Scolipedite",
+      "ja": "ペンドラナイト",
+      "zh": "蜈蚣王进化石"
+    },
+    "scovillainite": {
+      "en": "Scovillainite",
+      "ja": "スコヴィラナイト",
+      "zh": "狠辣椒进化石"
+    },
+    "scraftite": {
+      "en": "Scraftite",
+      "ja": "ズルズキナイト",
+      "zh": "头巾混混进化石"
+    },
+    "sharpedonite": {
+      "en": "Sharpedonite",
+      "ja": "サメハダナイト",
+      "zh": "巨牙鲨进化石"
+    },
+    "skarmoryite": {
+      "en": "Skarmoryite",
+      "ja": "エアームドナイト",
+      "zh": "盔甲鸟进化石"
+    },
+    "slowbronite": {
+      "en": "Slowbronite",
+      "ja": "ヤドランナイト",
+      "zh": "呆壳兽进化石"
+    },
+    "starmiite": {
+      "en": "Starmiite",
+      "ja": "スターミナイト",
+      "zh": "宝石海星进化石"
+    },
+    "steelixite": {
+      "en": "Steelixite",
+      "ja": "ハガネールナイト",
+      "zh": "大钢蛇进化石"
+    },
+    "swampertite": {
+      "en": "Swampertite",
+      "ja": "ラグラージナイト",
+      "zh": "巨沼怪进化石"
+    },
+    "shed-shell": {
+      "en": "Shed Shell",
+      "ja": "きれいなぬけがら",
+      "zh": "美丽空壳"
+    },
+    "victreebelite": {
+      "en": "Victreebelite",
+      "ja": "ウツボットナイト",
+      "zh": "大食花进化石"
+    }
+  },
+  "abilities": {
+    "blizzard": {
+      "en": "Blizzard",
+      "ja": "ゆきふらし",
+      "zh": "降雪"
+    },
+    "soundproof": {
+      "en": "Soundproof",
+      "ja": "ぼうおん",
+      "zh": "隔音"
+    },
+    "super-luck": {
+      "en": "Super Luck",
+      "ja": "きょううん",
+      "zh": "超幸运"
+    },
+    "justified": {
+      "en": "Justified",
+      "ja": "せいぎのこころ",
+      "zh": "正义之心"
+    },
+    "pressure": {
+      "en": "Pressure",
+      "ja": "プレッシャー",
+      "zh": "压迫感"
+    },
+    "stance-change": {
+      "en": "Stance Change",
+      "ja": "バトルスイッチ",
+      "zh": "战斗切换"
+    },
+    "unnerve": {
+      "en": "Unnerve",
+      "ja": "きんちょうかん",
+      "zh": "紧张感"
+    },
+    "rock-head": {
+      "en": "Rock Head",
+      "ja": "いしあたま",
+      "zh": "坚硬脑袋"
+    },
+    "sturdy": {
+      "en": "Sturdy",
+      "ja": "がんじょう",
+      "zh": "结实"
+    },
+    "heavy-metal": {
+      "en": "Heavy Metal",
+      "ja": "ヘビーメタル",
+      "zh": "重金属"
+    },
+    "inner-focus": {
+      "en": "Inner Focus",
+      "ja": "せいしんりょく",
+      "zh": "精神力"
+    },
+    "magic-guard": {
+      "en": "Magic Guard",
+      "ja": "マジックガード",
+      "zh": "魔法防守"
+    },
+    "synchronize": {
+      "en": "Synchronize",
+      "ja": "シンクロ",
+      "zh": "同步"
+    },
+    "aroma-veil": {
+      "en": "Aroma Veil",
+      "ja": "アロマベール",
+      "zh": "芳香幕"
+    },
+    "sweet-veil": {
+      "en": "Sweet Veil",
+      "ja": "スイートベール",
+      "zh": "甜幕"
+    },
+    "cloud-nine": {
+      "en": "Cloud Nine",
+      "ja": "ノーてんき",
+      "zh": "无关天气"
+    },
+    "natural-cure": {
+      "en": "Natural Cure",
+      "ja": "しぜんかいふく",
+      "zh": "自然回复"
+    },
+    "static": {
+      "en": "Static",
+      "ja": "せいでんき",
+      "zh": "静电"
+    },
+    "plus": {
+      "en": "Plus",
+      "ja": "プラス",
+      "zh": "正电"
+    },
+    "defiant": {
+      "en": "Defiant",
+      "ja": "まけんき",
+      "zh": "不服输"
+    },
+    "vital-spirit": {
+      "en": "Vital Spirit",
+      "ja": "やるき",
+      "zh": "干劲"
+    },
+    "thick-fat": {
+      "en": "Thick Fat",
+      "ja": "あついしぼう",
+      "zh": "厚脂肪"
+    },
+    "ripen": {
+      "en": "Ripen",
+      "ja": "じゅくせい",
+      "zh": "熟成"
+    },
+    "gluttony": {
+      "en": "Gluttony",
+      "ja": "くいしんぼう",
+      "zh": "贪吃鬼"
+    },
+    "water-bubble": {
+      "en": "Water Bubble",
+      "ja": "すいほう",
+      "zh": "水泡"
+    },
+    "water-absorb": {
+      "en": "Water Absorb",
+      "ja": "ちょすい",
+      "zh": "储水"
+    },
+    "intimidate": {
+      "en": "Intimidate",
+      "ja": "いかく",
+      "zh": "威吓"
+    },
+    "shed-skin": {
+      "en": "Shed Skin",
+      "ja": "だっぴ",
+      "zh": "蜕皮"
+    },
+    "flash-fire": {
+      "en": "Flash Fire",
+      "ja": "もらいび",
+      "zh": "引火"
+    },
+    "stamina": {
+      "en": "Stamina",
+      "ja": "じきゅうりょく",
+      "zh": "持久力"
+    },
+    "stalwart": {
+      "en": "Stalwart",
+      "ja": "すじがねいり",
+      "zh": "坚毅"
+    },
+    "insomnia": {
+      "en": "Insomnia",
+      "ja": "ふみん",
+      "zh": "不眠"
+    },
+    "sniper": {
+      "en": "Sniper",
+      "ja": "スナイパー",
+      "zh": "狙击手"
+    },
+    "swarm": {
+      "en": "Swarm",
+      "ja": "むしのしらせ",
+      "zh": "虫之预感"
+    },
+    "weak-armor": {
+      "en": "Weak Armor",
+      "ja": "くだけるよろい",
+      "zh": "碎裂铠甲"
+    },
+    "healer": {
+      "en": "Healer",
+      "ja": "いやしのこころ",
+      "zh": "治愈之心"
+    },
+    "regenerator": {
+      "en": "Regenerator",
+      "ja": "さいせいりょく",
+      "zh": "再生力"
+    },
+    "klutz": {
+      "en": "Klutz",
+      "ja": "ぶきよう",
+      "zh": "笨拙"
+    },
+    "refrigerate": {
+      "en": "Refrigerate",
+      "ja": "フリーズスキン",
+      "zh": "冰冻皮肤"
+    },
+    "ice-body": {
+      "en": "Ice Body",
+      "ja": "アイスボディ",
+      "zh": "冰冻之躯"
+    },
+    "strong-jaw": {
+      "en": "Strong Jaw",
+      "ja": "がんじょうあご",
+      "zh": "强壮之颚"
+    },
+    "own-tempo": {
+      "en": "Own Tempo",
+      "ja": "マイペース",
+      "zh": "我行我素"
+    },
+    "huge-power": {
+      "en": "Huge Power",
+      "ja": "ちからもち",
+      "zh": "大力士"
+    },
+    "sap-sipper": {
+      "en": "Sap Sipper",
+      "ja": "そうしょく",
+      "zh": "食草"
+    },
+    "frisk": {
+      "en": "Frisk",
+      "ja": "おみとおし",
+      "zh": "察觉"
+    },
+    "cursed-body": {
+      "en": "Cursed Body",
+      "ja": "のろわれボディ",
+      "zh": "诅咒之躯"
+    },
+    "tough-claws": {
+      "en": "Tough Claws",
+      "ja": "かたいツメ",
+      "zh": "硬爪"
+    },
+    "pickpocket": {
+      "en": "Pickpocket",
+      "ja": "わるいてぐせ",
+      "zh": "顺手牵羊"
+    },
+    "adaptability": {
+      "en": "Adaptability",
+      "ja": "てきおうりょく",
+      "zh": "适应力"
+    },
+    "swiftswim": {
+      "en": "Swiftswim",
+      "ja": "すいすい",
+      "zh": "悠游自如"
+    },
+    "mold-breaker": {
+      "en": "Mold Breaker",
+      "ja": "かたやぶり",
+      "zh": "破格"
+    },
+    "slush-rush": {
+      "en": "Slush Rush",
+      "ja": "ゆきかき",
+      "zh": "拨雪"
+    },
+    "snow-cloak": {
+      "en": "Snow Cloak",
+      "ja": "ゆきがくれ",
+      "zh": "雪隐"
+    },
+    "electromorphosis": {
+      "en": "Electromorphosis",
+      "ja": "でんきにかえる",
+      "zh": "电力转换"
+    },
+    "damp": {
+      "en": "Damp",
+      "ja": "しめりけ",
+      "zh": "湿气"
+    },
+    "rain-dish": {
+      "en": "Rain Dish",
+      "ja": "あめうけざら",
+      "zh": "雨盘"
+    },
+    "torrent": {
+      "en": "Torrent",
+      "ja": "げきりゅう",
+      "zh": "激流"
+    },
+    "speed-boost": {
+      "en": "Speed Boost",
+      "ja": "かそく",
+      "zh": "加速"
+    },
+    "blaze": {
+      "en": "Blaze",
+      "ja": "もうか",
+      "zh": "猛火"
+    },
+    "solid-rock": {
+      "en": "Solid Rock",
+      "ja": "ハードロック",
+      "zh": "坚硬岩石"
+    },
+    "magma-armor": {
+      "en": "Magma Armor",
+      "ja": "マグマのよろい",
+      "zh": "熔岩铠甲"
+    },
+    "anger-point": {
+      "en": "Anger Point",
+      "ja": "いかりのつぼ",
+      "zh": "愤怒穴位"
+    },
+    "forecast": {
+      "en": "Forecast",
+      "ja": "てんきや",
+      "zh": "阴晴不定"
+    },
+    "infiltrator": {
+      "en": "Infiltrator",
+      "ja": "すりぬけ",
+      "zh": "穿透"
+    },
+    "flame-body": {
+      "en": "Flame Body",
+      "ja": "ほのおのからだ",
+      "zh": "火焰之躯"
+    },
+    "solar-power": {
+      "en": "Solar Power",
+      "ja": "サンパワー",
+      "zh": "太阳之力"
+    },
+    "bulletproof": {
+      "en": "Bulletproof",
+      "ja": "ぼうだん",
+      "zh": "防弹"
+    },
+    "overgrow": {
+      "en": "Overgrow",
+      "ja": "しんりょく",
+      "zh": "茂盛"
+    },
+    "levitate": {
+      "en": "Levitate",
+      "ja": "ふゆう",
+      "zh": "飘浮"
+    },
+    "mega-launcher": {
+      "en": "Mega Launcher",
+      "ja": "メガランチャー",
+      "zh": "超级发射器"
+    },
+    "unaware": {
+      "en": "Unaware",
+      "ja": "てんねん",
+      "zh": "纯朴"
+    },
+    "cute-charm": {
+      "en": "Cute Charm",
+      "ja": "メロメロボディ",
+      "zh": "迷人之躯"
+    },
+    "mummy": {
+      "en": "Mummy",
+      "ja": "ミイラ",
+      "zh": "木乃伊"
+    },
+    "iron-fist": {
+      "en": "Iron Fist",
+      "ja": "てつのこぶし",
+      "zh": "铁拳"
+    },
+    "guts": {
+      "en": "Guts",
+      "ja": "こんじょう",
+      "zh": "毅力"
+    },
+    "sheer-force": {
+      "en": "Sheer Force",
+      "ja": "ちからずく",
+      "zh": "强行"
+    },
+    "mirror-armor": {
+      "en": "Mirror Armor",
+      "ja": "ミラーアーマー",
+      "zh": "镜甲"
+    },
+    "hyper-cutter": {
+      "en": "Hyper Cutter",
+      "ja": "かいりきバサミ",
+      "zh": "怪力钳"
+    },
+    "scrappy": {
+      "en": "Scrappy",
+      "ja": "きもったま",
+      "zh": "胆量"
+    },
+    "oblivious": {
+      "en": "Oblivious",
+      "ja": "どんかん",
+      "zh": "迟钝"
+    },
+    "cheek-pouch": {
+      "en": "Cheek Pouch",
+      "ja": "ほおぶくろ",
+      "zh": "颊囊"
+    },
+    "pickup": {
+      "en": "Pickup",
+      "ja": "ものひろい",
+      "zh": "捡拾"
+    },
+    "magician": {
+      "en": "Magician",
+      "ja": "マジシャン",
+      "zh": "魔术师"
+    },
+    "imposter": {
+      "en": "Imposter",
+      "ja": "かわりもの",
+      "zh": "变身者"
+    },
+    "limber": {
+      "en": "Limber",
+      "ja": "じゅうなん",
+      "zh": "柔软"
+    },
+    "poison-point": {
+      "en": "Poison Point",
+      "ja": "どくのとげ",
+      "zh": "毒刺"
+    },
+    "poison-touch": {
+      "en": "Poison Touch",
+      "ja": "どくしゅ",
+      "zh": "毒手"
+    },
+    "clear-body": {
+      "en": "Clear Body",
+      "ja": "クリアボディ",
+      "zh": "恒净之躯"
+    },
+    "multiscale": {
+      "en": "Multiscale",
+      "ja": "マルチスケイル",
+      "zh": "多重鳞片"
+    },
+    "berserk": {
+      "en": "Berserk",
+      "ja": "ぎゃくじょう",
+      "zh": "怒火冲天"
+    },
+    "reckless": {
+      "en": "Reckless",
+      "ja": "すてみ",
+      "zh": "舍身"
+    },
+    "motor-drive": {
+      "en": "Motor Drive",
+      "ja": "でんきエンジン",
+      "zh": "电气引擎"
+    },
+    "competitive": {
+      "en": "Competitive",
+      "ja": "かちき",
+      "zh": "好胜"
+    },
+    "opportunist": {
+      "en": "Opportunist",
+      "ja": "びんじょう",
+      "zh": "跟风"
+    },
+    "magic-bounce": {
+      "en": "Magic Bounce",
+      "ja": "マジックミラー",
+      "zh": "魔法镜"
+    },
+    "sand-rush": {
+      "en": "Sand Rush",
+      "ja": "すなかき",
+      "zh": "拨沙"
+    },
+    "sand-force": {
+      "en": "Sand Force",
+      "ja": "すなのちから",
+      "zh": "沙之力"
+    },
+    "battle-armor": {
+      "en": "Battle Armor",
+      "ja": "カブトアーマー",
+      "zh": "战斗盔甲"
+    },
+    "armor-tail": {
+      "en": "Armor Tail",
+      "ja": "テイルアーマー",
+      "zh": "尾甲"
+    },
+    "cud-chew": {
+      "en": "Cud Chew",
+      "ja": "はんすう",
+      "zh": "反刍"
+    },
+    "hustle": {
+      "en": "Hustle",
+      "ja": "はりきり",
+      "zh": "活力"
+    },
+    "flower-veil": {
+      "en": "Flower Veil",
+      "ja": "フラワーベール",
+      "zh": "花幕"
+    },
+    "symbiosis": {
+      "en": "Symbiosis",
+      "ja": "きょうせい",
+      "zh": "共生"
+    },
+    "overcoat": {
+      "en": "Overcoat",
+      "ja": "ぼうじん",
+      "zh": "防尘"
+    },
+    "fur-coat": {
+      "en": "Fur Coat",
+      "ja": "ファーコート",
+      "zh": "毛皮大衣"
+    },
+    "sharpness": {
+      "en": "Sharpness",
+      "ja": "きれあじ",
+      "zh": "锋锐"
+    },
+    "steadfast": {
+      "en": "Steadfast",
+      "ja": "ふくつのこころ",
+      "zh": "不屈之心"
+    },
+    "aftermath": {
+      "en": "Aftermath",
+      "ja": "ゆうばく",
+      "zh": "引爆"
+    },
+    "stench": {
+      "en": "Stench",
+      "ja": "あくしゅう",
+      "zh": "恶臭"
+    },
+    "rough-skin": {
+      "en": "Rough Skin",
+      "ja": "さめはだ",
+      "zh": "粗糙皮肤"
+    },
+    "sand-veil": {
+      "en": "Sand Veil",
+      "ja": "すなかくれ",
+      "zh": "沙隐"
+    },
+    "trace": {
+      "en": "Trace",
+      "ja": "トレース",
+      "zh": "复制"
+    },
+    "telepathy": {
+      "en": "Telepathy",
+      "ja": "テレパシー",
+      "zh": "心灵感应"
+    },
+    "purifying-salt": {
+      "en": "Purifying Salt",
+      "ja": "きよめのしお",
+      "zh": "洁净之盐"
+    },
+    "good-as-gold": {
+      "en": "Good As Gold",
+      "ja": "おうごんのからだ",
+      "zh": "黄金之躯"
+    },
+    "moody": {
+      "en": "Moody",
+      "ja": "ムラっけ",
+      "zh": "心情不定"
+    },
+    "toxic-debris": {
+      "en": "Toxic Debris",
+      "ja": "どくげしょう",
+      "zh": "毒满地"
+    },
+    "corrosion": {
+      "en": "Corrosion",
+      "ja": "ふしょく",
+      "zh": "腐蚀"
+    },
+    "poison-heal": {
+      "en": "Poison Heal",
+      "ja": "ポイズンヒール",
+      "zh": "毒疗"
+    },
+    "no-guard": {
+      "en": "No Guard",
+      "ja": "ノーガード",
+      "zh": "无防守"
+    },
+    "shell-armor": {
+      "en": "Shell Armor",
+      "ja": "シェルアーマー",
+      "zh": "硬壳盔甲"
+    },
+    "gooey": {
+      "en": "Gooey",
+      "ja": "ぬめぬめ",
+      "zh": "黏滑"
+    },
+    "hydration": {
+      "en": "Hydration",
+      "ja": "うるおいボディ",
+      "zh": "湿润之躯"
+    },
+    "protean": {
+      "en": "Protean",
+      "ja": "へんげんじざい",
+      "zh": "变幻自如"
+    },
+    "prankster": {
+      "en": "Prankster",
+      "ja": "いたずらごころ",
+      "zh": "恶作剧之心"
+    },
+    "moxie": {
+      "en": "Moxie",
+      "ja": "じしんかじょう",
+      "zh": "自信过度"
+    },
+    "anticipation": {
+      "en": "Anticipation",
+      "ja": "きけんよち",
+      "zh": "危险预知"
+    },
+    "unburden": {
+      "en": "Unburden",
+      "ja": "かるわざ",
+      "zh": "轻装"
+    },
+    "dry-skin": {
+      "en": "Dry Skin",
+      "ja": "かんそうはだ",
+      "zh": "干燥皮肤"
+    },
+    "sand-stream": {
+      "en": "Sand Stream",
+      "ja": "すなおこし",
+      "zh": "扬沙"
+    },
+    "early-bird": {
+      "en": "Early Bird",
+      "ja": "はやおき",
+      "zh": "早起"
+    },
+    "fluffy": {
+      "en": "Fluffy",
+      "ja": "もふもふ",
+      "zh": "毛茸茸"
+    },
+    "supersweet-syrup": {
+      "en": "Supersweet Syrup",
+      "ja": "かんろなミツ",
+      "zh": "甘露之蜜"
+    },
+    "sticky-hold": {
+      "en": "Sticky Hold",
+      "ja": "ねんちゃく",
+      "zh": "黏着"
+    },
+    "volt-absorb": {
+      "en": "Volt Absorb",
+      "ja": "ちくでん",
+      "zh": "蓄电"
+    },
+    "quick-feet": {
+      "en": "Quick Feet",
+      "ja": "はやあし",
+      "zh": "飞毛腿"
+    },
+    "supreme-overlord": {
+      "en": "Supreme Overlord",
+      "ja": "そうだいしょう",
+      "zh": "大将"
+    },
+    "chlorophyll": {
+      "en": "Chlorophyll",
+      "ja": "ようりょくそ",
+      "zh": "叶绿素"
+    },
+    "leaf-guard": {
+      "en": "Leaf Guard",
+      "ja": "リーフガード",
+      "zh": "叶子防守"
+    },
+    "rivalry": {
+      "en": "Rivalry",
+      "ja": "きょうそうしん",
+      "zh": "斗争心"
+    },
+    "keen-eye": {
+      "en": "Keen Eye",
+      "ja": "するどいめ",
+      "zh": "锐利目光"
+    },
+    "contrary": {
+      "en": "Contrary",
+      "ja": "あまのじゃく",
+      "zh": "唱反调"
+    },
+    "suction-cups": {
+      "en": "Suction Cups",
+      "ja": "きゅうばん",
+      "zh": "吸盘"
+    },
+    "lightning-rod": {
+      "en": "Lightning Rod",
+      "ja": "ひらいしん",
+      "zh": "避雷针"
+    },
+    "minus": {
+      "en": "Minus",
+      "ja": "マイナス",
+      "zh": "负电"
+    },
+    "friend-guard": {
+      "en": "Friend Guard",
+      "ja": "フレンドガード",
+      "zh": "友情防守"
+    },
+    "technician": {
+      "en": "Technician",
+      "ja": "テクニシャン",
+      "zh": "技术高手"
+    },
+    "pure-power": {
+      "en": "Pure Power",
+      "ja": "ヨガパワー",
+      "zh": "瑜伽之力"
+    },
+    "light-metal": {
+      "en": "Light Metal",
+      "ja": "ライトメタル",
+      "zh": "轻金属"
+    },
+    "marvel-scale": {
+      "en": "Marvel Scale",
+      "ja": "ふしぎなうろこ",
+      "zh": "神奇鳞片"
+    },
+    "disguise": {
+      "en": "Disguise",
+      "ja": "ばけのかわ",
+      "zh": "画皮"
+    },
+    "hunger-switch": {
+      "en": "Hunger Switch",
+      "ja": "はらぺこスイッチ",
+      "zh": "饱了又饿"
+    },
+    "screen-cleaner": {
+      "en": "Screen Cleaner",
+      "ja": "バリアフリー",
+      "zh": "除障"
+    },
+    "tangled-feet": {
+      "en": "Tangled Feet",
+      "ja": "ちどりあし",
+      "zh": "蹒跚"
+    },
+    "forewarn": {
+      "en": "Forewarn",
+      "ja": "よちむ",
+      "zh": "预知梦"
+    },
+    "drought": {
+      "en": "Drought",
+      "ja": "ひでり",
+      "zh": "日照"
+    },
+    "earth-eater": {
+      "en": "Earth Eater",
+      "ja": "どしょく",
+      "zh": "食土"
+    },
+    "zero-to-hero": {
+      "en": "Zero To Hero",
+      "ja": "マイティチェンジ",
+      "zh": "全能变身"
+    },
+    "receiver": {
+      "en": "Receiver",
+      "ja": "レシーバー",
+      "zh": "接球手"
+    },
+    "drizzle": {
+      "en": "Drizzle",
+      "ja": "あめふらし",
+      "zh": "降雨"
+    },
+    "big-pecks": {
+      "en": "Big Pecks",
+      "ja": "はとむね",
+      "zh": "健壮胸肌"
+    },
+    "liquid-voice": {
+      "en": "Liquid Voice",
+      "ja": "うるおいボイス",
+      "zh": "湿润之声"
+    },
+    "surge-surfer": {
+      "en": "Surge Surfer",
+      "ja": "サーフテール",
+      "zh": "冲浪之尾"
+    },
+    "wandering-spirit": {
+      "en": "Wandering Spirit",
+      "ja": "さまようたましい",
+      "zh": "游魂"
+    },
+    "stall": {
+      "en": "Stall",
+      "ja": "あとだし",
+      "zh": "慢出"
+    },
+    "sand-spit": {
+      "en": "Sand Spit",
+      "ja": "すなはき",
+      "zh": "吐沙"
+    },
+    "hospitality": {
+      "en": "Hospitality",
+      "ja": "おもてなし",
+      "zh": "款待"
+    },
+    "heatproof": {
+      "en": "Heatproof",
+      "ja": "たいねつ",
+      "zh": "耐热"
+    },
+    "quick-draw": {
+      "en": "Quick Draw",
+      "ja": "クイックドロウ",
+      "zh": "速击"
+    },
+    "curious-medicine": {
+      "en": "Curious Medicine",
+      "ja": "きみょうなくすり",
+      "zh": "怪药"
+    },
+    "immunity": {
+      "en": "Immunity",
+      "ja": "めんえき",
+      "zh": "免疫"
+    },
+    "illuminate": {
+      "en": "Illuminate",
+      "ja": "はっこう",
+      "zh": "发光"
+    },
+    "analytic": {
+      "en": "Analytic",
+      "ja": "アナライズ",
+      "zh": "分析"
+    },
+    "mimicry": {
+      "en": "Mimicry",
+      "ja": "ぎたい",
+      "zh": "拟态"
+    },
+    "pixilate": {
+      "en": "Pixilate",
+      "ja": "フェアリースキン",
+      "zh": "妖精皮肤"
+    },
+    "gale-wings": {
+      "en": "Gale Wings",
+      "ja": "はやてのつばさ",
+      "zh": "疾风之翼"
+    },
+    "white-smoke": {
+      "en": "White Smoke",
+      "ja": "しろいけむり",
+      "zh": "白色烟雾"
+    },
+    "skill-link": {
+      "en": "Skill Link",
+      "ja": "スキルリンク",
+      "zh": "连续攻击"
+    },
+    "merciless": {
+      "en": "Merciless",
+      "ja": "ひとでなし",
+      "zh": "不仁不义"
+    },
+    "harvest": {
+      "en": "Harvest",
+      "ja": "しゅうかく",
+      "zh": "收获"
+    },
+    "queenly-majesty": {
+      "en": "Queenly Majesty",
+      "ja": "じょおうのいげん",
+      "zh": "女王的威严"
+    },
+    "effect-spore": {
+      "en": "Effect Spore",
+      "ja": "ほうし",
+      "zh": "孢子"
+    },
+    "compound-eyes": {
+      "en": "Compound Eyes",
+      "ja": "ふくがん",
+      "zh": "复眼"
+    },
+    "shield-dust": {
+      "en": "Shield Dust",
+      "ja": "りんぷん",
+      "zh": "鳞粉"
+    },
+    "illusion": {
+      "en": "Illusion",
+      "ja": "イリュージョン",
+      "zh": "幻觉"
+    }
+  },
+  "natures": {
+    "quiet": {
+      "en": "Quiet",
+      "ja": "れいせい",
+      "zh": "冷静"
+    },
+    "modest": {
+      "en": "Modest",
+      "ja": "ひかえめ",
+      "zh": "内敛"
+    },
+    "brave": {
+      "en": "Brave",
+      "ja": "ゆうかん",
+      "zh": "勇敢"
+    },
+    "timid": {
+      "en": "Timid",
+      "ja": "おくびょう",
+      "zh": "胆小"
+    },
+    "relaxed": {
+      "en": "Relaxed",
+      "ja": "のんき",
+      "zh": "悠闲"
+    },
+    "bold": {
+      "en": "Bold",
+      "ja": "ずぶとい",
+      "zh": "大胆"
+    },
+    "sassy": {
+      "en": "Sassy",
+      "ja": "なまいき",
+      "zh": "自大"
+    },
+    "calm": {
+      "en": "Calm",
+      "ja": "おだやか",
+      "zh": "温和"
+    },
+    "adamant": {
+      "en": "Adamant",
+      "ja": "いじっぱり",
+      "zh": "固执"
+    },
+    "mild": {
+      "en": "Mild",
+      "ja": "おっとり",
+      "zh": "慢吞吞"
+    },
+    "rash": {
+      "en": "Rash",
+      "ja": "うっかりや",
+      "zh": "马虎"
+    },
+    "jolly": {
+      "en": "Jolly",
+      "ja": "ようき",
+      "zh": "爽朗"
+    },
+    "naughty": {
+      "en": "Naughty",
+      "ja": "やんちゃ",
+      "zh": "顽皮"
+    },
+    "impish": {
+      "en": "Impish",
+      "ja": "わんぱく",
+      "zh": "淘气"
+    },
+    "naive": {
+      "en": "Naive",
+      "ja": "むじゃき",
+      "zh": "天真"
+    },
+    "hasty": {
+      "en": "Hasty",
+      "ja": "せっかち",
+      "zh": "急躁"
+    },
+    "lonely": {
+      "en": "Lonely",
+      "ja": "さみしがり",
+      "zh": "怕寂寞"
+    },
+    "careful": {
+      "en": "Careful",
+      "ja": "しんちょう",
+      "zh": "慎重"
+    },
+    "serious": {
+      "en": "Serious",
+      "ja": "まじめ",
+      "zh": "认真"
+    },
+    "lax": {
+      "en": "Lax",
+      "ja": "のうてんき",
+      "zh": "乐天"
+    },
+    "gentle": {
+      "en": "Gentle",
+      "ja": "おとなしい",
+      "zh": "温顺"
+    },
+    "すばやさ-ぐ": {
+      "en": "すばやさ ぐ",
+      "ja": "すばやさ ぐ",
+      "zh": ""
+    },
+    "すばやさを": {
+      "en": "すばやさを",
+      "ja": "すばやさを",
+      "zh": ""
+    },
+    "こうげき^": {
+      "en": "こうげき^",
+      "ja": "こうげき^",
+      "zh": ""
+    },
+    "hardy": {
+      "en": "Hardy",
+      "ja": "がんばりや",
+      "zh": "勤奋"
+    },
+    "quirky": {
+      "en": "Quirky",
+      "ja": "きまぐれ",
+      "zh": "浮躁"
+    },
+    "bashful": {
+      "en": "Bashful",
+      "ja": "てれや",
+      "zh": "害羞"
+    },
+    "こうげき父": {
+      "en": "こうげき父",
+      "ja": "こうげき父",
+      "zh": ""
+    },
+    "すばやさ-へ": {
+      "en": "すばやさ へ",
+      "ja": "すばやさ へ",
+      "zh": ""
+    },
+    "こうげきぐ": {
+      "en": "こうげきぐ",
+      "ja": "こうげきぐ",
+      "zh": ""
+    },
+    "すばやさゃ": {
+      "en": "すばやさゃ",
+      "ja": "すばやさゃ",
+      "zh": ""
+    },
+    "とくぼうぐ": {
+      "en": "とくぼうぐ",
+      "ja": "とくぼうぐ",
+      "zh": ""
+    },
+    "すばやさ-と": {
+      "en": "すばやさ と",
+      "ja": "すばやさ と",
+      "zh": ""
+    },
+    "すばやさそ": {
+      "en": "すばやさそ",
+      "ja": "すばやさそ",
+      "zh": ""
+    },
+    "すばやさへ": {
+      "en": "すばやさへ",
+      "ja": "すばやさへ",
+      "zh": ""
+    },
+    "とくぼうへ": {
+      "en": "とくぼうへ",
+      "ja": "とくぼうへ",
+      "zh": ""
+    },
+    "こうげきへ": {
+      "en": "こうげきへ",
+      "ja": "こうげきへ",
+      "zh": ""
+    },
+    "とくこう入": {
+      "en": "とくこう入",
+      "ja": "とくこう入",
+      "zh": ""
+    },
+    "すばやさ♥": {
+      "en": "すばやさ♥",
+      "ja": "すばやさ♥",
+      "zh": ""
+    },
+    "こうげき公": {
+      "en": "こうげき公",
+      "ja": "こうげき公",
+      "zh": ""
+    },
+    "すばやさ": {
+      "en": "すばやさ",
+      "ja": "すばやさ",
+      "zh": ""
+    },
+    "すばやさ^": {
+      "en": "すばやさ^",
+      "ja": "すばやさ^",
+      "zh": ""
+    },
+    "すばやさ-♥": {
+      "en": "すばやさ ♥",
+      "ja": "すばやさ ♥",
+      "zh": ""
+    },
+    "とくこうへ": {
+      "en": "とくこうへ",
+      "ja": "とくこうへ",
+      "zh": ""
+    },
+    "とくぼう^": {
+      "en": "とくぼう^",
+      "ja": "とくぼう^",
+      "zh": ""
+    },
+    "すばやさ-^": {
+      "en": "すばやさ ^",
+      "ja": "すばやさ ^",
+      "zh": ""
+    },
+    "ぼうぎよ->": {
+      "en": "ぼうぎよ >",
+      "ja": "ぼうぎよ >",
+      "zh": ""
+    },
+    "とくこう": {
+      "en": "とくこう",
+      "ja": "とくこう",
+      "zh": ""
+    },
+    "とくぼう入": {
+      "en": "とくぼう入",
+      "ja": "とくぼう入",
+      "zh": ""
+    },
+    "すばやさ-<": {
+      "en": "すばやさ <",
+      "ja": "すばやさ <",
+      "zh": ""
+    },
+    "ぼうぎよ>": {
+      "en": "ぼうぎよ>",
+      "ja": "ぼうぎよ>",
+      "zh": ""
+    },
+    "ぼうぎよ♥": {
+      "en": "ぼうぎよ♥",
+      "ja": "ぼうぎよ♥",
+      "zh": ""
+    },
+    "ぼうぎよと": {
+      "en": "ぼうぎよと",
+      "ja": "ぼうぎよと",
+      "zh": ""
+    },
+    "こうげき": {
+      "en": "こうげき",
+      "ja": "こうげき",
+      "zh": ""
+    },
+    "とくぼう♥": {
+      "en": "とくぼう♥",
+      "ja": "とくぼう♥",
+      "zh": ""
+    },
+    "docile": {
+      "en": "Docile",
+      "ja": "すなお",
+      "zh": "坦率"
+    },
+    "すばやさ>": {
+      "en": "すばやさ>",
+      "ja": "すばやさ>",
+      "zh": ""
+    },
+    "すばやさ-く": {
+      "en": "すばやさ く",
+      "ja": "すばやさ く",
+      "zh": ""
+    },
+    "ぼうぎよ<": {
+      "en": "ぼうぎよ<",
+      "ja": "ぼうぎよ<",
+      "zh": ""
+    },
+    "すばやさぐ": {
+      "en": "すばやさぐ",
+      "ja": "すばやさぐ",
+      "zh": ""
+    },
+    "とくぼう": {
+      "en": "とくぼう",
+      "ja": "とくぼう",
+      "zh": ""
+    },
+    "すばやさ->": {
+      "en": "すばやさ >",
+      "ja": "すばやさ >",
+      "zh": ""
+    },
+    "とくぼう*": {
+      "en": "とくぼう*",
+      "ja": "とくぼう*",
+      "zh": ""
+    }
+  },
+  "ja_index": {
+    "pokemon": {
+      "ユキノオー": "abomasnow",
+      "アブソル": "absol",
+      "ギルガルド": "aegislash",
+      "プテラ": "aerodactyl",
+      "ボスゴドラ": "aggron",
+      "フーディン": "alakazam",
+      "マホイップ": "alcremie",
+      "チルタリス": "altaria",
+      "デンリュウ": "ampharos",
+      "コノヨザル": "annihilape",
+      "タルップル": "appletun",
+      "オニシズクモ": "araquanid",
+      "アーボック": "arbok",
+      "ウインディ": "arcanine",
+      "ヒスイウインディ": "arcanine-hisui",
+      "ブリジュラス": "archaludon",
+      "アリアドス": "ariados",
+      "グレンアルマ": "armarouge",
+      "フレフワン": "aromatisse",
+      "タブンネ": "audino",
+      "アマルルガ": "aurorus",
+      "クレベース": "avalugg",
+      "ヒスイクレベース": "avalugg-hisui",
+      "マリルリ": "azumarill",
+      "ジュペッタ": "banette",
+      "ガメノデス": "barbaracle",
+      "イダイトウ": "basculegion",
+      "イダイトウ(メス)": "basculegion-female",
+      "トリデプス": "bastiodon",
+      "ツンベアー": "beartic",
+      "スピアー": "beedrill",
+      "ハラバリー": "bellibolt",
+      "カメックス": "blastoise",
+      "バシャーモ": "blaziken",
+      "バクーダ": "camerupt",
+      "ポワルン": "castform",
+      "ソウブレイズ": "ceruledge",
+      "シャンデラ": "chandelure",
+      "リザードン": "charizard",
+      "ブリガロン": "chesnaught",
+      "チリーン": "chimecho",
+      "ブロスター": "clawitzer",
+      "ピクシー": "clefable",
+      "デスカーン": "cofagrigus",
+      "ローブシン": "conkeldurr",
+      "アーマーガア": "corviknight",
+      "ケケンカニ": "crabominable",
+      "ジュナイパー": "decidueye",
+      "ヒスイジュナイパー": "decidueye-hisui",
+      "デデンネ": "dedenne",
+      "マフォクシー": "delphox",
+      "ホルード": "diggersby",
+      "メタモン": "ditto",
+      "ドラミドロ": "dragalge",
+      "ドラパルト": "dragapult",
+      "カイリュー": "dragonite",
+      "ジジーロン": "drampa",
+      "シビルドン": "eelektross",
+      "エンブオー": "emboar",
+      "エモンガ": "emolga",
+      "エンペルト": "empoleon",
+      "クエスパトラ": "espathra",
+      "エーフィ": "espeon",
+      "ドリュウズ": "excadrill",
+      "タイレーツ": "falinks",
+      "リキキリン": "farigiraf",
+      "オーダイル": "feraligatr",
+      "アップリュー": "flapple",
+      "ブースター": "flareon",
+      "フラエッテ": "floette",
+      "フラージェス": "florges",
+      "フォレトス": "forretress",
+      "ユキメノコ": "froslass",
+      "トリミアン": "furfrou",
+      "エルレイド": "gallade",
+      "ダストダス": "garbodor",
+      "ガブリアス": "garchomp",
+      "サーナイト": "gardevoir",
+      "キョジオーン": "garganacl",
+      "ゲンガー": "gengar",
+      "サーフゴー": "gholdengo",
+      "グレイシア": "glaceon",
+      "オニゴーリ": "glalie",
+      "キラフロル": "glimmora",
+      "グライオン": "gliscor",
+      "ゴルーグ": "golurk",
+      "ヌメルゴン": "goodra",
+      "ヌメルゴン(ヒスイ)": "goodra-hisui",
+      "パンプジン(ちゅうだま)": "gourgeist",
+      "パンプジン(おおだま)": "gourgeist-large",
+      "パンプジン(こだま)": "gourgeist-small",
+      "パンプジン(ギガだま)": "gourgeist-super",
+      "ゲッコウガ": "greninja",
+      "オーロンゲ": "grimmsnarl",
+      "ギャラドス": "gyarados",
+      "ブリムオン": "hatterene",
+      "ルチャブル": "hawlucha",
+      "エレザード": "heliolisk",
+      "ヘラクロス": "heracross",
+      "カバルドン": "hippowdon",
+      "ヘルガー": "houndoom",
+      "ハカドッグ": "houndstone",
+      "カミツオロチ": "hydrapple",
+      "サザンドラ": "hydreigon",
+      "ガオガエン": "incineroar",
+      "ゴウカザル": "infernape",
+      "サンダース": "jolteon",
+      "ガルーラ": "kangaskhan",
+      "ドドゲザン": "kingambit",
+      "バサギリ": "kleavor",
+      "クレッフィ": "klefki",
+      "ジャラランガ": "kommo-o",
+      "ワルビアル": "krookodile",
+      "リーフィア": "leafeon",
+      "レパルダス": "liepard",
+      "ミミロップ": "lopunny",
+      "ルカリオ": "lucario",
+      "レントラー": "luxray",
+      "ルガルガン": "lycanroc",
+      "ルガルガン(たそがれ)": "lycanroc-dusk",
+      "ルガルガン(まよなか)": "lycanroc-midnight",
+      "カイリキー": "machamp",
+      "カラマネロ": "malamar",
+      "マンムー": "mamoswine",
+      "ライボルト": "manectric",
+      "イッカネズミ": "maushold",
+      "クチート": "mawile",
+      "チャーレム": "medicham",
+      "メガニウム": "meganium",
+      "マスカーニャ": "meowscarada",
+      "ニャオニクス": "meowstic",
+      "ニャオニクス(メス)": "meowstic-female",
+      "メタグロス": "metagross",
+      "ミロカロス": "milotic",
+      "ミミッキュ": "mimikyu",
+      "モルペコ": "morpeko",
+      "バリコオル": "mr-rime",
+      "バンバドロ": "mudsdale",
+      "ムシャーナ": "musharna",
+      "キュウコン": "ninetales",
+      "アローラキュウコン": "ninetales-alola",
+      "オンバーン": "noivern",
+      "ヤレユータン": "oranguru",
+      "ミミズズ": "orthworm",
+      "ハリーマン": "overqwil",
+      "イルカマン": "palafin",
+      "ゴロンダ": "pangoro",
+      "ナゲツケサル": "passimian",
+      "ペリッパー": "pelipper",
+      "ピジョット": "pidgeot",
+      "ピカチュウ": "pikachu",
+      "カイロス": "pinsir",
+      "ニョロトノ": "politoed",
+      "ポットデス": "polteageist",
+      "アシレーヌ": "primarina",
+      "カエンジシ": "pyroar",
+      "ウェーニバル": "quaquaval",
+      "ハリーセン": "qwilfish",
+      "ライチュウ": "raichu",
+      "アローラライチュウ": "raichu-alola",
+      "ラムパルド": "rampardos",
+      "ランクルス": "reuniclus",
+      "ドサイドン": "rhyperior",
+      "ロズレイド": "roserade",
+      "ロトム": "rotom",
+      "スピンロトム": "rotom-fan",
+      "フロストロトム": "rotom-frost",
+      "ヒートロトム": "rotom-heat",
+      "カットロトム": "rotom-mow",
+      "ウォッシュロトム": "rotom-wash",
+      "デスバーン": "runerigus",
+      "ヤミラミ": "sableye",
+      "エンニュート": "salazzle",
+      "ダイケンキ": "samurott",
+      "ヒスイダイケンキ": "samurott-hisui",
+      "サダイジャ": "sandaconda",
+      "ジュカイン": "sceptile",
+      "ハッサム": "scizor",
+      "ペンドラー": "scolipede",
+      "スコヴィラン": "scovillain",
+      "ズルズキン": "scrafty",
+      "ジャローダ": "serperior",
+      "サメハダー": "sharpedo",
+      "ヒヤッキー": "simipour",
+      "ヤナッキー": "simisage",
+      "バオッキー": "simisear",
+      "ヤバソチャ": "sinistcha",
+      "エアームド": "skarmory",
+      "ラウドボーン": "skeledirge",
+      "ヤドラン": "slowbro",
+      "ガラルヤドラン": "slowbro-galar",
+      "ヤドキング": "slowking",
+      "ガラルヤドキング": "slowking-galar",
+      "ペロリーム": "slurpuff",
+      "オオニューラ": "sneasler",
+      "カビゴン": "snorlax",
+      "ミカルゲ": "spiritomb",
+      "ムクホーク": "staraptor",
+      "スターミー": "starmie",
+      "ハガネール": "steelix",
+      "マッギョ": "stunfisk",
+      "ガラルマッギョ": "stunfisk-galar",
+      "ラグラージ": "swampert",
+      "ニンフィア": "sylveon",
+      "ファイアロー": "talonflame",
+      "ケンタロス": "tauros",
+      "パルデアケンタロス(水)": "tauros-paldea-aqua",
+      "パルデアケンタロス(炎)": "tauros-paldea-blaze",
+      "パルデアケンタロス(格闘)": "tauros-paldea-combat",
+      "デカヌチャン": "tinkaton",
+      "コータス": "torkoal",
+      "ドダイトス": "torterra",
+      "ドデカバシ": "toucannon",
+      "ドヒドイデ": "toxapex",
+      "ドクロッグ": "toxicroak",
+      "オーロット": "trevenant",
+      "アマージョ": "tsareena",
+      "バクフーン": "typhlosion",
+      "ヒスイバクフーン": "typhlosion-hisui",
+      "バンギラス": "tyranitar",
+      "ガチゴラス": "tyrantrum",
+      "ブラッキー": "umbreon",
+      "バイバニラ": "vanilluxe",
+      "シャワーズ": "vaporeon",
+      "フシギバナ": "venusaur",
+      "ウツボット": "victreebel",
+      "ラフレシア": "vileplume",
+      "ビビヨン": "vivillon",
+      "ウルガモス": "volcarona",
+      "ミルホッグ": "watchog",
+      "マニューラ": "weavile",
+      "エルフーン": "whimsicott",
+      "アヤシシ": "wyrdeer",
+      "ゾロアーク": "zoroark",
+      "ゾロアーク(ヒスイ)": "zoroark-hisui"
+    },
+    "moves": {
+      "ふぶき": "blizzard",
+      "まもる": "protect",
+      "ギガドレイン": "giga-drain",
+      "エナジーボール": "energy-ball",
+      "オーロラベール": "aurora-veil",
+      "だいちのちから": "earth-power",
+      "こおりのつぶて": "ice-shard",
+      "きあいだま": "focus-blast",
+      "ウッドハンマー": "wood-hammer",
+      "やどりぎのタネ": "leech-seed",
+      "リーフストーム": "leaf-storm",
+      "じしん": "earthquake",
+      "ぜったいれいど": "sheer-cold",
+      "くさむすび": "grass-knot",
+      "ふいうち": "sucker-punch",
+      "つじぎり": "night-slash",
+      "インファイト": "close-combat",
+      "サイコカッター": "psycho-cut",
+      "はたきおとす": "knock-off",
+      "じゃれつく": "play-rough",
+      "つるぎのまい": "swords-dance",
+      "みきり": "detect",
+      "ストーンエッジ": "stone-edge",
+      "れいとうビーム": "ice-beam",
+      "おにび": "will-o-wisp",
+      "いわなだれ": "rock-slide",
+      "シャドークロー": "shadow-claw",
+      "キングシールド": "kings-shield",
+      "かげうち": "shadow-sneak",
+      "ポルターガイスト": "poltergeist",
+      "アイアンヘッド": "iron-head",
+      "せいなるつるぎ": "sacred-sword",
+      "ワイドガード": "wide-guard",
+      "シャドーボール": "shadow-ball",
+      "ラスターカノン": "flash-cannon",
+      "てっていこうせん": "steel-beam",
+      "かわらわり": "brick-break",
+      "みがわり": "substitute",
+      "おいかぜ": "tailwind",
+      "ダブルウイング": "dual-wingbeat",
+      "こおりのキバ": "ice-fang",
+      "ちょうはつ": "taunt",
+      "サイコファング": "psychic-fangs",
+      "りゅうのまい": "dragon-dance",
+      "ステルスロック": "stealth-rock",
+      "かみくだく": "crunch",
+      "にほんばれ": "sunny-day",
+      "ボディプレス": "body-press",
+      "ヘビーボンバー": "heavy-slam",
+      "てっぺき": "iron-defense",
+      "れいとうパンチ": "ice-punch",
+      "のろい": "curse",
+      "メタルバースト": "metal-burst",
+      "ゆきなだれ": "avalanche",
+      "もろはのずつき": "head-smash",
+      "ねむる": "rest",
+      "10まんばりき": "high-horsepower",
+      "ほえる": "roar",
+      "サイコキネシス": "psychic",
+      "ワイドフォース": "expanding-force",
+      "マジカルシャイン": "dazzling-gleam",
+      "ガードスワップ": "guard-swap",
+      "ひかりのかべ": "light-screen",
+      "リフレクター": "reflect",
+      "アンコール": "encore",
+      "わるだくみ": "nasty-plot",
+      "サイコショック": "psyshock",
+      "トリックルーム": "trick-room",
+      "サイコフィールド": "psychic-terrain",
+      "デコレーション": "decorate",
+      "てだすけ": "helping-hand",
+      "マジカルフレイム": "mystical-fire",
+      "じこさいせい": "recover",
+      "ドレインキッス": "draining-kiss",
+      "ベビードールアイ": "baby-doll-eyes",
+      "めいそう": "calm-mind",
+      "とける": "acid-armor",
+      "みわくのボイス": "alluring-voice",
+      "アシストパワー": "stored-power",
+      "じこあんじ": "psych-up",
+      "ハイパーボイス": "hyper-voice",
+      "はねやすめ": "roost",
+      "ブレイブバード": "brave-bird",
+      "りゅうせいぐん": "draco-meteor",
+      "ほろびのうた": "perish-song",
+      "りゅうのはどう": "dragon-pulse",
+      "コットンガード": "cotton-guard",
+      "かえんほうしゃ": "flamethrower",
+      "だいもんじ": "fire-blast",
+      "のしかかり": "body-slam",
+      "すてみタックル": "double-edge",
+      "ほのおのうず": "fire-spin",
+      "10まんボルト": "thunderbolt",
+      "パラボラチャージ": "parabolic-charge",
+      "パワージェム": "power-gem",
+      "ボルトチェンジ": "volt-switch",
+      "かみなり": "thunder",
+      "じゅうでん": "charge",
+      "ふんどのこぶし": "rage-fist",
+      "ドレインパンチ": "drain-punch",
+      "ビルドアップ": "bulk-up",
+      "コーチング": "coaching",
+      "とんぼがえり": "u-turn",
+      "かみなりパンチ": "thunder-punch",
+      "ゴーストダイブ": "phantom-force",
+      "がんせきふうじ": "rock-tomb",
+      "りんごさん": "apple-acid",
+      "じわれ": "fissure",
+      "リサイクル": "recycle",
+      "きおくじょうほう": "amnesia",
+      "アクアブレイク": "liquidation",
+      "きゅうけつ": "leech-life",
+      "とびかかる": "lunge",
+      "どくづき": "poison-jab",
+      "ねばねばネット": "sticky-web",
+      "ミラーコート": "mirror-coat",
+      "あまごい": "rain-dance",
+      "こそこそスラッシュ": "skitter-smack",
+      "こごえるかぜ": "icy-wind",
+      "かみつく": "bite",
+      "なみのり": "surf",
+      "がむしゃら": "endeavor",
+      "なかまづくり": "entrainment",
+      "まきつく": "wrap",
+      "こわいかお": "scary-face",
+      "おどりかかる": "pounce",
+      "ダストシュート": "gunk-shot",
+      "へびにらみ": "glare",
+      "とぐろをまく": "coil",
+      "ワイドブレイカー": "breaking-swipe",
+      "どくびし": "toxic-spikes",
+      "ドラゴンテール": "dragon-tail",
+      "どくどく": "toxic",
+      "すりかえ": "switcheroo",
+      "バークアウト": "snarl",
+      "どくどくのキバ": "poison-fang",
+      "いたみわけ": "pain-split",
+      "フレアドライブ": "flare-blitz",
+      "しんそく": "extreme-speed",
+      "ワイルドボルト": "wild-charge",
+      "げきりん": "outrage",
+      "あさのひざし": "morning-sun",
+      "ニトロチャージ": "flame-charge",
+      "ねっぷう": "heat-wave",
+      "じならし": "bulldoze",
+      "もえつきる": "burn-up",
+      "エレクトロビーム": "electro-shot",
+      "はどうだん": "aura-sphere",
+      "あくのはどう": "dark-pulse",
+      "イカサマ": "foul-play",
+      "いかりのこな": "rage-powder",
+      "いとをはく": "string-shot",
+      "むしのていこう": "struggle-bug",
+      "どくのいと": "toxic-thread",
+      "であいがしら": "first-impression",
+      "クロスポイズン": "cross-poison",
+      "メガホーン": "megahorn",
+      "アーマーキャノン": "armor-cannon",
+      "みちづれ": "destiny-bond",
+      "こらえる": "endure",
+      "サイドチェンジ": "ally-switch",
+      "ムーンフォース": "moonblast",
+      "いやしのはどう": "heal-pulse",
+      "ミストバースト": "misty-explosion",
+      "ミストフィールド": "misty-terrain",
+      "うそなき": "fake-tears",
+      "かなしばり": "disable",
+      "ねがいごと": "wish",
+      "いのちのしずく": "life-dew",
+      "シンプルビーム": "simple-beam",
+      "あくび": "yawn",
+      "いやしのねがい": "healing-wish",
+      "げんしのちから": "ancient-power",
+      "フリーズドライ": "freeze-dry",
+      "りんしょう": "round",
+      "でんじは": "thunder-wave",
+      "はかいこうせん": "hyper-beam",
+      "ひょうざんおろし": "mountain-gale",
+      "アイススピナー": "ice-spinner",
+      "ロックブラスト": "rock-blast",
+      "こうそくスピン": "rapid-spin",
+      "つららばり": "icicle-spear",
+      "つららおとし": "icicle-crash",
+      "こおりのいぶき": "frost-breath",
+      "アクアジェット": "aqua-jet",
+      "はらだいこ": "belly-drum",
+      "ばかぢから": "superpower",
+      "たきのぼり": "waterfall",
+      "あまえる": "charm",
+      "うずしお": "whirlpool",
+      "スキルスワップ": "skill-swap",
+      "からをやぶる": "shell-smash",
+      "アクアカッター": "aqua-cutter",
+      "クロスチョップ": "cross-chop",
+      "おはかまいり": "last-respects",
+      "だくりゅう": "muddy-water",
+      "クイックターン": "flip-turn",
+      "ウェーブタックル": "wave-crash",
+      "ハイドロポンプ": "hydro-pump",
+      "こうそくいどう": "agility",
+      "みずびたし": "soak",
+      "うちおとす": "smack-down",
+      "カウンター": "counter",
+      "じごくづき": "throat-chop",
+      "ドリルライナー": "drill-run",
+      "とどめばり": "fell-stinger",
+      "エックスシザー": "x-scissor",
+      "ミサイルばり": "pin-missile",
+      "なまける": "slack-off",
+      "ウェザーボール": "weather-ball",
+      "アシッドボム": "acid-spray",
+      "エレキフィールド": "electric-terrain",
+      "エレキネット": "electroweb",
+      "マッドショット": "mud-shot",
+      "しおふき": "water-spout",
+      "ねこだまし": "fake-out",
+      "みずのはどう": "water-pulse",
+      "ほのおのキック": "blaze-kick",
+      "とびひざげり": "high-jump-kick",
+      "バトンタッチ": "baton-pass",
+      "ブプレイズキック": "ブプレイズキック",
+      "ふんか": "eruption",
+      "ソーラービーム": "solar-beam",
+      "じだんだ": "stomping-tantrum",
+      "ぼうふう": "hurricane",
+      "ねっとう": "scald",
+      "どろぼう": "thief",
+      "からげんき": "facade",
+      "むねんのつるぎ": "bitter-blade",
+      "ソーラーブレード": "solar-blade",
+      "オーバーヒート": "overheat",
+      "トリック": "trick",
+      "ちいさくなる": "minimize",
+      "エアスラッシュ": "air-slash",
+      "ドラゴンクロー": "dragon-claw",
+      "ねっさのだいち": "scorching-sands",
+      "ニードルガード": "spiky-shield",
+      "タネばくだん": "seed-bomb",
+      "こうごうせい": "synthesis",
+      "グラススライダー": "grassy-glide",
+      "ばくおんぱ": "boomburst",
+      "コスモパワー": "cosmic-power",
+      "サイコノイズ": "psychic-noise",
+      "ヘドロばくだん": "sludge-bomb",
+      "フィールドのちから": "terrain-pulse",
+      "ヘドロウェーブ": "sludge-wave",
+      "このゆびとまれ": "follow-me",
+      "つきのひかり": "moonlight",
+      "チャージビーム": "charge-beam",
+      "たたりめ": "hex",
+      "おきみやげ": "memento",
+      "くろいきり": "haze",
+      "マッハパンチ": "mach-punch",
+      "ほのおのパンチ": "fire-punch",
+      "つけあがる": "power-trip",
+      "きりばらい": "defog",
+      "アイスハンマー": "ice-hammer",
+      "クラブハンマー": "crabhammer",
+      "あわ": "bubble",
+      "3ぼんのや": "triple-arrows",
+      "リーフブレード": "leaf-blade",
+      "はやてがえし": "upper-hand",
+      "かげぬい": "spirit-shackle",
+      "ほっぺすりすり": "nuzzle",
+      "いかりのまえば": "super-fang",
+      "かいでんぱ": "eerie-impulse",
+      "ライジングボルト": "rising-voltage",
+      "でんこうせっか": "quick-attack",
+      "じばく": "self-destruct",
+      "へんしん": "transform",
+      "ドラゴンアロー": "dragon-darts",
+      "ふくろだたき": "beat-up",
+      "けたぐり": "low-kick",
+      "ほうでん": "discharge",
+      "サンダーダイブ": "supercell-slam",
+      "やまあらし": "storm-throw",
+      "スピードシェア": "speed-swap",
+      "しんくうは": "vacuum-wave",
+      "ハイドロカノン": "hydro-cannon",
+      "ルミナコリジョン": "lumina-crash",
+      "さいみんじゅつ": "hypnosis",
+      "フェザーダンス": "feather-dance",
+      "つのドリル": "horn-drill",
+      "もうしんのかまえ": "no-retreat",
+      "ツインビーム": "twin-beam",
+      "ふういん": "imprison",
+      "あばれる": "thrash",
+      "グラビティアップル": "grav-apple",
+      "ドラゴンダイブ": "dragon-rush",
+      "アクロバット": "acrobatics",
+      "くさわけ": "trailblaze",
+      "つばめがえし": "aerial-ace",
+      "グラスフィールド": "grassy-terrain",
+      "やけっぱち": "temper-flare",
+      "はめつのひかり": "light-of-ruin",
+      "かふんだんご": "pollen-puff",
+      "ジャイロボール": "gyro-ball",
+      "だいばくはつ": "explosion",
+      "まきびし": "spikes",
+      "ラストリゾート": "last-resort",
+      "ほのおのキバ": "fire-fang",
+      "トリプルアクセル": "triple-axel",
+      "たくわえる": "stockpile",
+      "なげつける": "fling",
+      "クリアスモッグ": "clear-smog",
+      "スケイルショット": "scale-shot",
+      "しおづけ": "salt-cure",
+      "ゴールドラッシュ": "make-it-rain",
+      "ゆきげしき": "snowscape",
+      "かげぶんしん": "double-team",
+      "キラースピン": "mortal-spin",
+      "ベノムショック": "venoshock",
+      "ロックカット": "rock-polish",
+      "ぶちかまし": "headlong-rush",
+      "シャドーパンチ": "shadow-punch",
+      "ばくれつパンチ": "dynamic-punch",
+      "たてこもる": "shelter",
+      "ハロウィン": "trick-or-treat",
+      "パワーウィップ": "power-whip",
+      "みずしゅりけん": "water-shuriken",
+      "じんつうりき": "extrasensory",
+      "すてゼリフ": "parting-shot",
+      "ソウルクラッシュ": "spirit-break",
+      "アクアテール": "aqua-tail",
+      "ぶちまける": "lash-out",
+      "まほうのこな": "magic-powder",
+      "フライングプレス": "flying-press",
+      "しっぽきり": "shed-tail",
+      "タネマシンガン": "bullet-seed",
+      "フェイント": "feint",
+      "ふきとばし": "whirlwind",
+      "とおぼえ": "howl",
+      "ぐるぐるレーザー": "fickle-beam",
+      "シロップばくだん": "syrup-bomb",
+      "DDラリアット": "darkest-lariat",
+      "まねっこ": "copycat",
+      "エレクトロボール": "electro-ball",
+      "どろかけ": "mud-slap",
+      "ハンマーアーム": "hammer-arm",
+      "ドゲザン": "kowtow-cleave",
+      "ローキック": "low-sweep",
+      "ダメおし": "assurance",
+      "ハサミギロチン": "guillotine",
+      "がんせきアックス": "stone-axe",
+      "すなあらし": "sandstorm",
+      "でんじふゆう": "magnet-rise",
+      "スケイルノイズ": "clanging-scales",
+      "ソウルビート": "clangorous-soul",
+      "ギガインパクト": "giga-impact",
+      "おさきにどうぞ": "after-you",
+      "メガトンキック": "mega-kick",
+      "コメットパンチ": "meteor-mash",
+      "バレットパンチ": "bullet-punch",
+      "いのちがけ": "final-gambit",
+      "アクセルロック": "accelerock",
+      "アイアンテール": "iron-tail",
+      "ひっくりかえす": "topsy-turvy",
+      "しねんのずつき": "zen-headbutt",
+      "ねずみざん": "population-bomb",
+      "おかたづけ": "tidy-up",
+      "プレイズキック": "プレイズキック",
+      "トリックフラワー": "flower-trick",
+      "じゅうりょく": "gravity",
+      "オーラぐるま": "aura-wheel",
+      "きしかいせい": "reversal",
+      "みらいよち": "future-sight",
+      "パワースワップ": "power-swap",
+      "さいはい": "instruct",
+      "どくばりセンボン": "barb-barrage",
+      "どくばり": "poison-sting",
+      "ジェットパンチ": "jet-punch",
+      "ほうふく": "comeuppance",
+      "ボルテッカー": "volt-tackle",
+      "ちからをすいとる": "strength-sap",
+      "うたかたのアリア": "sparkling-aria",
+      "アクアステップ": "aqua-step",
+      "ツボをつく": "acupressure",
+      "でんじほう": "zap-cannon",
+      "ねむりごな": "sleep-powder",
+      "さきおくり": "quash",
+      "ドラゴンエール": "dragon-cheer",
+      "ひけん・ちえなみ": "ceaseless-edge",
+      "シェルブレード": "razor-shell",
+      "すなじごく": "sand-tomb",
+      "クイックガード": "quick-guard",
+      "むしくい": "bug-bite",
+      "からいちゃくち": "spicy-extract",
+      "しっとのほのお": "jealous-flames",
+      "シャカシャカほう": "shaka-shaka-cannon",
+      "フレアソング": "torch-song",
+      "シェルアームズ": "shell-side-arm",
+      "さむいギャグ": "chilly-reception",
+      "ぶきみなじゅもん": "eerie-spell",
+      "フェイタルクロー": "dire-claw",
+      "ヒートスタンプ": "heat-crash",
+      "トラバサミ": "snap-trap",
+      "あなをほる": "dig",
+      "レイジングブル": "raging-bull",
+      "ねごと": "sleep-talk",
+      "いびき": "snore",
+      "デカハンマー": "gigaton-hammer",
+      "ふんえん": "lava-plume",
+      "くちばしキャノン": "beak-blast",
+      "トーチカ": "baneful-bunker",
+      "まとわりつく": "infestation",
+      "しっぺがえし": "payback",
+      "ひやみず": "chilling-water",
+      "ウッドホーン": "horn-leech",
+      "もりののろい": "forests-curse",
+      "ねをはる": "ingrain",
+      "トロピカルキック": "trop-kick",
+      "じごくのパレード": "infernal-parade",
+      "ひやっきやこう": "ひやっきやこう",
+      "かみなりのキバ": "thunder-fang",
+      "ちょうのまい": "quiver-dance",
+      "むしのさざめき": "bug-buzz",
+      "ほのおのまい": "fiery-dance",
+      "メロメロ": "attract",
+      "くすぐる": "tickle",
+      "バリアーラッシュ": "psyshield-bash",
+      "うらみつらみ": "bitter-malice",
+      "ナイトバースト": "night-daze"
+    },
+    "items": {
+      "ユキノオナイト": "abomasite",
+      "きあいのタスキ": "focus-sash",
+      "とけないこおり": "never-melt-ice",
+      "せんせいのツメ": "quick-claw",
+      "オッカのみ": "occa-berry",
+      "たべのこし": "leftovers",
+      "こだわりスカーフ": "choice-scarf",
+      "オボンのみ": "sitrus-berry",
+      "かいがらのすず": "shell-bell",
+      "ひかりのこな": "bright-powder",
+      "きせきのタネ": "miracle-seed",
+      "ラムのみ": "lum-berry",
+      "メンタルハーブ": "mental-herb",
+      "ひかりのねんど": "light-clay",
+      "いのちのたま": "life-orb",
+      "たつじんのおび": "expert-belt",
+      "アブソルナイト": "absolite",
+      "ピントレンズ": "scope-lens",
+      "くろいメガネ": "black-glasses",
+      "ヨプのみ": "chople-berry",
+      "おうじゃのしるし": "kings-rock",
+      "しろいハーブ": "white-herb",
+      "ロゼルのみ": "roseli-berry",
+      "ちからのハチマキ": "muscle-band",
+      "オレンのみ": "oran-berry",
+      "のろいのおふだ": "spell-tag",
+      "ナモのみ": "colbur-berry",
+      "メタルコート": "metal-coat",
+      "カシブのみ": "kasib-berry",
+      "くろおび": "black-belt",
+      "シュカのみ": "shuca-berry",
+      "カゴのみ": "chesto-berry",
+      "プテラナイト": "aerodactylite",
+      "かたいいし": "hard-stone",
+      "するどいくちばし": "sharp-beak",
+      "ヨロギのみ": "charti-berry",
+      "こうかくレンズ": "wide-lens",
+      "ボスゴドラナイト": "aggronite",
+      "でんきだま": "light-ball",
+      "きあいのハチマキ": "focus-band",
+      "フーディナイト": "alakazite",
+      "まがったスプーン": "twisted-spoon",
+      "ものしりメガネ": "wise-glasses",
+      "ビアーのみ": "kebia-berry",
+      "ようせいのハネ": "fairy-feather",
+      "リリバのみ": "babiri-berry",
+      "くろいてっきゅう": "iron-ball",
+      "おおきなねっこ": "big-root",
+      "メトロノーム": "metronome",
+      "チルタリスナイト": "altarianite",
+      "ハバンのみ": "haban-berry",
+      "ヤチェのみ": "yache-berry",
+      "りゅうのキバ": "dragon-fang",
+      "デンリュウナイト": "ampharosite",
+      "じしゃく": "magnet",
+      "しんぴのしずく": "mystic-water",
+      "バコウのみ": "coba-berry",
+      "ソクノのみ": "wacan-berry",
+      "どくバリ": "poison-barb",
+      "ウタンのみ": "payapa-berry",
+      "もくたん": "charcoal",
+      "イトケのみ": "passho-berry",
+      "シルクのスカーフ": "silk-scarf",
+      "ぎんのこな": "silver-powder",
+      "ミミロップナイト": "lopunnite",
+      "タブンネナイト": "audinite",
+      "ユキメノコナイト": "froslassite",
+      "つめたいいわ": "icy-rock",
+      "フォーカスレンズ": "zoom-lens",
+      "ヒメリのみ": "leppa-berry",
+      "ジュペッタナイト": "banettite",
+      "ゲンガナイト": "gengarite",
+      "ヤミラミナイト": "sablenite",
+      "ガメノデスナイト": "barbaraclite",
+      "スピアナイト": "beedrillite",
+      "カメックスナイト": "blastoisinite",
+      "リンドのみ": "rindo-berry",
+      "バシャーモナイト": "blazikenite",
+      "バクーダナイト": "cameruptite",
+      "やわらかいすな": "soft-sand",
+      "メガニウムナイト": "meganiumite",
+      "ガブリアスナイト": "garchompite",
+      "シャンデラナイト": "chandelurite",
+      "リザードナイトY": "charizardite-y",
+      "リザードナイトX": "charizardite-x",
+      "カイリュナイト": "dragonitite",
+      "ライボルトナイト": "manectite",
+      "バンギラスナイト": "tyranitarite",
+      "ブリガロナイト": "chesnaughtite",
+      "チリーンナイト": "chimechite",
+      "ピクシナイト": "clefablite",
+      "ケケンカニナイト": "crabominite",
+      "ゲッコウガナイト": "greninjaite",
+      "ムクホークナイト": "staraptornite",
+      "マフォクシナイト": "delphoxite",
+      "ガルーラナイト": "kangaskhanite",
+      "ドラミドナイト": "dragalgite",
+      "ジジーロナイト": "drampite",
+      "シビルドナイト": "eelektrossite",
+      "しめったいわ": "damp-rock",
+      "エンブオナイト": "emboarite",
+      "ドリュウズナイト": "excadrillite",
+      "タイレーツナイト": "falinksite",
+      "オーダイルナイト": "feraligatrite",
+      "フラエッテナイト": "floettite",
+      "ヘラクロスナイト": "heracronite",
+      "エルレイドナイト": "galladite",
+      "サーナイトナイト": "gardevoirite",
+      "オニゴーリナイト": "glalitite",
+      "キラフロルナイト": "glimmorite",
+      "ゴルーグナイト": "golurkite",
+      "ギャラドスナイト": "gyaradosite",
+      "ルチャブルナイト": "hawluchite",
+      "キーのみ": "persim-berry",
+      "さらさらいわ": "smooth-rock",
+      "ヘルガナイト": "houndoominite",
+      "あついいわ": "heat-rock",
+      "ルカリオナイト": "lucarionite",
+      "ハッサムナイト": "scizorite",
+      "カラマネナイト": "malamarite",
+      "タンガのみ": "tanga-berry",
+      "クチートナイト": "mawilite",
+      "チャーレムナイト": "medichamite",
+      "フシギバナイト": "venusaurite",
+      "ニャオニクスナイト": "meowsticite",
+      "メタグロスナイト": "metagrossite",
+      "ピジョットナイト": "pidgeotite",
+      "ライチュウナイトY": "raichunite-y",
+      "カイロスナイト": "pinsirite",
+      "カエンジシナイト": "pyroarite",
+      "ライチュウナイトX": "raichunite-x",
+      "ジュカインナイト": "sceptilite",
+      "ペンドラナイト": "scolipedite",
+      "スコヴィラナイト": "scovillainite",
+      "ズルズキナイト": "scraftite",
+      "サメハダナイト": "sharpedonite",
+      "エアームドナイト": "skarmoryite",
+      "ヤドランナイト": "slowbronite",
+      "スターミナイト": "starmiite",
+      "ハガネールナイト": "steelixite",
+      "ラグラージナイト": "swampertite",
+      "きれいなぬけがら": "shed-shell",
+      "ウツボットナイト": "victreebelite"
+    },
+    "abilities": {
+      "ゆきふらし": "blizzard",
+      "ぼうおん": "soundproof",
+      "きょううん": "super-luck",
+      "せいぎのこころ": "justified",
+      "プレッシャー": "pressure",
+      "バトルスイッチ": "stance-change",
+      "きんちょうかん": "unnerve",
+      "いしあたま": "rock-head",
+      "がんじょう": "sturdy",
+      "ヘビーメタル": "heavy-metal",
+      "せいしんりょく": "inner-focus",
+      "マジックガード": "magic-guard",
+      "シンクロ": "synchronize",
+      "アロマベール": "aroma-veil",
+      "スイートベール": "sweet-veil",
+      "ノーてんき": "cloud-nine",
+      "しぜんかいふく": "natural-cure",
+      "せいでんき": "static",
+      "プラス": "plus",
+      "まけんき": "defiant",
+      "やるき": "vital-spirit",
+      "あついしぼう": "thick-fat",
+      "じゅくせい": "ripen",
+      "くいしんぼう": "gluttony",
+      "すいほう": "water-bubble",
+      "ちょすい": "water-absorb",
+      "いかく": "intimidate",
+      "だっぴ": "shed-skin",
+      "もらいび": "flash-fire",
+      "じきゅうりょく": "stamina",
+      "すじがねいり": "stalwart",
+      "ふみん": "insomnia",
+      "スナイパー": "sniper",
+      "むしのしらせ": "swarm",
+      "くだけるよろい": "weak-armor",
+      "いやしのこころ": "healer",
+      "さいせいりょく": "regenerator",
+      "ぶきよう": "klutz",
+      "フリーズスキン": "refrigerate",
+      "アイスボディ": "ice-body",
+      "がんじょうあご": "strong-jaw",
+      "マイペース": "own-tempo",
+      "ちからもち": "huge-power",
+      "そうしょく": "sap-sipper",
+      "おみとおし": "frisk",
+      "のろわれボディ": "cursed-body",
+      "かたいツメ": "tough-claws",
+      "わるいてぐせ": "pickpocket",
+      "てきおうりょく": "adaptability",
+      "すいすい": "swiftswim",
+      "かたやぶり": "mold-breaker",
+      "ゆきかき": "slush-rush",
+      "ゆきがくれ": "snow-cloak",
+      "でんきにかえる": "electromorphosis",
+      "しめりけ": "damp",
+      "あめうけざら": "rain-dish",
+      "げきりゅう": "torrent",
+      "かそく": "speed-boost",
+      "もうか": "blaze",
+      "ハードロック": "solid-rock",
+      "マグマのよろい": "magma-armor",
+      "いかりのつぼ": "anger-point",
+      "てんきや": "forecast",
+      "すりぬけ": "infiltrator",
+      "ほのおのからだ": "flame-body",
+      "サンパワー": "solar-power",
+      "ぼうだん": "bulletproof",
+      "しんりょく": "overgrow",
+      "ふゆう": "levitate",
+      "メガランチャー": "mega-launcher",
+      "てんねん": "unaware",
+      "メロメロボディ": "cute-charm",
+      "ミイラ": "mummy",
+      "てつのこぶし": "iron-fist",
+      "こんじょう": "guts",
+      "ちからずく": "sheer-force",
+      "ミラーアーマー": "mirror-armor",
+      "かいりきバサミ": "hyper-cutter",
+      "きもったま": "scrappy",
+      "どんかん": "oblivious",
+      "ほおぶくろ": "cheek-pouch",
+      "ものひろい": "pickup",
+      "マジシャン": "magician",
+      "かわりもの": "imposter",
+      "じゅうなん": "limber",
+      "どくのとげ": "poison-point",
+      "どくしゅ": "poison-touch",
+      "クリアボディ": "clear-body",
+      "マルチスケイル": "multiscale",
+      "ぎゃくじょう": "berserk",
+      "すてみ": "reckless",
+      "でんきエンジン": "motor-drive",
+      "かちき": "competitive",
+      "びんじょう": "opportunist",
+      "マジックミラー": "magic-bounce",
+      "すなかき": "sand-rush",
+      "すなのちから": "sand-force",
+      "カブトアーマー": "battle-armor",
+      "テイルアーマー": "armor-tail",
+      "はんすう": "cud-chew",
+      "はりきり": "hustle",
+      "フラワーベール": "flower-veil",
+      "きょうせい": "symbiosis",
+      "ぼうじん": "overcoat",
+      "ファーコート": "fur-coat",
+      "きれあじ": "sharpness",
+      "ふくつのこころ": "steadfast",
+      "ゆうばく": "aftermath",
+      "あくしゅう": "stench",
+      "さめはだ": "rough-skin",
+      "すなかくれ": "sand-veil",
+      "トレース": "trace",
+      "テレパシー": "telepathy",
+      "きよめのしお": "purifying-salt",
+      "おうごんのからだ": "good-as-gold",
+      "ムラっけ": "moody",
+      "どくげしょう": "toxic-debris",
+      "ふしょく": "corrosion",
+      "ポイズンヒール": "poison-heal",
+      "ノーガード": "no-guard",
+      "シェルアーマー": "shell-armor",
+      "ぬめぬめ": "gooey",
+      "うるおいボディ": "hydration",
+      "へんげんじざい": "protean",
+      "いたずらごころ": "prankster",
+      "じしんかじょう": "moxie",
+      "きけんよち": "anticipation",
+      "かるわざ": "unburden",
+      "かんそうはだ": "dry-skin",
+      "すなおこし": "sand-stream",
+      "はやおき": "early-bird",
+      "もふもふ": "fluffy",
+      "かんろなミツ": "supersweet-syrup",
+      "ねんちゃく": "sticky-hold",
+      "ちくでん": "volt-absorb",
+      "はやあし": "quick-feet",
+      "そうだいしょう": "supreme-overlord",
+      "ようりょくそ": "chlorophyll",
+      "リーフガード": "leaf-guard",
+      "きょうそうしん": "rivalry",
+      "するどいめ": "keen-eye",
+      "あまのじゃく": "contrary",
+      "きゅうばん": "suction-cups",
+      "ひらいしん": "lightning-rod",
+      "マイナス": "minus",
+      "フレンドガード": "friend-guard",
+      "テクニシャン": "technician",
+      "ヨガパワー": "pure-power",
+      "ライトメタル": "light-metal",
+      "ふしぎなうろこ": "marvel-scale",
+      "ばけのかわ": "disguise",
+      "はらぺこスイッチ": "hunger-switch",
+      "バリアフリー": "screen-cleaner",
+      "ちどりあし": "tangled-feet",
+      "よちむ": "forewarn",
+      "ひでり": "drought",
+      "どしょく": "earth-eater",
+      "マイティチェンジ": "zero-to-hero",
+      "レシーバー": "receiver",
+      "あめふらし": "drizzle",
+      "はとむね": "big-pecks",
+      "うるおいボイス": "liquid-voice",
+      "サーフテール": "surge-surfer",
+      "さまようたましい": "wandering-spirit",
+      "あとだし": "stall",
+      "すなはき": "sand-spit",
+      "おもてなし": "hospitality",
+      "たいねつ": "heatproof",
+      "クイックドロウ": "quick-draw",
+      "きみょうなくすり": "curious-medicine",
+      "めんえき": "immunity",
+      "はっこう": "illuminate",
+      "アナライズ": "analytic",
+      "ぎたい": "mimicry",
+      "フェアリースキン": "pixilate",
+      "はやてのつばさ": "gale-wings",
+      "しろいけむり": "white-smoke",
+      "スキルリンク": "skill-link",
+      "ひとでなし": "merciless",
+      "しゅうかく": "harvest",
+      "じょおうのいげん": "queenly-majesty",
+      "ほうし": "effect-spore",
+      "ふくがん": "compound-eyes",
+      "りんぷん": "shield-dust",
+      "イリュージョン": "illusion"
+    },
+    "natures": {
+      "れいせい": "quiet",
+      "ひかえめ": "modest",
+      "ゆうかん": "brave",
+      "おくびょう": "timid",
+      "のんき": "relaxed",
+      "ずぶとい": "bold",
+      "なまいき": "sassy",
+      "おだやか": "calm",
+      "いじっぱり": "adamant",
+      "おっとり": "mild",
+      "うっかりや": "rash",
+      "ようき": "jolly",
+      "やんちゃ": "naughty",
+      "わんぱく": "impish",
+      "むじゃき": "naive",
+      "せっかち": "hasty",
+      "さみしがり": "lonely",
+      "しんちょう": "careful",
+      "まじめ": "serious",
+      "のうてんき": "lax",
+      "おとなしい": "gentle",
+      "すばやさ ぐ": "すばやさ-ぐ",
+      "すばやさを": "すばやさを",
+      "こうげき^": "こうげき^",
+      "がんばりや": "hardy",
+      "きまぐれ": "quirky",
+      "てれや": "bashful",
+      "こうげき父": "こうげき父",
+      "すばやさ へ": "すばやさ-へ",
+      "こうげきぐ": "こうげきぐ",
+      "すばやさゃ": "すばやさゃ",
+      "とくぼうぐ": "とくぼうぐ",
+      "すばやさ と": "すばやさ-と",
+      "すばやさそ": "すばやさそ",
+      "すばやさへ": "すばやさへ",
+      "とくぼうへ": "とくぼうへ",
+      "こうげきへ": "こうげきへ",
+      "とくこう入": "とくこう入",
+      "すばやさ♥": "すばやさ♥",
+      "こうげき公": "こうげき公",
+      "すばやさ": "すばやさ",
+      "すばやさ^": "すばやさ^",
+      "すばやさ ♥": "すばやさ-♥",
+      "とくこうへ": "とくこうへ",
+      "とくぼう^": "とくぼう^",
+      "すばやさ ^": "すばやさ-^",
+      "ぼうぎよ >": "ぼうぎよ->",
+      "とくこう": "とくこう",
+      "とくぼう入": "とくぼう入",
+      "すばやさ <": "すばやさ-<",
+      "ぼうぎよ>": "ぼうぎよ>",
+      "ぼうぎよ♥": "ぼうぎよ♥",
+      "ぼうぎよと": "ぼうぎよと",
+      "こうげき": "こうげき",
+      "とくぼう♥": "とくぼう♥",
+      "すなお": "docile",
+      "すばやさ>": "すばやさ>",
+      "すばやさ く": "すばやさ-く",
+      "ぼうぎよ<": "ぼうぎよ<",
+      "すばやさぐ": "すばやさぐ",
+      "とくぼう": "とくぼう",
+      "すばやさ >": "すばやさ->",
+      "とくぼう*": "とくぼう*"
+    }
+  },
+  "pokemon_alias": {},
+  "pokemon_form_suffix": {}
+}

@@ -931,6 +931,257 @@ video {
     word-break: break-all;
 }
 
+/* ==================== 对手队伍切换器（菜单栏内） ==================== */
+.opp-team-switcher {
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#opp-team-count {
+    color: #4ec9b0;
+}
+
+/* ==================== 已匹配队伍选择弹窗 ==================== */
+#opp-team-picker-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+#opp-team-picker-overlay.open {
+    display: flex;
+}
+
+.opp-team-picker-box {
+    background: #1e1e1e;
+    color: #ccc;
+    border: 1px solid #444;
+    border-radius: 8px;
+    width: 92vw;
+    max-width: 1440px;
+    max-height: 85vh;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.opp-team-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #444;
+    flex-shrink: 0;
+}
+
+.opp-team-picker-close {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 22px;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.opp-team-picker-close:hover {
+    color: #ccc;
+}
+
+.opp-team-picker-body {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #4a4a4f #1e1e1e;
+}
+
+.opp-team-picker-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.opp-team-picker-body::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 4px;
+}
+
+.opp-team-picker-body::-webkit-scrollbar-thumb {
+    background: #4a4a4f;
+    border-radius: 4px;
+}
+
+.opp-team-picker-body::-webkit-scrollbar-thumb:hover {
+    background: #5a5a60;
+}
+
+.opp-team-picker-row {
+    background: #252526;
+    border: 1px solid #3e3e42;
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.opp-team-picker-row:hover {
+    background: #2d2d30;
+    border-color: #666;
+}
+
+.opp-team-picker-row.active {
+    background: rgba(0, 120, 204, 0.15);
+    border-color: #007acc;
+    box-shadow: 0 0 6px rgba(0, 122, 204, 0.4);
+}
+
+.opp-team-picker-row-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #ddd;
+}
+
+.opp-team-picker-row-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.opp-team-picker-row-date {
+    font-size: 11px;
+    color: #888;
+}
+
+.opp-team-picker-empty {
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    padding: 24px 0;
+}
+
+.opp-team-picker-cards {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+}
+
+.opp-team-picker-card {
+    display: flex;
+    background: #1e1e1e;
+    border: 1px solid #3e3e42;
+    border-radius: 4px;
+    padding: 4px;
+    min-width: 0;
+}
+
+.opp-team-picker-card-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 76px;
+    flex-shrink: 0;
+}
+
+.opp-team-picker-sprite {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+}
+
+.opp-team-picker-name {
+    font-size: 11px;
+    color: #ddd;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.opp-team-picker-meta {
+    font-size: 9px;
+    color: #999;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.opp-team-picker-card-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    justify-content: center;
+}
+
+.opp-team-picker-move {
+    font-size: 10px;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.opp-team-picker-move-icon {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.opp-team-picker-move-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.opp-team-picker-evs {
+    width: 50px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    justify-content: center;
+    border-left: 1px solid #2d2d30;
+    padding-left: 6px;
+}
+
+.opp-team-picker-ev {
+    font-size: 11px;
+    color: #ddd;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    line-height: 1.4;
+}
+
 /* ==================== 进化形态按钮 ==================== */
 .evo-buttons {
     display: flex;

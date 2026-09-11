@@ -18,6 +18,16 @@ const OPP_OVERLAY_COLORS = {
   type2: "#FF6347",     // 番茄 - type2区域
 };
 
+// 逐元素 OCR 裁剪区域颜色
+const TEXT_REGION_COLORS = {
+  nickname: "#FFFFFF",   // 白 - 昵称
+  ability: "#FF00FF",    // 品红 - 特性
+  held_item: "#00FFFF",  // 青 - 道具
+  move: "#FFA500",       // 橙 - 招式
+  stat_number: "#FFFF00", // 黄 - 属性数值
+  ev_number: "#64C8FF",  // 浅蓝 - 能力值加点
+};
+
 class LayoutOverlay {
   constructor() {
     this.canvas = document.getElementById('layout-canvas');
@@ -141,9 +151,57 @@ class LayoutOverlay {
     this.drawRegion('type1', card, x0, y0, w, h, scale);
     this.drawRegion('type2', card, x0, y0, w, h, scale);
 
-    // Draw stat boxes and arrows
+    // Draw OCR text regions (nickname/ability/item/moves/stat numbers)
+    this.drawTextRegions(card, x0, y0, w, h, scale);
+
+    // Draw stat boxes and EV number boxes
     this.drawStatBoxes(card, x0, y0, w, h, scale);
-    this.drawStatArrows(card, x0, y0, w, h, scale);
+  }
+
+  drawTextRegions(card, cardX, cardY, cardW, cardH, scale) {
+    const regions = CARD_LAYOUT_CONFIG.text_regions;
+    if (!regions) return;
+
+    const drawRect = (label, rx0, ry0, rx1, ry1, color) => {
+      const x = cardX + rx0 * cardW;
+      const y = cardY + ry0 * cardH;
+      const w = (rx1 - rx0) * cardW;
+      const h = (ry1 - ry0) * cardH;
+      this.ctx.strokeStyle = color;
+      this.ctx.lineWidth = 1.5;
+      this.ctx.strokeRect(x, y, w, h);
+      this.drawLabel(x, y, label, color, 10);
+    };
+
+    drawRect('昵称', regions.nickname.rx0, regions.nickname.ry0,
+             regions.nickname.rx1, regions.nickname.ry1, TEXT_REGION_COLORS.nickname);
+    drawRect('特性', regions.ability.rx0, regions.ability.ry0,
+             regions.ability.rx1, regions.ability.ry1, TEXT_REGION_COLORS.ability);
+    drawRect('道具', regions.held_item.rx0, regions.held_item.ry0,
+             regions.held_item.rx1, regions.held_item.ry1, TEXT_REGION_COLORS.held_item);
+    if (Array.isArray(regions.moves)) {
+      regions.moves.forEach((m, i) => {
+        drawRect(`招式${i + 1}`, m.rx0, m.ry0, m.rx1, m.ry1, TEXT_REGION_COLORS.move);
+      });
+    }
+    const sn = regions.stat_numbers;
+    if (sn) {
+      const boxW = sn.box_w * cardW;
+      const boxH = sn.box_h * cardH;
+      const yTops = Array.isArray(sn.y_tops) ? sn.y_tops : [sn.y_tops];
+      yTops.forEach((yt, i) => {
+        drawRect(`HP/特攻${i + 1}`, sn.left_x, yt, sn.left_x + sn.box_w, yt + sn.box_h, TEXT_REGION_COLORS.stat_number);
+        drawRect(`攻/防/速${i + 1}`, sn.right_x, yt, sn.right_x + sn.box_w, yt + sn.box_h, TEXT_REGION_COLORS.stat_number);
+      });
+    }
+    const evn = regions.ev_numbers;
+    if (evn) {
+      const yTops = Array.isArray(evn.y_tops) ? evn.y_tops : [evn.y_tops];
+      yTops.forEach((yt, i) => {
+        drawRect(`加点HP/特攻${i + 1}`, evn.left_x, yt, evn.left_x + evn.box_w, yt + evn.box_h, TEXT_REGION_COLORS.ev_number);
+        drawRect(`加点攻防速${i + 1}`, evn.right_x, yt, evn.right_x + evn.box_w, yt + evn.box_h, TEXT_REGION_COLORS.ev_number);
+      });
+    }
   }
 
   drawRegion(regionName, card, cardX, cardY, cardW, cardH, scale) {
@@ -194,24 +252,6 @@ class LayoutOverlay {
     config.y_tops.forEach(yTop => {
       const y = cardY + yTop * cardH;
       this.ctx.strokeRect(rightX, y, boxW, boxH);
-    });
-  }
-
-  drawStatArrows(card, cardX, cardY, cardW, cardH, scale) {
-    const arrows = CARD_LAYOUT_CONFIG.stat_arrows;
-    if (!arrows) return;
-
-    const color = "#64C8FF";
-    this.ctx.strokeStyle = color;
-    this.ctx.lineWidth = 1;
-
-    arrows.forEach(arrow => {
-      const x = cardX + arrow.x * cardW;
-      const y = cardY + arrow.y * cardH;
-      // Convert size from pixels to relative (assuming 738px card width)
-      const sizeRel = arrow.size / 738;
-      const size = sizeRel * cardW;
-      this.ctx.strokeRect(x, y, size, size);
     });
   }
 

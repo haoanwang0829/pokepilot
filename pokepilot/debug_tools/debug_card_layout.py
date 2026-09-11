@@ -48,14 +48,18 @@ def load_card_layout_config():
             'right_x': 0.762,
             'y_tops': [0.2708, 0.5200, 0.7692]
         },
-        'stat_arrows': [
-            {'name': 'hp', 'x': 0.162, 'y': 0.302, 'size': 27},
-            {'name': 'attack', 'x': 0.182, 'y': 0.552, 'size': 27},
-            {'name': 'defense', 'x': 0.183, 'y': 0.79, 'size': 27},
-            {'name': 'sp_atk', 'x': 0.653, 'y': 0.302, 'size': 27},
-            {'name': 'sp_def', 'x': 0.656, 'y': 0.552, 'size': 27},
-            {'name': 'speed', 'x': 0.656, 'y': 0.79, 'size': 27},
-        ]
+        'text_regions': {
+            'stat_numbers': {
+                'box_w': 0.085, 'box_h': 0.19,
+                'left_x': 0.287, 'right_x': 0.762,
+                'y_tops': [0.2708, 0.5200, 0.7692]
+            },
+            'ev_numbers': {
+                'box_w': 0.09, 'box_h': 0.19,
+                'left_x': 0.415, 'right_x': 0.895,
+                'y_tops': [0.2708, 0.5200, 0.7692]
+            },
+        }
     }
 
 
@@ -98,9 +102,9 @@ _SPRITE_REGION = regions.get('sprite', {"rx": 0.01, "ry": -0.11, "size": 66})
 _TYPE1_REGION = regions.get('type1', {"rx": 0.471, "ry": 0.05, "size": 30})
 _TYPE2_REGION = regions.get('type2', {"rx": 0.528, "ry": 0.05, "size": 30})
 
-# Stats boxes and arrows loaded from config
+# Stats boxes loaded from config
 stat_boxes = config.get('stat_boxes', {})
-stat_arrows = config.get('stat_arrows', [])
+_text_regions = config.get('text_regions', {})
 
 _STAT_BOX_W = stat_boxes.get('box_w', 0.189)
 _STAT_BOX_H = stat_boxes.get('box_h', 0.19)
@@ -108,8 +112,7 @@ _STAT_LEFT_X = stat_boxes.get('left_x', 0.287)
 _STAT_RIGHT_X = stat_boxes.get('right_x', 0.762)
 _STAT_Y_TOPS = stat_boxes.get('y_tops', [0.2708, 0.5200, 0.7692])
 
-# Convert arrow dict list to tuple list for compatibility
-_STAT_ARROWS = [(arrow['name'], arrow['x'], arrow['y'], arrow['size']) for arrow in stat_arrows]
+_EV_NUMBERS = _text_regions.get('ev_numbers')
 
 
 def debug_card_layout(image_path: str, output_dir: str = "debug_output/layout"):
@@ -230,14 +233,16 @@ def debug_card_layout(image_path: str, output_dir: str = "debug_output/layout"):
             box_y1 = int(box_y0 + _STAT_BOX_H * h_card)
             cv2.rectangle(img_marked, (box_x0, box_y0), (box_x1, box_y1), color_stat, 1)
 
-        # 5. Draw stat arrows
-        color_arrow = (100, 200, 255)  # Orange for arrows
-        for stat_name, x, y, size_px in _STAT_ARROWS:
-            arrow_x0 = int(x0 + x * w_card)
-            arrow_y0 = int(y0 + y * h_card)
-            arrow_x1 = arrow_x0 + size_px
-            arrow_y1 = arrow_y0 + size_px
-            cv2.rectangle(img_marked, (arrow_x0, arrow_y0), (arrow_x1, arrow_y1), color_arrow, 1)
+        # 5. Draw EV number boxes
+        if _EV_NUMBERS:
+            color_ev = (100, 200, 255)
+            for y_top in _EV_NUMBERS.get('y_tops', _STAT_Y_TOPS):
+                for xf in (_EV_NUMBERS['left_x'], _EV_NUMBERS['right_x']):
+                    ev_x0 = int(x0 + xf * w_card)
+                    ev_y0 = int(y0 + y_top * h_card)
+                    ev_x1 = int(ev_x0 + _EV_NUMBERS['box_w'] * w_card)
+                    ev_y1 = int(ev_y0 + _EV_NUMBERS['box_h'] * h_card)
+                    cv2.rectangle(img_marked, (ev_x0, ev_y0), (ev_x1, ev_y1), color_ev, 1)
 
     # 保存标注后的完整图片
     marked_path = output_path / "marked_layout.png"

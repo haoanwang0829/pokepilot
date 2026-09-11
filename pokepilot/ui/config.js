@@ -129,14 +129,22 @@ function getDefaultCardConfig() {
       right_x: 0.762,
       y_tops: [0.2708, 0.5200, 0.7692],
     },
-    stat_arrows: [
-      { name: "hp", x: 0.162, y: 0.302, size: 27 },
-      { name: "attack", x: 0.182, y: 0.552, size: 27 },
-      { name: "defense", x: 0.183, y: 0.79, size: 27 },
-      { name: "sp_atk", x: 0.653, y: 0.302, size: 27 },
-      { name: "sp_def", x: 0.656, y: 0.552, size: 27 },
-      { name: "speed", x: 0.656, y: 0.79, size: 27 },
-    ],
+    text_regions: {
+      stat_numbers: {
+        box_w: 0.085,
+        box_h: 0.19,
+        left_x: 0.287,
+        right_x: 0.762,
+        y_tops: [0.2708, 0.5200, 0.7692],
+      },
+      ev_numbers: {
+        box_w: 0.09,
+        box_h: 0.19,
+        left_x: 0.415,
+        right_x: 0.895,
+        y_tops: [0.2708, 0.5200, 0.7692],
+      },
+    },
     bg_colors_multi: [[221, 237, 245], [200, 95, 115]],
   };
 }

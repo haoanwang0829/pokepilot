@@ -6,11 +6,16 @@
 """
 
 from dataclasses import dataclass
-import json
 import os
 import sys
 import threading
 from pathlib import Path
+
+# 项目内路径（__file__ 位于 pokepilot/common/，向上三级为项目根）
+_ROOT = Path(__file__).resolve().parent.parent.parent
+
+# torch hub 模型统一放项目内 models/torch，避免落到 C 盘 ~/.cache/torch
+os.environ.setdefault("TORCH_HOME", str(_ROOT / "models" / "torch"))
 
 import cv2
 import numpy as np
@@ -21,12 +26,11 @@ from torchvision.models import resnet50
 
 from pokepilot.tools.logger_util import setup_logger
 from pokepilot.data.pokedb import PokeDB
+from pokepilot.data.roster_db import RosterDB
 
 logger = setup_logger(__name__)
 
 # ── 路径 ──────────────────────────────────────────────────────────────────────
-_ROOT = Path(__file__).parent.parent.parent
-_ROSTER_PATH = _ROOT / "data" / "champions_roster.json"
 _CHAMPIONS_DIR = _ROOT / "sprites" / "champions"
 _CHAMPIONS_SHINY = _ROOT / "sprites" / "champions_shiny"
 _TYPES_DIR = _ROOT / "sprites" / "sprites" / "types" / "generation-ix" / "scarlet-violet" / "small"
@@ -177,33 +181,36 @@ class PokemonDetector:
 
         # [5/6] 构建变体列表
         _progress("[5/6] 构建变体列表 ...")
-        roster = json.loads(_ROSTER_PATH.read_text(encoding="utf-8"))["pokemon"]
+        roster = RosterDB().get_all()
         self.variants: dict[str, PokemonVariant] = {}
 
         for pokemon_data in roster:
             slug = pokemon_data["slug"]
+            form = pokemon_data.get("form") or ""
+            is_mega = "mega" in form.lower()
             variant = PokemonVariant(
                 slug=slug,
                 id=pokemon_data["id"],
                 name=pokemon_data["name"],
-                form=pokemon_data['form'],
+                form=form,
                 types=pokemon_data.get("types", []),
-                sprite_filename=pokemon_data.get("sprite"),
-                sprite_shiny_filename=pokemon_data.get("sprite_shiny"),
+                sprite_filename=pokemon_data.get("sprite") if not is_mega else None,
+                sprite_shiny_filename=pokemon_data.get("sprite_shiny") if not is_mega else None,
                 sprite=None,
                 sprite_shiny=None,
             )
             self.variants[slug] = variant
 
-        # 加载 sprite 图片到对应的 variant
+        # 加载 sprite 图片到对应的 variant（mega 形态跳过）
         self._load_sprites_into_variants()
 
-        # [6/6] 预计算特征（最耗时）
+        # [6/6] 预计算特征（最耗时，mega 形态跳过）
         self._ref_features: dict[str, tuple[np.ndarray | None, np.ndarray | None]] = {}
         self._precompute_ref_features()
 
         _progress_done()
-        logger.info(f"初始化完成: {len(self.sprite_refs)} 精灵图, {len(self.type_refs)} 属性图标, {len(self.variants)} 宝可梦变体")
+        non_mega_count = sum(1 for v in self.variants.values() if v.form is None or "mega" not in v.form.lower())
+        logger.info(f"初始化完成: {len(self.sprite_refs)} 精灵图, {len(self.type_refs)} 属性图标, {len(self.variants)} 宝可梦变体 ({non_mega_count} 识别用 + {len(self.variants) - non_mega_count} mega 跳过)")
 
     def _load_type_refs(self, size: int = 32) -> dict[int, np.ndarray]:
         """加载 18 张属性图标"""
@@ -246,10 +253,11 @@ class PokemonDetector:
                     variant.sprite_shiny = self.sprite_refs[key]
 
     def _precompute_ref_features(self, target_size: int = 96):
-        """预计算所有参考精灵的特征向量，缓存到 self._ref_features"""
-        total = len(self.variants)
+        """预计算非 mega 参考精灵的特征向量，缓存到 self._ref_features"""
+        non_mega = [(s, v) for s, v in self.variants.items() if v.form is None or "mega" not in v.form.lower()]
+        total = len(non_mega)
         bar_width = 20
-        for idx, (slug, variant) in enumerate(self.variants.items(), 1):
+        for idx, (slug, variant) in enumerate(non_mega, 1):
             normal_feat = None
             shiny_feat = None
 
@@ -269,7 +277,7 @@ class PokemonDetector:
             if idx % 5 == 0 or idx == total:
                 pct = idx / total
                 filled = int(bar_width * pct)
-                bar = "█" * filled + "░" * (bar_width - filled)
+                bar = "#" * filled + "." * (bar_width - filled)
                 _progress(f"[6/6] 预计算特征 {bar} {idx}/{total} ({int(pct*100)}%)")
 
     def _match_type(self, icon: np.ndarray, size: int = 32, threshold: float = 60.0, min_std: float = 10.0) -> int | None:
@@ -312,7 +320,7 @@ class PokemonDetector:
         # 只对目标图片做 1 次特征提取
         target_features = _extract_features(sprite_r, self.feature_model, self.device)
 
-        search = candidates if candidates else list(self.variants.values())
+        search = candidates if candidates else [v for v in self.variants.values() if v.form is None or "mega" not in v.form.lower()]
         best_variant, best_score, is_shiny = None, float("inf"), False
 
         for variant in search:
@@ -409,18 +417,18 @@ class PokemonDetector:
         tid2 = self._match_type(type2_img)
         types_found = [_TYPE_NAMES[t] for t in [tid1, tid2] if t]
 
-        # 按属性过滤候选
+        # 按属性过滤候选（mega 形态已在构建时排除，无需再过滤）
         candidates = None
         if types_found:
             candidates = [
                 v for v in self.variants.values()
-                if (types_found == v.types) and ('-mega' not in v.slug)
+                if types_found == v.types
             ]
 
         # 识别精灵
         variant, score, is_shiny = self._match_sprite(sprite_clean, candidates, bg_removal=bg_removal, bg_colors=bg_colors, bg_color=bg_color)
 
-        n_searched = len(candidates) if candidates else len(self.variants)
+        n_searched = len(candidates) if candidates else sum(1 for v in self.variants.values() if v.form is None or "mega" not in v.form.lower())
 
         if variant:
             # 构建相对于项目根目录的完整精灵图路径

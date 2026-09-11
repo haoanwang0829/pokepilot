@@ -272,6 +272,8 @@ function calcTeamDamage(myTeam, oppTeam) {
                     continue;
                 }
                 const res = calcDamage(attacker, defender, move, { attackerSide: 'my', defenderSide: 'opp' });
+                
+                // console.log(attacker.name_zh, defender.name_zh, move.name_zh,res.range());
                 if (res) {
                     const [min, max] = res.range();
                     //默认没加HP
@@ -460,7 +462,7 @@ function calcDamage(attacker, defender, move, sideContext = {}){
         const { calculate, Pokemon, Move,Field } = window.calc;
         // ====== 处理攻击者道具：是mega石则丢弃item字段 ======
         let atkItemOpt;
-        var aitem = attacker.item || attacker.held_item[0].name
+        var aitem = canonicalName('items', attacker.item || attacker.held_item[0].name);
         if (aitem) {
             const itemLower = aitem.toLowerCase();
             if (!MEGA_STONES.includes(itemLower)&&!itemLower.includes("进化石")) {
@@ -487,14 +489,14 @@ function calcDamage(attacker, defender, move, sideContext = {}){
                 spe: attacker.evs?.speed > 0 ? attacker.evs.speed * 8 - 4 : 0,
             },
             nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
-            ability: capitalize(attacker.ability[0].name),
+            ability: canonicalName('abilities', attacker.ability[0].name),
              // 只有非mega石才会存在，mega石该字段直接不写
             ...(atkItemOpt ? { item: atkItemOpt } : {}),
             boosts: atkBoosts,
         });
         // ====== 处理防御者道具，逻辑完全一致 ======
         let defItemOpt;
-        var item = defender.item || defender.held_item[0].name
+        var item = canonicalName('items', defender.item || defender.held_item[0].name);
         if (item) {
             const itemLower = item.toLowerCase();
             if (!MEGA_STONES.includes(itemLower)&&!itemLower.includes("进化石")) {
@@ -515,15 +517,34 @@ function calcDamage(attacker, defender, move, sideContext = {}){
                 spe: defender.evs?.speed > 0 ? defender.evs.speed * 8 - 4 : 0,
             },
             nature: (defender.nature_en && defender.nature_en[0]?.name) || defender.nature || 'Hardy',
-            ability: capitalize(defender.ability[0].name),
+            ability: canonicalName('abilities', defender.ability[0].name),
             ...(defItemOpt ? { item: defItemOpt } : {}),
             ignoreItemErrors: true, // 核心：关闭道具匹配校验，消除megaStone报错
             boosts: defBoosts,
         });
 
-        const calcMove = new Move(gen, move.name);
+        // 用规范英文名重建 Move，确保 originalName 正确（气象球/科技爆破/多属性攻击等依赖 originalName 按天气或道具判型，
+        // 传入小写连字符 slug 时 originalName 不匹配，气象球会固定按无天气的普通属性计算伤害）
+        const _rawMove = new Move(gen, move.name);
+        const calcMove = _rawMove.name === move.name ? _rawMove : new Move(gen, _rawMove.name);
         // ==========构建Field战场对象==========
         const field = new Field(gen);
+        if(typeof speedFieldState === 'undefined'){ 
+            speedFieldState = {
+                my_tailwind: false,
+                opp_tailwind: false,
+                my_friendGuard: false,
+                my_lightScreen: false,
+                my_reflect: false,
+                my_auroraVeil: false,
+                opp_friendGuard: false,
+                opp_lightScreen: false,
+                opp_reflect: false,
+                opp_auroraVeil: false,
+                weather: null,
+                terrain: null
+            };
+        }
         // 1. 天气
         if (speedFieldState.weather) field.weather = speedFieldState.weather;
         // 2. 场地
@@ -538,6 +559,7 @@ function calcDamage(attacker, defender, move, sideContext = {}){
         field.defenderSide.isAuroraVeil = !!speedFieldState[fieldDefSide + '_auroraVeil'];
         field.defenderSide.isFriendGuard = !!speedFieldState[fieldDefSide + '_friendGuard'];
 
+        // console.log(speedFieldState.weather,field.weather);
         // 第五参数传入field
         const res = calculate(gen, atkPokemon, defPokemon, calcMove, field);
         return res;
@@ -546,10 +568,17 @@ function calcDamage(attacker, defender, move, sideContext = {}){
     }
     return null;
 }
-// 单词首字母大写，其余小写
-function capitalize(str) {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+// 把能力/道具/招式名规范化为 Smogon 引擎认可的规范英文名（兼容 slug 与规范名两种旧/新数据）
+function canonicalName(cat, name) {
+  if (!name) return name;
+  try {
+    const gen = window.calc.Generations.get(9);
+    const id = window.calc.toID(name);
+    const obj = gen[cat].get(id);
+    return (obj && obj.name) || name;
+  } catch (e) {
+    return name;
+  }
 }
 function getDamageLabel(pctLow, pctHigh) {
   if (pctLow >= 100 && pctHigh >= 100) return { label: '确一', color: '#e74c3c' };

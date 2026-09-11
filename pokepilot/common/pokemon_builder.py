@@ -11,8 +11,13 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from pokepilot.data.pokedb import PokeDB
+from pokepilot.data.pokedb import PokeDB, _fuzzy_match
+from pokepilot.data.roster_db import RosterDB
+from pokepilot.data.usage_db import get_usage_db
+from pokepilot.tools.logger_util import setup_logger
 from .pokemon import Pokemon, Move, EvoForm, Ability, HeldItem
+
+logger = setup_logger(__name__)
 
 # 只有这些 form 才被视为 evoform（进化形态）
 _EVOFORM_TYPES = {"mega", "mega-nium", "mega-x", "mega-y", "blade-forme", "hero"}
@@ -30,11 +35,13 @@ class PokemonBuilder:
             pika_info: Pikalytics 数据（可选）
         """
         self.db = PokeDB()
-        self.roster = self._load_roster()  # 加载 champions_roster.json
-        self.pika_cache = self._load_pikalytics_cache()
-        self.pokechamdb_cache = self._load_pokechamdb_cache()
-
-        # 加载 champions_roster.json 用于获取图鉴号
+        self.roster = {"pokemon": RosterDB().get_all()}  # 从数据库读取 roster（champions_roster 表）
+        # 从数据库读取使用率数据（默认赛季/格式）
+        self.pokechamdb_cache = get_usage_db().get_all()
+        # 所有可用赛季（最新在前），供逐赛季回退查询
+        self._seasons = sorted(get_usage_db().get_seasons(), reverse=True)
+        # 回退查询缓存：slug/name -> usage entry（已跨赛季查找后的结果）
+        self._fallback_cache: dict[str, dict] = {}
 
         # 加载类型相克表
         self.type_effectiveness = self._load_type_effectiveness()
@@ -45,20 +52,85 @@ class PokemonBuilder:
         if cache_path.exists():
             return json.loads(cache_path.read_text(encoding="utf-8"))
         return {}
-    
-    def _load_pokechamdb_cache(self) -> dict:
-        """加载 pokechamdb 缓存"""
-        cache_path = Path(__file__).parent.parent.parent / "data" / "pokechamdb_cache.json"
-        if cache_path.exists():
-            return json.loads(cache_path.read_text(encoding="utf-8"))
+
+    # ------------------------------------------------------------------
+    # OCR 草稿中文名模糊纠错（生成 draft.json 之前调用）
+    # ------------------------------------------------------------------
+
+    def _correct_zh_name(self, zh_text: str, mapping: dict,
+                         known_exact: set | None = None) -> str:
+        """
+        对单个中文名做模糊匹配纠错，返回正确的标准中文名
+
+        命中（精确或编辑距离≤2）→ 返回标准中文名；未命中 → 返回原文。
+        已知真实名称（known_exact）但不在映射范围（如非冠军道具）→ 不做纠错，返回原文。
+        """
+        if not zh_text or not mapping:
+            return zh_text
+
+        zh_norm = self.db._normalize_text(zh_text)
+        if zh_norm in mapping:
+            return zh_norm
+
+        if known_exact and zh_norm in known_exact:
+            logger.warning(f"已知名称但不在冠军范围内（保留原文）: '{zh_norm}'")
+            return zh_text
+
+        matched_key = _fuzzy_match(zh_norm, mapping)
+        if matched_key != zh_norm:
+            logger.warning(f"中文名模糊匹配: '{zh_norm}' → '{matched_key}'")
+            return matched_key
+
+        logger.warning(f"中文名未匹配（保留原文）: '{zh_norm}'")
+        return zh_text
+
+    def correct_move_cards(self, move_cards: list[dict]) -> list[dict]:
+        """
+        对 OCR 草稿的 move_cards 逐槽做中文名模糊纠错（昵称除外）
+
+        纠错字段：ability、held_item、moves[]。昵称为自由文本不纠错。
+        返回纠错后的新列表，不影响传入参数。
+        """
+        corrected = []
+        for mc in move_cards:
+            mc = dict(mc)
+            mc['ability'] = self._correct_zh_name(mc.get('ability', ''), self.db.get_ability_mappings())
+            mc['held_item'] = self._correct_zh_name(
+                mc.get('held_item', ''), self.db.get_item_mappings(),
+                known_exact=self.db.get_all_item_zh_names())
+            mc['moves'] = [
+                self._correct_zh_name(m, self.db.get_move_mappings())
+                for m in mc.get('moves', [])
+            ]
+            corrected.append(mc)
+        return corrected
+
+    def _fallback_usage(self, slug: str) -> dict:
+        """
+        默认赛季未找到时，逐赛季回退查询（最新→最旧），结果缓存。
+        跳过已查过的 key，避免重复查询。
+        """
+        if slug in self._fallback_cache:
+            return self._fallback_cache[slug]
+        usage_db = get_usage_db()
+        current_fmt = usage_db.DEFAULT_FORMAT
+        for season in self._seasons:
+            # 跳过已在默认缓存中的赛季（已确定无此 slug）
+            if season == usage_db.DEFAULT_SEASON:
+                continue
+            entry = usage_db.get_pokemon_usage(slug, season, current_fmt)
+            if entry:
+                self._fallback_cache[slug] = entry
+                return entry
+        self._fallback_cache[slug] = {}
         return {}
 
     def read_pokechamdb(self, slug: str, name: str) -> dict:
-        """从 pokechamdb 缓存读取宝可梦数据"""
-        info = self.pokechamdb_cache.get(slug, {})
-        if not info:
-            info = self.pokechamdb_cache.get(name, {})
-        return info
+        """从使用率数据库读取宝可梦数据，未找到则逐赛季回退"""
+        info = self.pokechamdb_cache.get(slug) or self.pokechamdb_cache.get(name)
+        if info:
+            return info
+        return self._fallback_usage(slug) or self._fallback_usage(name) or {}
 
     def _load_type_effectiveness(self) -> dict:
         """从 type_effectiveness.json 加载类型相克表"""
@@ -72,26 +144,11 @@ class PokemonBuilder:
 
         return {}
 
-    def _load_roster(self) -> dict:
-        """加载 champions_roster.json - 包含所有宝可梦形态信息"""
-        try:
-            roster_file = Path(__file__).parent.parent.parent / "data" / "champions_roster.json"
-            if roster_file.exists():
-                with open(roster_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except Exception as e:
-            print(f"警告: 无法加载 champions_roster.json: {e}")
-
-        return {"pokemon": []}
-
     def read_pikalytics(self, slug: str, name: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]], list[tuple[str, str]]]:
-        pika_info = self.pokechamdb_cache.get(slug, {})
+        # 默认赛季缓存 → 逐赛季回退（新→旧）
+        pika_info = self.pokechamdb_cache.get(slug) or self.pokechamdb_cache.get(name)
         if not pika_info:
-            pika_info = self.pokechamdb_cache.get(name, {})
-        if not pika_info:
-            pika_info = self.pika_cache.get(slug, {})
-        if not pika_info:
-            pika_info = self.pika_cache.get(name, {})
+            pika_info = self._fallback_usage(slug) or self._fallback_usage(name)
 
         # 处理招式 - 合并重复的
         moves_dict = {}
@@ -150,7 +207,7 @@ class PokemonBuilder:
         lookup_slug = slug if slug != "meganium-mega-nium" else "meganium-mega"
 
         # 从 pokedb 获取形态的属性
-        evo_db = self.db._data.get("pokemon", {}).get(lookup_slug, {})
+        evo_db = self.db.get_pokemon(lookup_slug) or {}
         evo_base_stats = evo_db.get("base_stats", {})
         evo_types = evo_db.get("types", [])
         evo_abilities = evo_db.get("abilities", [])
@@ -285,6 +342,131 @@ class PokemonBuilder:
             evs[stat_key] = min(ev, 32)  # EV 最多 32（Pokemon Champions 系统）
 
         return evs
+
+    @staticmethod
+    def _feasible_evs(base_stat: int, modifier: float, actual_stat: int) -> list[int]:
+        """求使 floor((base + 20 + ev) * modifier) == actual 的所有 EV（0..32）
+        用整数算术避免浮点截断偏差（如 int(130*0.9)==116 的坑）"""
+        num = round(modifier * 100)
+        return [ev for ev in range(33)
+                if (base_stat + 20 + ev) * num // 100 == actual_stat]
+
+    def infer_nature_and_evs(self, base_stats: dict, actual_stats: dict,
+                             ev_reads: dict | None = None) -> tuple[str, dict, list]:
+        """
+        由「最终能力值 + 加点读数 + 种族值」按公式反推性格与完整 EV。
+
+        公式：HP = base + 75 + ev；其它 int((base + 20 + ev) * 性格修正)，EV 上限 32。
+        判定规则：
+          - 某属性加点读数恰好落在唯一修正的可行 EV 集内 → 直接确定该修正；
+          - 读数缺失/矛盾时收集候选修正，最后用「至多一升一降」全局约束消歧，
+            候选含 1.0 时优先按无修正处理。
+
+        Returns:
+            (nature_str, evs, warnings)：nature_str 形如 "attack↑/speed↓"（可为空串），
+            evs 为六项完整 EV，warnings 为人工校对提示列表
+        """
+        ev_reads = {k: int(v) for k, v in (ev_reads or {}).items() if v is not None}
+        warnings: list[str] = []
+        evs: dict[str, int] = {}
+        up_key: str | None = None
+        down_key: str | None = None
+        candidates: dict[str, set[float]] = {}
+        options_map: dict[str, dict[float, list[int]]] = {}
+
+        # HP 无性格修正，直接反解并校验读数
+        hp_actual = actual_stats.get("hp")
+        hp_base = base_stats.get("hp")
+        if hp_actual is not None and hp_base is not None:
+            ev_hp = hp_actual - hp_base - 75
+            read_hp = ev_reads.get("hp")
+            if not 0 <= ev_hp <= 32:
+                fallback = read_hp if read_hp is not None else max(ev_hp, 0)
+                warnings.append(
+                    f"HP 反推 EV={ev_hp} 越界（种族 {hp_base}/实际 {hp_actual}），按 {fallback} 兜底")
+                ev_hp = min(max(int(fallback), 0), 32)
+            elif read_hp is not None and read_hp != ev_hp:
+                warnings.append(f"HP 加点读数 {read_hp} 与公式反推 {ev_hp} 不一致，以公式为准")
+            evs["hp"] = int(ev_hp)
+
+        # 逐非 HP 属性求可行修正集合
+        for key in ("attack", "defense", "sp_atk", "sp_def", "speed"):
+            actual = actual_stats.get(key)
+            base = base_stats.get(key)
+            if actual is None or base is None:
+                continue
+            options = {}
+            for m in (1.1, 1.0, 0.9):
+                ev_set = self._feasible_evs(base, m, actual)
+                if ev_set:
+                    options[m] = ev_set
+            if not options:
+                warnings.append(
+                    f"{key}: 实际值 {actual} 无法匹配任何性格修正（数值可能误读），按无修正处理")
+                evs[key] = min(max(actual - base - 20, 0), 32)
+                continue
+            options_map[key] = options
+
+            read_ev = ev_reads.get(key)
+            chosen = None
+            if read_ev is not None:
+                hits = {m for m in options if read_ev in options[m]}
+                if len(hits) == 1:
+                    chosen = next(iter(hits))
+                elif not hits:
+                    warnings.append(
+                        f"{key}: 加点读数 {read_ev} 与公式矛盾（读数可能误读），改用约束消歧")
+            if chosen is not None:
+                evs[key] = self._pick_ev(options_map[key][chosen], read_ev)
+                if chosen == 1.1:
+                    up_key = up_key or key
+                elif chosen == 0.9:
+                    down_key = down_key or key
+            else:
+                candidates[key] = set(options)
+
+        # 全局消歧：约束「至多一升一降」，候选含无修正时优先取无修正；
+        # 若存在多种可行选择则按偏好取值并告警，供草稿校对页人工确认
+        for key, cands in candidates.items():
+            allowed = [m for m in (1.0, 1.1, 0.9) if m in cands]
+            allowed = [m for m in allowed
+                       if m == 1.0 or (m == 1.1 and up_key is None) or (m == 0.9 and down_key is None)]
+            if not allowed:
+                warnings.append(
+                    f"{key}: 候选修正 {sorted(cands)} 与已确定的升/降冲突，强制按 {min(cands)} 处理")
+                allowed = [min(cands)]
+                chosen = allowed[0]
+            else:
+                chosen = allowed[0]
+                if len(allowed) > 1:
+                    pretty = {1.1: "↑", 0.9: "↓", 1.0: "无修正"}
+                    alts = ", ".join(f"{pretty[m]}(EV {self._pick_ev(options_map[key][m], None)})"
+                                     for m in allowed[1:])
+                    warnings.append(
+                        f"{key}: 性格修正存在歧义，按「{pretty[chosen]}」处理（其它可行: {alts}），请人工核对")
+            evs[key] = self._pick_ev(options_map[key][chosen], ev_reads.get(key))
+            if chosen == 1.1:
+                up_key = key
+            elif chosen == 0.9:
+                down_key = key
+
+        # 组装性格字符串（与旧格式一致："attack↑/speed↓"）
+        nature = ""
+        if up_key and down_key:
+            nature = f"{up_key}↑/{down_key}↓"
+        elif up_key:
+            nature = f"{up_key}↑"
+        elif down_key:
+            nature = f"{down_key}↓"
+
+        return nature, evs, warnings
+
+    @staticmethod
+    def _pick_ev(ev_set: list[int], read_ev: int | None) -> int:
+        """从可行 EV 集合中取值：读数有效用读数，否则取集合中位数"""
+        if read_ev is not None and read_ev in ev_set:
+            return int(read_ev)
+        return int(ev_set[len(ev_set) // 2])
     
     @staticmethod
     def _calc_hp(base_stat: int, ev: int = 0) -> int:
@@ -340,7 +522,7 @@ class PokemonBuilder:
         """
 
         move_key = name.lower().replace(" ", "-")
-        move_info = self.db._data.get("moves", {}).get(move_key, {})
+        move_info = self.db.get_move(move_key) or {}
 
         return Move(
             name=move_info.get("name", name) or name,
@@ -371,7 +553,7 @@ class PokemonBuilder:
             Ability 对象
         """
         ability_key = name.lower().replace(" ", "-")
-        ability_info = self.db._data.get("abilities", {}).get(ability_key, {})
+        ability_info = self.db.get_ability(ability_key) or {}
 
         return Ability(
             name=ability_info.get("name", name) or name,
@@ -393,7 +575,7 @@ class PokemonBuilder:
             HeldItem 对象
         """
         item_key = name.lower().replace(" ", "-")
-        item_info = self.db._data.get("items", {}).get(item_key, {})
+        item_info = self.db.get_item(item_key) or {}
 
         return HeldItem(
             name=item_info.get("name", name) or name,
@@ -435,16 +617,14 @@ class PokemonBuilder:
         types = detect_data.get('types', [])
 
         # 从数据库获取 Pokemon 信息（先用 slug，读不到用 name）
-        pokemon_db = self.db._data.get("pokemon", {})
-
         # 先用 slug 查询
         slug_key = pokemon_slug.lower().replace(" ", "-") if pokemon_slug else ""
-        pokemon_info = pokemon_db.get(slug_key, {})
+        pokemon_info = self.db.get_pokemon(slug_key) or {}
 
         # 如果 slug 查不到，尝试用 name 查询
         if not pokemon_info and pokemon_name:
             name_key = pokemon_name.lower().replace(" ", "-")
-            pokemon_info = pokemon_db.get(name_key, {})
+            pokemon_info = self.db.get_pokemon(name_key) or {}
 
         base_stats = pokemon_info.get("base_stats", {})
         name_zh = pokemon_info.get("name_zh", "")
@@ -506,9 +686,18 @@ class PokemonBuilder:
             ability_input = moves_data.get('ability', '')
             held_item_input = moves_data.get('held_item', '')
 
-            # 从 stats_data 提取信息
+            # 从 stats_data 提取信息（evs 为截图直读的加点；性格一律由数值核算产出，不读传入值）
             stats = stats_data.get('stats', {}) if stats_data else {}
-            nature = stats_data.get('nature', '') if stats_data else ''
+            ev_reads = stats_data.get('evs') or {}
+
+            if stats and base_stats:
+                nature, evs, nature_warnings = self.infer_nature_and_evs(
+                    base_stats, stats, ev_reads)
+                for w in nature_warnings:
+                    logger.warning(f"[{pokemon_slug}] 性格/EV 核算: {w}")
+            else:
+                nature = ""
+                evs = {k: int(v) for k, v in ev_reads.items() if isinstance(v, (int, float))}
 
             # 将输入转换为英文
             if is_zh_input:
@@ -548,10 +737,6 @@ class PokemonBuilder:
             type_effectiveness=type_effectiveness,
             sprite=sprite,
         )
-
-        # 计算 EV（仅我方队伍）
-        if not is_opponent and stats:
-            pokemon.evs = self.calc_ev_from_stats(pokemon)
 
         # 构建进化形态（我方和对手队伍都支持）
         evo_forms_data = self.find_evo_forms(pokemon_name)

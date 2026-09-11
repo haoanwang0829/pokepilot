@@ -1,11 +1,16 @@
 """
 OCR 引擎封装 —— 基于 EasyOCR，支持整图和裁切区域识别
 """
+from pathlib import Path
+
 import cv2
 import numpy as np
 import easyocr
 
 _reader_cache: dict[str, easyocr.Reader] = {}
+
+# 模型目录固定在项目内，避免落到 C 盘 ~/.EasyOCR
+_MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "models" / "easyocr"
 
 
 def get_reader(langs: list[str] | None = None) -> easyocr.Reader:
@@ -14,19 +19,23 @@ def get_reader(langs: list[str] | None = None) -> easyocr.Reader:
     key = ",".join(langs)
     if key not in _reader_cache:
         print(f"加载 OCR 模型 {langs}...")
-        _reader_cache[key] = easyocr.Reader(langs, gpu=False)
+        _MODEL_DIR.mkdir(parents=True, exist_ok=True)
+        _reader_cache[key] = easyocr.Reader(
+            langs, gpu=False, model_storage_directory=str(_MODEL_DIR), download_enabled=True)
     return _reader_cache[key]
 
 
-def read_region(img: np.ndarray, min_conf: float = 0.25) -> list[tuple[list, str, float]]:
+def read_region(img: np.ndarray, min_conf: float = 0.25, allowlist: str | None = None) -> list[tuple[list, str, float]]:
     """
     对 numpy 图像跑 OCR，返回 [(box, text, conf), ...]
     box: [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
+    allowlist: 只识别指定字符集（如数字列 "0123456789"），可提升精度
     """
     reader = get_reader()
     if img is None or img.size == 0:
         return []
-    results = reader.readtext(img)
+    kwargs = {"allowlist": allowlist} if allowlist else {}
+    results = reader.readtext(img, **kwargs)
     return [(box, text, conf) for box, text, conf in results if conf >= min_conf]
 
 

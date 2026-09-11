@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝可梦详情 - PokePilot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .header {
+            height: 40px;
+            background: #2d2d2d;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .header a { color: #4fc3f7; text-decoration: none; font-size: 13px; }
+        .header a:hover { text-decoration: underline; }
+        .header h1 { font-size: 16px; font-weight: 600; }
+        .header .spacer { flex: 1; }
+        .content { max-width: 100%; margin: 0; padding: 16px; }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 120px 200px 120px 150px 80px;
+            gap: 20px;
+            padding: 20px 24px;
+            background: #2d2d2d;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            align-items: start;
+        }
+        .hero-avatar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .hero-avatar .sprite img { width: 96px; height: 96px; image-rendering: pixelated; display: block; }
+        .hero-avatar .sprite-placeholder {
+            width: 96px; height: 96px;
+            display: flex; align-items: center; justify-content: center;
+            color: #555; font-size: 13px;
+        }
+        .hero-avatar .rank-badge {
+            display: inline-block;
+            padding: 2px 10px; background: #4fc3f7; color: #000;
+            border-radius: 10px; font-size: 13px; font-weight: 600;
+        }
+        .evo-buttons { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+        .evo-button {
+            padding: 2px 8px; background: #444; color: #ddd;
+            border: 1px solid #666; border-radius: 4px;
+            font-size: 10px; cursor: pointer; transition: 0.15s;
+        }
+        .evo-button:hover { background: #555; }
+        .evo-button.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+
+        .hero-info { display: flex; flex-direction: column; gap: 4px; }
+        .hero-info .name-zh { font-size: 22px; font-weight: 700; }
+        .hero-info .slug { font-size: 14px; color: #888; }
+        .hero-info .type-zh { font-size: 13px; color: #aaa; margin-bottom: 2px; }
+        .hero-info .type-badges { display: flex; gap: 6px; align-items: center; }
+        .hero-info .type-icon {
+            width: 20px; height: 20px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            flex-shrink: 0;
+        }
+
+        .hero-base { min-width: 110px; }
+        .hero-base .bs-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 8px;
+            font-size: 13px;
+            border-radius: 4px;
+            gap: 12px;
+            height: 34px;
+        }
+        .hero-base .bs-row:hover { background: #333; }
+        .hero-base .bs-label { font-size: 12px; color: #aaa; }
+        .hero-base .bs-val { font-weight: 700; font-size: 15px; }
+
+        .hp  .bs-val { color: #ff5959; }
+        .atk .bs-val { color: #f5ac78; }
+        .def .bs-val { color: #fae078; }
+        .spa .bs-val { color: #9db7f5; }
+        .spd .bs-val { color: #a7db8d; }
+        .spe .bs-val { color: #fa92b2; }
+
+        .hero-ev { min-width: 140px; }
+        .hero-ev .ev-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            border-radius: 4px;
+            height: 34px;
+        }
+        .hero-ev .ev-row:hover { background: #333; }
+        .hero-ev .ev-row input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 80px;
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+            background: #444;
+            flex-shrink: 0;
+            margin: 0;
+            vertical-align: middle;
+        }
+        .hero-ev .ev-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            border: none;
+        }
+        .hero-ev .ev-row input[type=range]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            border: none;
+        }
+        .hero-ev .ev-val {
+            font-weight: 700;
+            font-size: 13px;
+            color: #4fc3f7;
+            min-width: 20px;
+            text-align: center;
+        }
+        .hero-ev .ev-label {
+            font-size: 10px;
+            color: #666;
+            min-width: 16px;
+        }
+
+        .hero-final { min-width: 50px; }
+        .hero-final .fs-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px 8px;
+            font-size: 13px;
+            border-radius: 4px;
+            height: 34px;
+        }
+        .hero-final .fs-row:hover { background: #333; }
+        .hero-final .fs-val { font-weight: 700; font-size: 14px; }
+        .hp  .fs-val { color: #ff5959; }
+        .atk .fs-val { color: #f5ac78; }
+        .def .fs-val { color: #fae078; }
+        .spa .fs-val { color: #9db7f5; }
+        .spd .fs-val { color: #a7db8d; }
+        .spe .fs-val { color: #fa92b2; }
+
+        .row-6 {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+        .col {
+            background: #2d2d2d;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 10px;
+            min-width: 0;
+        }
+        .col h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4fc3f7;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #3e3e42;
+        }
+        .col-list {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .col-list::-webkit-scrollbar { width: 4px; }
+        .col-list::-webkit-scrollbar-track { background: #1e1e1e; }
+        .col-list::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
+        .entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 4px;
+            font-size: 12px;
+            border-bottom: 1px solid #2a2a2a;
+            cursor: default;
+        }
+        .entry:last-child { border-bottom: none; }
+        .entry .name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .entry .pct { color: #aaa; margin-left: 6px; flex-shrink: 0; }
+
+        .ev-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .ev-table th {
+            background: #363636;
+            padding: 4px 3px;
+            text-align: center;
+            color: #aaa;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+        }
+        .ev-table td {
+            padding: 3px;
+            text-align: center;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .ev-table tr { cursor: pointer; }
+        .ev-table tr:hover td { background: #333; }
+        .ev-table .ev-pct { color: #4fc3f7; font-weight: 600; }
+        .ev-table tr.active td { background: #2a4a5a; }
+
+        .entry.nature-item { cursor: pointer; }
+        .entry.nature-item:hover { background: #333; }
+        .entry.nature-item.active { background: #2a4a5a; }
+        .entry.ability-item { cursor: pointer; }
+        .entry.ability-item:hover { background: #333; }
+        .entry.ability-item.active { background: #2a4a5a; }
+        .entry.item-item { cursor: pointer; }
+        .entry.item-item:hover { background: #333; }
+        .entry.item-item.active { background: #2a4a5a; }
+        .nature-effect { font-size: 10px; margin-left: 4px; flex-shrink: 0; }
+        .nature-up { color: #f5ac78; }
+        .nature-down { color: #9db7f5; }
+
+        .loading, .error {
+            text-align: center; padding: 60px 20px;
+            font-size: 16px; color: #888;
+        }
+        .error { color: #f44336; }
+
+        .damage-rankings { margin-top: 16px; }
+        .dr-filter {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 0; font-size: 12px;
+            flex-wrap: wrap;
+        }
+        .dr-top-n-input {
+            width: 60px; padding: 4px 6px; font-size: 12px;
+            background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 4px;
+            color: #e0e0e0; text-align: center;
+        }
+        .dr-filter-btn {
+            padding: 4px 12px; font-size: 12px; cursor: pointer;
+            background: #3a6ea5; color: #fff; border: none; border-radius: 4px;
+        }
+        .dr-filter-btn:hover { background: #4a7eb5; }
+        .dr-filter-info { color: #888; font-size: 11px; }
+        .dr-filter-sep { width: 1px; height: 20px; background: #3e3e42; margin: 0 2px; flex-shrink: 0; }
+        .dr-toggle-btn {
+            padding: 4px 10px; font-size: 12px; cursor: pointer;
+            background: #3a3a3e; color: #ccc;
+            border: 1px solid #4a4a4e; border-radius: 4px;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .dr-toggle-btn:hover { background: #4a4a4e; color: #fff; }
+        .dr-toggle-btn.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+        .speed-dropdown-wrap { position: relative; display: inline-block; }
+        .speed-dropdown-menu {
+            display: none;
+            position: fixed;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            z-index: 2000;
+            min-width: 110px;
+            padding: 4px 0;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
+        }
+        .speed-dropdown-menu.show { display: block; }
+        .speed-dropdown-item {
+            padding: 5px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            color: #ccc;
+            font-size: 12px;
+            text-align: center;
+            border-radius: 2px;
+            margin: 1px 3px;
+        }
+        .speed-dropdown-item:hover { background: #555; color: #fff; }
+        .speed-dropdown-item.selected { background: #2a6a2a; color: #8fd88f; }
+        .dr-panel {
+            background: #2d2d2d;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .dr-panel-header {
+            padding: 7px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dr-panel-header .count { font-weight: 400; color: #888; font-size: 11px; }
+        .dr-panel-body { min-height: 0; }
+        .dr-speed-label {
+            padding: 2px 10px;
+            font-size: 10px;
+            color: #666;
+            background: #252525;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .dr-card-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            padding: 4px;
+        }
+        .dr-card {
+            display: flex;
+            flex-direction: row;
+            background: #262626;
+            border: 1px solid #3a3a3e;
+            border-radius: 5px;
+            padding: 6px;
+            gap: 4px;
+            min-height: 100px;
+        }
+        .dr-card-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+        .dr-card-top {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .dr-rank { font-size: 9px; color: #666; white-space: nowrap; }
+        .dr-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dr-sprite-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .dr-sprite { width: 44px; height: 44px; image-rendering: pixelated; flex-shrink: 0; }
+        .dr-ev-text { font-size: 10px; color: #888; line-height: 1.1; }
+        .dr-item-text { font-size: 10px; color: #aaa; line-height: 1.1; }
+        .dr-types { display: flex; gap: 2px; align-items: center; }
+        .dr-type-icon { width: 14px; height: 14px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .dr-my-dmg {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 2px;
+        }
+        .dr-my-row {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .dr-my-move-chip {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 8px;
+            color: #fff;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .dr-my-pct { font-size: 11px; font-weight: 700; white-space: nowrap; }
+        .dr-my-pct.ohko { color: #ff4444; }
+        .dr-my-dmg-num { font-size: 8px; color: #888; white-space: nowrap; }
+        .dr-card-right {
+            border-left: 1px solid #3a3a3e;
+            padding-left: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+            justify-content: center;
+        }
+        .dr-opp-row {
+            font-size: 9px;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .dr-opp-move-chip {
+            display: inline-block;
+            padding: 0 4px;
+            border-radius: 3px;
+            font-size: 9px;
+            color: #fff;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .dr-opp-pct { color: #eee; font-size: 10px; font-weight: 600; }
+        .dr-opp-pct.ohko { color: #ff4444; font-weight: 700; }
+        .dr-opp-num { color: #999; font-size: 9px; margin-left: 1px; }
+        .dr-loading { padding: 40px; text-align: center; color: #888; font-size: 14px; }
+        .entry.move-entry { cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .entry.move-entry.disabled { opacity: 0.4; cursor: default; }
+        .move-cb { width: 14px; height: 14px; cursor: pointer; accent-color: #78C850; }
+        .type-normal { background: #A8A878; } .type-fighting { background: #C03028; }
+        .type-flying { background: #A890F0; } .type-poison { background: #A040A0; }
+        .type-ground { background: #E0C068; } .type-rock { background: #B8A038; }
+        .type-bug { background: #A8B820; } .type-ghost { background: #705898; }
+        .type-steel { background: #B8B8D0; } .type-fire { background: #F08030; }
+        .type-water { background: #6890F0; } .type-grass { background: #78C850; }
+        .type-electric { background: #F8D030; } .type-psychic { background: #F85888; }
+        .type-ice { background: #98D8D8; } .type-dragon { background: #7038F8; }
+        .type-dark { background: #705848; } .type-fairy { background: #EE99AC; }
+
+        @media (max-width: 900px) {
+            .row-6 { grid-template-columns: repeat(3, 1fr); }
+            .hero { grid-template-columns: auto 1fr 1fr; }
+            .hero-base { grid-column: 1; }
+            .hero-ev { grid-column: 2; }
+            .hero-final { grid-column: 3; }
+            .dr-card-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 540px) {
+            .row-6 { grid-template-columns: repeat(2, 1fr); }
+            .hero { grid-template-columns: 1fr; }
+            .hero-avatar { flex-direction: row; gap: 12px; }
+            .hero-base { min-width: 0; }
+            .hero-ev { min-width: 0; }
+            .hero-final { min-width: 0; }
+        }
+    </style>
+    <script>
+        function require() { return {}; }
+    </script>
+    <script src="/calc/data.min.js"></script>
+    <script src="/calc/production.min.js"></script>
+    <script src="/type-effect.js"></script>
+</head>
+<body>
+    <div class="header">
+        <a href="/data">← 返回列表</a>
+        <span class="spacer"></span>
+        <h1 id="page-title">宝可梦详情</h1>
+    </div>
+    <div class="content">
+        <div class="loading" id="loading">加载中...</div>
+        <div id="detail-root" style="display:none">
+            <div class="hero">
+                <div class="hero-avatar">
+                    <div class="sprite" id="hero-sprite"></div>
+                    <div id="hero-rank"></div>
+                    <div id="hero-evo-buttons" class="evo-buttons"></div>
+                </div>
+                <div class="hero-info">
+                    <div class="name-zh" id="hero-name"></div>
+                    <div class="type-zh" id="hero-type-zh"></div>
+                    <div class="slug" id="hero-slug"></div>
+                    <div class="type-badges" id="hero-types"></div>
+                </div>
+                <div class="hero-base" id="hero-base-stats"></div>
+                <div class="hero-ev" id="hero-ev-sliders"></div>
+                <div class="hero-final" id="hero-final-stats"></div>
+            </div>
+
+            <div class="row-6">
+                <div class="col">
+                    <h3>性格</h3>
+                    <div class="col-list" id="natures-content"></div>
+                </div>
+                <div class="col">
+                    <h3>道具</h3>
+                    <div class="col-list" id="items-content"></div>
+                </div>
+                <div class="col">
+                    <h3>特性</h3>
+                    <div class="col-list" id="abilities-content"></div>
+                </div>
+                <div class="col">
+                    <h3>技能</h3>
+                    <div class="col-list" id="moves-content"></div>
+                </div>
+                <div class="col">
+                    <h3>常见队友</h3>
+                    <div class="col-list" id="teammates-content"></div>
+                </div>
+                <div class="col">
+                    <h3>努力值</h3>
+                    <div class="col-list" id="evs-content"></div>
+                </div>
+            </div>
+
+            <div class="damage-rankings" id="damage-rankings-root">
+                <div class="dr-loading" id="dr-loading">正在计算伤害排名...</div>
+                <div class="dr-filter">
+                    <label>前排筛选：</label>
+                    <input type="number" id="dr-top-n" value="999" min="1" max="999" class="dr-top-n-input">
+                    <button id="dr-filter-btn" class="dr-filter-btn">筛选</button>
+                    <span class="dr-filter-info" id="dr-filter-info"></span>
+                    <span class="dr-filter-sep"></span>
+                    <div class="speed-dropdown-wrap" id="weather-dropdown">
+                        <button id="btn-weather" class="dr-toggle-btn">天气</button>
+                        <div class="speed-dropdown-menu">
+                            <div class="speed-dropdown-item" data-value="Sun" onclick="setWeather('Sun')">晴天</div>
+                            <div class="speed-dropdown-item" data-value="Rain" onclick="setWeather('Rain')">雨天</div>
+                            <div class="speed-dropdown-item" data-value="Sand" onclick="setWeather('Sand')">沙暴</div>
+                            <div class="speed-dropdown-item" data-value="Hail" onclick="setWeather('Hail')">雪天</div>
+                            <div class="speed-dropdown-item" data-value="" onclick="setWeather(null)">无天气</div>
+                        </div>
+                    </div>
+                    <div class="speed-dropdown-wrap" id="terrain-dropdown">
+                        <button id="btn-terrain" class="dr-toggle-btn">场地</button>
+                        <div class="speed-dropdown-menu">
+                            <div class="speed-dropdown-item" data-value="Electric" onclick="setTerrain('Electric')">电气场地</div>
+                            <div class="speed-dropdown-item" data-value="Grassy" onclick="setTerrain('Grassy')">青草场地</div>
+                            <div class="speed-dropdown-item" data-value="Misty" onclick="setTerrain('Misty')">薄雾场地</div>
+                            <div class="speed-dropdown-item" data-value="Psychic" onclick="setTerrain('Psychic')">超能场地</div>
+                            <div class="speed-dropdown-item" data-value="" onclick="setTerrain(null)">无场地</div>
+                        </div>
+                    </div>
+                    <span class="dr-filter-sep"></span>
+                    <button id="btn-my_reflect" class="dr-toggle-btn" onclick="toggleFieldEffect('my_reflect')">我方反射壁</button>
+                    <button id="btn-my_lightScreen" class="dr-toggle-btn" onclick="toggleFieldEffect('my_lightScreen')">我方光墙</button>
+                    <button id="btn-my_auroraVeil" class="dr-toggle-btn" onclick="toggleFieldEffect('my_auroraVeil')">我方极光幕</button>
+                    <button id="btn-my_friendGuard" class="dr-toggle-btn" onclick="toggleFieldEffect('my_friendGuard')">我方友情防守</button>
+                    <button id="btn-opp_reflect" class="dr-toggle-btn" onclick="toggleFieldEffect('opp_reflect')">对方反射壁</button>
+                    <button id="btn-opp_lightScreen" class="dr-toggle-btn" onclick="toggleFieldEffect('opp_lightScreen')">对方光墙</button>
+                    <button id="btn-opp_auroraVeil" class="dr-toggle-btn" onclick="toggleFieldEffect('opp_auroraVeil')">对方极光幕</button>
+                    <button id="btn-opp_friendGuard" class="dr-toggle-btn" onclick="toggleFieldEffect('opp_friendGuard')">对方友情防守</button>
+                </div>
+                <div class="dr-grid" id="dr-grid" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const slug = location.pathname.split('/').filter(Boolean).pop();
+        const _qs = new URLSearchParams(location.search);
+        const _season = _qs.get('season') || '';
+        const _format = _qs.get('format') || '';
+
+        const STATS = [
+            {key:'hp',   zh:'HP',  cls:'hp'},
+            {key:'attack',  zh:'攻击', cls:'atk'},
+            {key:'defense', zh:'防御', cls:'def'},
+            {key:'sp_atk',  zh:'特攻', cls:'spa'},
+            {key:'sp_def',  zh:'特防', cls:'spd'},
+            {key:'speed',   zh:'速度', cls:'spe'},
+        ];
+
+        const EV_MAP = {
+            hp: 'hp',
+            attack: 'atk',
+            defense: 'def',
+            sp_atk: 'spA',
+            sp_def: 'spD',
+            speed: 'spe',
+        };
+
+        const TYPE_ID_MAP = {
+            'Normal':1,'Fighting':2,'Flying':3,'Poison':4,'Ground':5,'Rock':6,
+            'Bug':7,'Ghost':8,'Steel':9,'Fire':10,'Water':11,'Grass':12,
+            'Electric':13,'Psychic':14,'Ice':15,'Dragon':16,'Dark':17,'Fairy':18,
+        };
+        const TYPE_ZH = {
+            'Normal':'一般','Fire':'火','Water':'水','Electric':'电',
+            'Grass':'草','Ice':'冰','Fighting':'格斗','Poison':'毒',
+            'Ground':'地面','Flying':'飞行','Psychic':'超能力','Bug':'虫',
+            'Rock':'岩石','Ghost':'幽灵','Dragon':'龙','Dark':'恶',
+            'Steel':'钢','Fairy':'妖精',
+        };
+        const NATURE_STATS = {
+            'Hardy':null,'Lonely':{up:'attack',down:'defense'},'Brave':{up:'attack',down:'speed'},
+            'Adamant':{up:'attack',down:'sp_atk'},'Naughty':{up:'attack',down:'sp_def'},
+            'Bold':{up:'defense',down:'attack'},'Docile':null,'Relaxed':{up:'defense',down:'speed'},
+            'Impish':{up:'defense',down:'sp_atk'},'Lax':{up:'defense',down:'sp_def'},
+            'Timid':{up:'speed',down:'attack'},'Hasty':{up:'speed',down:'defense'},
+            'Serious':null,'Jolly':{up:'speed',down:'sp_atk'},'Naive':{up:'speed',down:'sp_def'},
+            'Modest':{up:'sp_atk',down:'attack'},'Mild':{up:'sp_atk',down:'defense'},
+            'Quiet':{up:'sp_atk',down:'speed'},'Bashful':null,
+            'Rash':{up:'sp_atk',down:'sp_def'},'Calm':{up:'sp_def',down:'attack'},
+            'Gentle':{up:'sp_def',down:'defense'},'Sassy':{up:'sp_def',down:'speed'},
+            'Careful':{up:'sp_def',down:'sp_atk'},'Quirky':null,
+        };
+        const STAT_ZH = {hp:'HP',attack:'攻击',defense:'防御',sp_atk:'特攻',sp_def:'特防',speed:'速度'};
+        let currentNature = null;
+        let _currentAbilityIdx = 0;
+        let _currentItemIdx = 0;
+
+        const speedFieldState = {
+            my_tailwind: false,
+            opp_tailwind: false,
+            my_friendGuard: false,
+            my_lightScreen: false,
+            my_reflect: false,
+            my_auroraVeil: false,
+            opp_friendGuard: false,
+            opp_lightScreen: false,
+            opp_reflect: false,
+            opp_auroraVeil: false,
+            weather: null,
+            terrain: null
+        };
+
+        const TYPE_COLORS = {
+            'Normal':'#A8A878','Fire':'#F08030','Water':'#6890F0','Electric':'#F8D030',
+            'Grass':'#78C850','Ice':'#98D8D8','Fighting':'#C03028','Poison':'#A040A0',
+            'Ground':'#E0C068','Flying':'#A890F0','Psychic':'#F85888','Bug':'#A8B820',
+            'Rock':'#B8A038','Ghost':'#705898','Dragon':'#7038F8','Dark':'#705848',
+            'Steel':'#B8B8D0','Fairy':'#EE99AC',
+        };
+
+        function calcHp(base, ev) { return base + 75 + ev; }
+        function calcStat(base, ev, nature) { return Math.floor((base + 20 + ev) * (nature || 1)); }
+        function natureMult(key) {
+            if (!currentNature || key === 'hp') return 1;
+            const s = NATURE_STATS[currentNature];
+            if (!s) return 1;
+            if (s.up === key) return 1.1;
+            if (s.down === key) return 0.9;
+            return 1;
+        }
+
+        function renderBaseStats(bs) {
+            const c = document.getElementById('hero-base-stats');
+            c.innerHTML = STATS.map(s => {
+                const val = parseInt(bs[s.key]) || 0;
+                return `<div class="bs-row ${s.cls}">
+                    <span class="bs-label">${s.zh}</span>
+                    <span class="bs-val">${val}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function renderEvSliders(bs) {
+            const c = document.getElementById('hero-ev-sliders');
+            c.innerHTML = STATS.map(s => {
+                const base = parseInt(bs[s.key]) || 0;
+                return `<div class="ev-row ${s.cls}">
+                    <input type="range" min="0" max="32" step="1" value="0"
+                           data-stat="${s.key}" data-base="${base}">
+                    <span class="ev-val" data-ev="${s.key}">0</span>
+                    <span class="ev-label">${s.zh}</span>
+                </div>`;
+            }).join('');
+
+            c.querySelectorAll('input[type=range]').forEach(input => {
+                input.addEventListener('input', onEvChange);
+            });
+        }
+
+        function renderFinalStats(bs) {
+            const c = document.getElementById('hero-final-stats');
+            c.innerHTML = STATS.map(s => {
+                const base = parseInt(bs[s.key]) || 0;
+                const nm = natureMult(s.key);
+                const final = s.key === 'hp' ? calcHp(base, 0) : calcStat(base, 0, nm);
+                return `<div class="fs-row ${s.cls}">
+                    <span class="fs-val" data-final="${s.key}">${final}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function updateAllFinalStats() {
+            STATS.forEach(s => updateFinalStat(s.key));
+        }
+        function updateFinalStat(key) {
+            const input = document.querySelector(`input[data-stat="${key}"]`);
+            const finalSpan = document.querySelector(`[data-final="${key}"]`);
+            if (!input || !finalSpan) return;
+            const base = parseInt(input.dataset.base);
+            const ev = parseInt(input.value);
+            const nm = natureMult(key);
+            finalSpan.textContent = key === 'hp' ? calcHp(base, ev) : calcStat(base, ev, nm);
+        }
+
+        let _initialLoad = true;
+
+        function onEvChange(e) {
+            const key = e.target.dataset.stat;
+            const ev = parseInt(e.target.value);
+            const evSpan = document.querySelector(`[data-ev="${key}"]`);
+            if (evSpan) evSpan.textContent = ev;
+            updateFinalStat(key);
+            if (!_initialLoad) refreshDamageRankings();
+        }
+
+        function setEvValues(values) {
+            STATS.forEach(s => {
+                const ev = values[s.key] !== undefined ? values[s.key] : 0;
+                const input = document.querySelector(`input[data-stat="${s.key}"]`);
+                const evSpan = document.querySelector(`[data-ev="${s.key}"]`);
+                if (input) { input.value = ev; input.dispatchEvent(new Event('input')); }
+                if (evSpan) { evSpan.textContent = ev; }
+            });
+        }
+
+        function renderTypeBadges(types) {
+            const c = document.getElementById('hero-types');
+            const zh = document.getElementById('hero-type-zh');
+            if (!types || types.length === 0) { c.innerHTML = ''; zh.textContent = ''; return; }
+            c.innerHTML = types.map(t => {
+                const key = t.charAt(0).toUpperCase() + t.slice(1);
+                const id = TYPE_ID_MAP[key] || 1;
+                return `<div class="type-icon" style="background-image:url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${id}.png')" title="${key}"></div>`;
+            }).join('');
+            zh.textContent = types.map(t => TYPE_ZH[t.charAt(0).toUpperCase() + t.slice(1)] || t).join(' / ');
+        }
+
+        function renderNatures(items) {
+            const c = document.getElementById('natures-content');
+            if (!items || items.length === 0) {
+                c.innerHTML = '<div class="entry" style="color:#888">暂无</div>';
+                return;
+            }
+            c.innerHTML = items.map((item, idx) => {
+                const ns = NATURE_STATS[item.name_en];
+                let effectHtml = '';
+                if (ns) {
+                    const upZh = STAT_ZH[ns.up] || ns.up;
+                    const downZh = STAT_ZH[ns.down] || ns.down;
+                    effectHtml = `<span class="nature-effect"><span class="nature-up">${upZh}↑</span> <span class="nature-down">${downZh}↓</span></span>`;
+                }
+                return `<div class="entry nature-item" data-nature-idx="${idx}">
+                    <span class="name">${item.name}</span>
+                    ${effectHtml}
+                    <span class="pct">${item.pct}%</span>
+                </div>`;
+            }).join('');
+
+            c.querySelectorAll('.nature-item').forEach((row, idx) => {
+                row.addEventListener('click', () => {
+                    const item = items[idx];
+                    const en = item.name_en;
+                    currentNature = (currentNature === en) ? null : en;
+                    c.querySelectorAll('.nature-item.active').forEach(r => r.classList.remove('active'));
+                    if (currentNature) row.classList.add('active');
+                    updateAllFinalStats();
+                    refreshDamageRankings();
+                });
+            });
+        }
+
+        function renderAbilities(items) {
+            const c = document.getElementById('abilities-content');
+            if (!items || items.length === 0) {
+                c.innerHTML = '<div class="entry" style="color:#888">暂无</div>';
+                return;
+            }
+            c.innerHTML = items.map((item, idx) =>
+                `<div class="entry ability-item${_currentAbilityIdx >= 0 && idx === _currentAbilityIdx ? ' active' : ''}" data-ability-idx="${idx}">
+                    <span class="name">${item.name}</span>
+                    <span class="pct">${item.pct}%</span>
+                </div>`
+            ).join('');
+            c.querySelectorAll('.ability-item').forEach(row => {
+                row.addEventListener('click', () => {
+                    const idx = parseInt(row.dataset.abilityIdx);
+                    _currentAbilityIdx = (_currentAbilityIdx === idx) ? -1 : idx;
+                    c.querySelectorAll('.ability-item.active').forEach(r => r.classList.remove('active'));
+                    if (_currentAbilityIdx >= 0) c.querySelector(`.ability-item[data-ability-idx="${_currentAbilityIdx}"]`).classList.add('active');
+                    if (_cachedBattleData) computeAndRender(_cachedBattleData);
+                });
+            });
+        }
+
+        function renderItems(items) {
+            const c = document.getElementById('items-content');
+            if (!items || items.length === 0) {
+                c.innerHTML = '<div class="entry" style="color:#888">暂无</div>';
+                return;
+            }
+            c.innerHTML = items.map((item, idx) =>
+                `<div class="entry item-item${_currentItemIdx >= 0 && idx === _currentItemIdx ? ' active' : ''}" data-item-idx="${idx}">
+                    <span class="name">${item.name}</span>
+                    <span class="pct">${item.pct}%</span>
+                </div>`
+            ).join('');
+            c.querySelectorAll('.item-item').forEach(row => {
+                row.addEventListener('click', () => {
+                    const idx = parseInt(row.dataset.itemIdx);
+                    _currentItemIdx = (_currentItemIdx === idx) ? -1 : idx;
+                    c.querySelectorAll('.item-item.active').forEach(r => r.classList.remove('active'));
+                    if (_currentItemIdx >= 0) c.querySelector(`.item-item[data-item-idx="${_currentItemIdx}"]`).classList.add('active');
+                    if (_cachedBattleData) computeAndRender(_cachedBattleData);
+                });
+            });
+        }
+
+        function renderSimpleList(containerId, items) {
+            const c = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                c.innerHTML = '<div class="entry" style="color:#888">暂无</div>';
+                return;
+            }
+            c.innerHTML = items.map(item =>
+                `<div class="entry">
+                    <span class="name">${item.name}</span>
+                    <span class="pct">${item.pct}%</span>
+                </div>`
+            ).join('');
+        }
+
+        function renderMoveCheckList(items) {
+            window._allMoveList = items || [];
+            const c = document.getElementById('moves-content');
+            if (!items || items.length === 0) {
+                c.innerHTML = '<div class="entry" style="color:#888">暂无</div>';
+                return;
+            }
+            const prechecked = new Set([0, 1, 2, 3].filter(i => i < items.length));
+            c.innerHTML = items.map((m, i) => {
+                const checked = prechecked.has(i) ? ' checked' : '';
+                return `<label class="entry move-entry">
+                    <input type="checkbox" class="move-cb" data-idx="${i}"${checked} onchange="refreshDamageRankings()">
+                    <span class="name">${m.name}</span>
+                    <span class="pct">${m.pct}%</span>
+                </label>`;
+            }).join('');
+        }
+
+        function renderEVTable(containerId, items) {
+            const c = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                c.innerHTML = '<div class="entry" style="color:#888">暂无</div>';
+                return;
+            }
+            let html = `<table class="ev-table">
+                <thead><tr>
+                    <th>HP</th><th>攻击</th><th>防御</th><th>特攻</th><th>特防</th><th>速度</th><th>%</th>
+                </tr></thead><tbody>`;
+            items.forEach((ev, idx) => {
+                html += `<tr data-ev-idx="${idx}">
+                    <td>${ev.hp}</td><td>${ev.atk}</td><td>${ev.def}</td>
+                    <td>${ev.spA}</td><td>${ev.spD}</td><td>${ev.spe}</td>
+                    <td class="ev-pct">${ev.pct}%</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            c.innerHTML = html;
+
+            c.querySelectorAll('tr[data-ev-idx]').forEach((row, idx) => {
+                row.addEventListener('click', () => {
+                    const ev = items[idx];
+                    setEvValues({
+                        hp: ev.hp,
+                        attack: ev.atk,
+                        defense: ev.def,
+                        sp_atk: ev.spA,
+                        sp_def: ev.spD,
+                        speed: ev.spe,
+                    });
+                    c.querySelectorAll('tr.active').forEach(r => r.classList.remove('active'));
+                    row.classList.add('active');
+                });
+            });
+        }
+
+        let drRefreshTimer = null;
+        let _cachedBattleData = null;
+        let _topN = 999;
+        let _currentPokemon = null;
+        let _currentEvoIndex = -1;
+
+        function renderMegaButtons(evoforms) {
+            const c = document.getElementById('hero-evo-buttons');
+            if (!evoforms || evoforms.length === 0) {
+                c.innerHTML = '';
+                return;
+            }
+            c.innerHTML = evoforms.map((evo, i) => {
+                const active = _currentEvoIndex === i ? 'active' : '';
+                return `<button class="evo-button ${active}" data-evo-idx="${i}">${evo.form_name}</button>`;
+            }).join('');
+            c.querySelectorAll('.evo-button').forEach(btn => {
+                btn.addEventListener('click', () => switchMega(parseInt(btn.dataset.evoIdx)));
+            });
+        }
+
+        function switchMega(evoIdx) {
+            const evoforms = _currentPokemon.evoforms || [];
+            if (evoforms.length === 0) return;
+
+            if (_currentEvoIndex === evoIdx) {
+                // Revert to original
+                _currentEvoIndex = -1;
+            } else {
+                _currentEvoIndex = evoIdx;
+            }
+
+            // Update button highlights
+            document.querySelectorAll('#hero-evo-buttons .evo-button').forEach((btn, i) => {
+                btn.classList.toggle('active', i === _currentEvoIndex);
+            });
+
+            // Re-render hero with current data
+            const p = getCurrentPokemonData();
+            document.getElementById('page-title').textContent = `${p.name_zh} - 详情`;
+            document.getElementById('hero-name').textContent = p.name_zh;
+            document.getElementById('hero-slug').textContent = `#${p.slug}`;
+            document.getElementById('hero-sprite').innerHTML = p.sprite
+                ? `<img src="/${p.sprite}" alt="${p.name_zh}">`
+                : '<div class="sprite-placeholder">-</div>';
+            renderTypeBadges(p.types);
+            renderBaseStats(p.base_stats || {});
+            // Preserve current EV values across slider re-render
+            const savedEv = {};
+            STATS.forEach(s => {
+                const input = document.querySelector(`input[data-stat="${s.key}"]`);
+                if (input) savedEv[s.key] = parseInt(input.value);
+            });
+            const savedNature = currentNature;
+            renderEvSliders(p.base_stats || {});
+            renderFinalStats(p.base_stats || {});
+            // Restore EV values
+            STATS.forEach(s => {
+                const ev = savedEv[s.key] !== undefined ? savedEv[s.key] : 0;
+                const input = document.querySelector(`input[data-stat="${s.key}"]`);
+                const evSpan = document.querySelector(`[data-ev="${s.key}"]`);
+                if (input) input.value = ev;
+                if (evSpan) evSpan.textContent = ev;
+                updateFinalStat(s.key);
+            });
+            // Restore nature highlight
+            if (savedNature !== currentNature) {
+                currentNature = savedNature;
+                document.querySelectorAll('.nature-item').forEach(el => el.classList.remove('active'));
+                if (currentNature) {
+                    const natureItems = document.querySelectorAll('.nature-item');
+                    const idx = (_currentPokemon.natures || []).findIndex(n => n.name_en === currentNature);
+                    if (idx >= 0 && natureItems[idx]) natureItems[idx].classList.add('active');
+                }
+                updateAllFinalStats();
+            }
+            // Recompute damage rankings
+            if (_cachedBattleData) {
+                computeAndRender(_cachedBattleData);
+            } else {
+                loadDamageRankings();
+            }
+        }
+
+        function getCurrentPokemonData() {
+            const base = _currentPokemon || { slug: '', name_zh: '', sprite: '', types: [], base_stats: {} };
+            if (_currentEvoIndex >= 0 && base.evoforms && base.evoforms[_currentEvoIndex]) {
+                const evo = base.evoforms[_currentEvoIndex];
+                return {
+                    ...base,
+                    name_zh: evo.form_name_zh || base.name_zh,
+                    slug: evo.slug_name,
+                    sprite: evo.sprite || base.sprite,
+                    types: evo.types || base.types,
+                    base_stats: evo.base_stats || base.base_stats,
+                    ability: (evo.ability && evo.ability.length > 0) ? evo.ability : base.ability,
+                };
+            }
+            return { ...base };
+        }
+
+        function mergeEvoIntoMe(me) {
+            if (_currentEvoIndex < 0 || !_currentPokemon) return me;
+            const evo = (_currentPokemon.evoforms || [])[_currentEvoIndex];
+            if (!evo) return me;
+            return {
+                ...me,
+                slug: evo.slug_name || me.slug,
+                types: evo.types || me.types,
+                base_stats: evo.base_stats || me.base_stats,
+                ability: (evo.ability && evo.ability.length > 0) ? evo.ability : me.ability,
+            };
+        }
+
+        async function loadDetail() {
+            try {
+                const res = await fetch(`/api/data/pokemon-detail/${slug}?season=${encodeURIComponent(_season)}&format=${encodeURIComponent(_format)}`);
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || '请求失败');
+                const p = data.pokemon;
+                _currentPokemon = p;
+                _currentEvoIndex = -1;
+
+                document.getElementById('page-title').textContent = `${p.name_zh} - 详情`;
+                document.getElementById('hero-name').textContent = p.name_zh;
+                document.getElementById('hero-slug').textContent = `#${p.slug}`;
+                document.getElementById('hero-sprite').innerHTML = p.sprite
+                    ? `<img src="/${p.sprite}" alt="${p.name_zh}">`
+                    : '<div class="sprite-placeholder">-</div>';
+                document.getElementById('hero-rank').innerHTML = p.rank
+                    ? `<span class="rank-badge">Rank #${p.rank}</span>`
+                    : '';
+
+                renderMegaButtons(p.evoforms);
+                renderTypeBadges(p.types);
+                renderBaseStats(p.base_stats || {});
+                renderEvSliders(p.base_stats || {});
+                renderFinalStats(p.base_stats || {});
+                renderNatures(p.natures);
+                renderItems(p.items);
+                renderAbilities(p.abilities);
+                renderMoveCheckList(p.moves);
+                renderSimpleList('teammates-content', p.teammates);
+                renderEVTable('evs-content', p.evs);
+
+                // Auto-select first nature (highest usage) and first EV set
+                if (p.natures && p.natures.length > 0) {
+                    const firstNature = p.natures[0];
+                    currentNature = firstNature.name_en;
+                    document.querySelector('.nature-item')?.classList.add('active');
+                    updateAllFinalStats();
+                }
+                if (p.evs && p.evs.length > 0) {
+                    const firstEv = p.evs[0];
+                    setEvValues({
+                        hp: firstEv.hp,
+                        attack: firstEv.atk,
+                        defense: firstEv.def,
+                        sp_atk: firstEv.spA,
+                        sp_def: firstEv.spD,
+                        speed: firstEv.spe,
+                    });
+                    document.querySelector('tr[data-ev-idx="0"]')?.classList.add('active');
+                }
+
+                _initialLoad = false;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('detail-root').style.display = 'block';
+                loadDamageRankings();
+            } catch (err) {
+                document.getElementById('loading').textContent = '加载失败: ' + err.message;
+                document.getElementById('loading').className = 'error';
+            }
+        }
+
+        function getSelectedMoveIndices() {
+            const cbs = document.querySelectorAll('#moves-content .move-cb');
+            const allMoves = window._allMoveList || [];
+            const selected = [];
+            cbs.forEach((cb, i) => {
+                if (cb.checked && allMoves[i] && allMoves[i].damaging) {
+                    const cnt = allMoves.slice(0, i + 1).filter(m => m.damaging).length - 1;
+                    selected.push(cnt);
+                }
+            });
+            return selected;
+        }
+
+        function getMyParams() {
+            const params = new URLSearchParams();
+            STATS.forEach(s => {
+                const input = document.querySelector(`input[data-stat="${s.key}"]`);
+                if (input) params.set(`ev_${s.key === 'attack' ? 'atk' : s.key === 'defense' ? 'def' : s.key === 'sp_atk' ? 'spA' : s.key === 'sp_def' ? 'spD' : s.key === 'speed' ? 'spe' : 'hp'}`, input.value);
+            });
+            if (currentNature) params.set('nature', currentNature);
+            const idxs = getSelectedMoveIndices();
+            if (idxs.length > 0) params.set('my_moves_idx', idxs.join(','));
+            return params.toString();
+        }
+
+        function loadDamageRankings() {
+            const qs = getMyParams();
+            const sep = qs ? '&' : '';
+            fetch(`/api/data/pokemon-damage-rankings/${slug}?${qs}${sep}season=${encodeURIComponent(_season)}&format=${encodeURIComponent(_format)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error);
+                    _cachedBattleData = data;
+                    computeAndRender(data);
+                })
+                .catch(err => {
+                    document.getElementById('dr-loading').textContent = '伤害排名加载失败';
+                });
+        }
+
+        function refreshDamageRankings() {
+            clearTimeout(drRefreshTimer);
+            drRefreshTimer = setTimeout(() => {
+                const grid = document.getElementById('dr-grid');
+                grid.style.display = 'none';
+                document.getElementById('dr-loading').style.display = 'block';
+                document.getElementById('dr-loading').textContent = '重新计算伤害排名...';
+                fetch(`/api/data/pokemon-damage-rankings/${slug}?${getMyParams()}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.success) throw new Error(data.error);
+                        _cachedBattleData = data;
+                        computeAndRender(data);
+                    })
+                    .catch(err => {
+                        document.getElementById('dr-loading').textContent = '伤害排名加载失败';
+                    });
+            }, 400);
+        }
+
+        function withSelectedOptions(me) {
+            const r = { ...me };
+            if (_currentAbilityIdx >= 0 && r.ability && r.ability[_currentAbilityIdx]) {
+                r.ability = [r.ability[_currentAbilityIdx]];
+            }
+            if (_currentItemIdx >= 0 && r.items && r.items[_currentItemIdx]) {
+                r.item = r.items[_currentItemIdx].name;
+            }
+            return r;
+        }
+
+        function computeAndRender(data) {
+            const idxs = getSelectedMoveIndices();
+            const n = _topN;
+            const filtered = {
+                ...data,
+                opponents: data.opponents.filter(o => o.rank <= n),
+            };
+            const mergedData = {
+                ...filtered,
+                me: withSelectedOptions(mergeEvoIntoMe(filtered.me)),
+            };
+            const categories = computeDamageRankings(mergedData, idxs);
+            renderDamageRankings(categories);
+        }
+
+        function applyTopNFilter() {
+            const inp = document.getElementById('dr-top-n');
+            const v = parseInt(inp.value);
+            if (v > 0) _topN = v;
+            if (_cachedBattleData) computeAndRender(_cachedBattleData);
+        }
+
+        function getBoosts(side, index) {
+            return { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+        }
+
+        function toggleFieldEffect(key) {
+            speedFieldState[key] = !speedFieldState[key];
+            const btn = document.getElementById('btn-' + key);
+            if (btn) btn.classList.toggle('active', speedFieldState[key]);
+            refreshDamageRankings();
+        }
+
+        function setWeather(weather) {
+            speedFieldState.weather = weather;
+            updateWeatherButton();
+            closeAllDropdowns();
+            refreshDamageRankings();
+        }
+
+        function setTerrain(terrain) {
+            speedFieldState.terrain = terrain;
+            updateTerrainButton();
+            closeAllDropdowns();
+            refreshDamageRankings();
+        }
+
+        function updateWeatherButton() {
+            const btn = document.getElementById('btn-weather');
+            if (!btn) return;
+            const w = speedFieldState.weather;
+            const labels = { Sun:'晴天', Rain:'雨天', Sand:'沙暴', Hail:'雪天' };
+            btn.textContent = w ? labels[w] : '天气';
+            btn.classList.toggle('active', !!w);
+            document.querySelectorAll('#weather-dropdown .speed-dropdown-item').forEach(el => {
+                el.classList.toggle('selected', el.dataset.value === (w || ''));
+            });
+        }
+
+        function updateTerrainButton() {
+            const btn = document.getElementById('btn-terrain');
+            if (!btn) return;
+            const t = speedFieldState.terrain;
+            const labels = { Electric:'电气', Grassy:'草场', Misty:'薄雾', Psychic:'超场' };
+            btn.textContent = t ? labels[t] : '场地';
+            btn.classList.toggle('active', !!t);
+            document.querySelectorAll('#terrain-dropdown .speed-dropdown-item').forEach(el => {
+                el.classList.toggle('selected', el.dataset.value === (t || ''));
+            });
+        }
+
+        function positionDropdown(btn, menu) {
+            const rect = btn.getBoundingClientRect();
+            menu.style.left = rect.left + rect.width / 2 + 'px';
+            menu.style.top = (rect.top - 6) + 'px';
+            menu.style.transform = 'translateX(-50%) translateY(-100%)';
+        }
+
+        function closeAllDropdowns(except) {
+            document.querySelectorAll('.speed-dropdown-menu.show').forEach(m => {
+                if (m !== except) m.classList.remove('show');
+            });
+        }
+
+        function compressedEvToActual(compressed) {
+            return compressed > 0 ? compressed * 8 - 4 : 0;
+        }
+
+        function showdownStat(base, compressedEv, natureMult, isHp) {
+            const actualEV = compressedEvToActual(compressedEv);
+            const raw = Math.floor((2 * base + 31 + Math.floor(actualEV / 4)) * 50 / 100);
+            if (isHp) return raw + 60;
+            return Math.floor((raw + 5) * natureMult);
+        }
+
+        function showdownSpeed(p) {
+            const base = (p.base_stats || {}).speed || 80;
+            const ev = (p.evs || {}).speed || 0;
+            const nm = getNatureSpeedMultiplier ? getNatureSpeedMultiplier(p.nature) : 1;
+            return showdownStat(base, ev, nm, false);
+        }
+
+        function getNatureSpeedMultiplier(nature) {
+            const m = { 'Timid':1.1,'Hasty':1.1,'Jolly':1.1,'Naive':1.1,'Brave':0.9,'Relaxed':0.9,'Quiet':0.9,'Sassy':0.9 };
+            return m[nature] || 1;
+        }
+
+        function computeDamageRankings(data, selectedMoveIndices) {
+            if (typeof calcDamage !== 'function') {
+                document.getElementById('dr-loading').textContent = '计算库未加载';
+                return [];
+            }
+            if (typeof battleMode === 'undefined') window.battleMode = 'double';
+            const me = data.me;
+            const cats = {
+                both_ohko: {faster:[], slower:[]},
+                my_ohko: {faster:[], slower:[]},
+                opp_ohko: {faster:[], slower:[]},
+                neither_ohko: {faster:[], slower:[]},
+            };
+            const mySpeed = showdownSpeed(me);
+            let debugCount = 0;
+            console.log(data);
+            console.log('[DR] start compute', {opponents: data.opponents.length, myMoves: me.moves.length, selectedIndices: selectedMoveIndices});
+
+            for (const opp of data.opponents) {
+                // My damage against this opponent
+                const myDmgList = [];
+                for (const idx of selectedMoveIndices) {
+                    const move = (me.moves || [])[idx];
+                    if (!move) continue;
+                    let res;
+                    try {
+                        res = calcDamage(me, opp, move, {attackerSide:'my', defenderSide:'opp'});
+                    } catch(e) {
+                        console.log('[DR] calcDamage my error:', e, move.name);
+                    }
+                    if (res) {
+                        const [minD, maxD] = res.range();
+                        const oppHp = showdownStat((opp.base_stats||{}).hp||1, (opp.evs||{}).hp||0, 1, true);
+                        const pctLow = oppHp > 0 ? +(minD / oppHp * 100).toFixed(1) : 0;
+                        const pctHigh = oppHp > 0 ? +(maxD / oppHp * 100).toFixed(1) : 0;
+                        if (debugCount < 3) {
+                            console.log('[DR] my', move.name, opp.slug, {minD, maxD, oppHp, pctLow, pctHigh});
+                            debugCount++;
+                        }
+                        myDmgList.push({
+                            move_name: move.name,
+                            move_name_zh: move.name_zh || move.name,
+                            type: move.type || '',
+                            pct_low: pctLow,
+                            pct_high: pctHigh,
+                            damage_min: minD,
+                            damage_max: maxD,
+                            can_ohko: pctHigh >= 100,
+                        });
+                    } else {
+                        if (debugCount < 3) console.log('[DR] calcDamage returned null for my', move.name, opp.slug);
+                    }
+                }
+                myDmgList.sort((a, b) => b.pct_high - a.pct_high);
+
+                // Opponent damage against me
+                const oppDmgList = [];
+                for (const move of (opp.moves || [])) {
+                    if (!move || !move.power || move.power <= 0) continue;
+                    let res;
+                    try {
+                        res = calcDamage(opp, me, move, {attackerSide:'opp', defenderSide:'my'});
+                    } catch(e) {
+                        console.log('[DR] calcDamage opp error:', e, move.name);
+                    }
+                    if (res) {
+                        const [minD, maxD] = res.range();
+                        const myHp = showdownStat((me.base_stats||{}).hp||1, (me.evs||{}).hp||0, 1, true);
+                        const pctHigh = myHp > 0 ? +(maxD / myHp * 100).toFixed(1) : 0;
+                        if (pctHigh > 0) {
+                            const pctLow = myHp > 0 ? +(minD / myHp * 100).toFixed(1) : 0;
+                            oppDmgList.push({
+                                move_name: move.name,
+                                move_name_zh: move.name_zh || move.name,
+                                type: move.type || '',
+                                pct_low: pctLow,
+                                pct_high: pctHigh,
+                                damage_min: minD,
+                                damage_max: maxD,
+                            });
+                        }
+                    } else {
+                        if (debugCount < 5) console.log('[DR] calcDamage returned null for opp', move.name, opp.slug);
+                    }
+                }
+                oppDmgList.sort((a, b) => b.pct_high - a.pct_high);
+                const oppDmgTop = oppDmgList.slice(0, 4);
+
+                const myOhko = myDmgList.some(d => d.can_ohko);
+                const oppOhko = oppDmgList.some(d => d.pct_high >= 100);
+
+                let catKey;
+                if (myOhko && oppOhko) catKey = 'both_ohko';
+                else if (myOhko && !oppOhko) catKey = 'my_ohko';
+                else if (!myOhko && oppOhko) catKey = 'opp_ohko';
+                else catKey = 'neither_ohko';
+
+                const oppSpeed = showdownSpeed(opp);
+                const speedKey = oppSpeed >= mySpeed ? 'faster' : 'slower';
+
+                cats[catKey][speedKey].push({
+                    slug: opp.slug,
+                    name_zh: opp.name_zh,
+                    sprite: opp.sprite,
+                    rank: opp.rank,
+                    types: opp.types,
+                    speed: oppSpeed,
+                    ev_text: opp.ev_text || '',
+                    item: opp.item || '',
+                    items: opp.items || [],
+                    my_damage: myDmgList.slice(0, 4),
+                    opp_damage: oppDmgTop,
+                });
+            }
+
+            console.log('[DR] category counts:', Object.fromEntries(Object.entries(cats).map(([k,v]) => [k, v.faster.length + v.slower.length])));
+
+            // Sort each group by rank ascending
+            for (const k of Object.keys(cats)) {
+                cats[k].faster.sort((a, b) => a.rank - b.rank);
+                cats[k].slower.sort((a, b) => a.rank - b.rank);
+            }
+
+            const labelMap = {
+                both_ohko: '互相一确',
+                my_ohko: '我一确对方，对方不能一确我',
+                opp_ohko: '对方一确我，我不能一确对方',
+                neither_ohko: '双方都不能一确',
+            };
+            return Object.keys(cats).map(cid => ({
+                id: cid,
+                label: labelMap[cid],
+                faster: cats[cid].faster,
+                slower: cats[cid].slower,
+            }));
+        }
+
+        function renderDamageRankings(categories) {
+            const grid = document.getElementById('dr-grid');
+            const totalCards = categories.reduce((s, c) => s + c.faster.length + c.slower.length, 0);
+            document.getElementById('dr-filter-info').textContent = `(显示 ${totalCards} 只)`;
+            grid.innerHTML = categories.map(cat => {
+                const total = cat.faster.length + cat.slower.length;
+                if (total === 0) return '';
+                let html = `<div class="dr-panel">
+                    <div class="dr-panel-header">${cat.label} <span class="count">${total}</span></div>
+                    <div class="dr-panel-body">`;
+                if (cat.faster.length) {
+                    html += `<div class="dr-speed-label">▲ 速度 ≥ 我方 (${cat.faster.length})</div>`;
+                    html += `<div class="dr-card-grid">${cat.faster.map(e => renderDrCard(e)).join('')}</div>`;
+                }
+                if (cat.slower.length) {
+                    html += `<div class="dr-speed-label">▼ 速度 < 我方 (${cat.slower.length})</div>`;
+                    html += `<div class="dr-card-grid">${cat.slower.map(e => renderDrCard(e)).join('')}</div>`;
+                }
+                html += '</div></div>';
+                return html;
+            }).join('');
+            document.getElementById('dr-loading').style.display = 'none';
+            grid.style.display = '';
+        }
+
+        function drTypeClass(type) {
+            return 'type-' + (type || 'normal').toLowerCase();
+        }
+
+        function renderDrCard(e) {
+            const types = e.types || [];
+            const typeIcons = types.map(t => {
+                const id = TYPE_ID_MAP[t.charAt(0).toUpperCase() + t.slice(1)] || 1;
+                return `<div class="dr-type-icon" style="background-image:url('/sprites/sprites/types/generation-ix/scarlet-violet/small/${id}.png')"></div>`;
+            }).join('');
+            const evHtml = e.ev_text ? `<div class="dr-ev-text">${e.ev_text}</div>` : '';
+            const itemHtml = e.item ? `<div class="dr-item-text">道具: ${e.item}</div>` : '';
+                function displayName(d) {
+                    if (d.move_name_zh && d.move_name_zh !== d.move_name) return d.move_name_zh;
+                    return d.move_name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                }
+            const first = (e.my_damage || [])[0] || null;
+            const myDmg = first ? (() => {
+                const ohkoCls = first.pct_high >= 100 ? ' ohko' : '';
+                const typeCls = drTypeClass(first.type);
+                const dmgNum = first.damage_min != null ? ` ${first.damage_min}-${first.damage_max}` : '';
+                return `<div class="dr-my-row">
+                    <span class="dr-my-move-chip ${typeCls}">${displayName(first)}</span>
+                    <span class="dr-my-pct${ohkoCls}">${first.pct_low}%~${first.pct_high}%</span>
+                    <span class="dr-my-dmg-num">${dmgNum}</span>
+                </div>`;
+            })() : '<div class="dr-my-row" style="color:#555;font-size:8px">-</div>';
+            const oppDmg = (e.opp_damage || []).map(d => {
+                const ohkoCls = d.pct_high >= 100 ? ' ohko' : '';
+                const oppTypeCls = drTypeClass(d.type);
+                const dmgNum = d.damage_min != null ? `${d.damage_min}-${d.damage_max}` : '';
+                return `<div class="dr-opp-row">
+                    <span class="dr-opp-move-chip ${oppTypeCls}">${displayName(d)}</span>
+                    <span class="dr-opp-pct${ohkoCls}">${d.pct_low}%~${d.pct_high}%</span>
+                    <span class="dr-opp-num">${dmgNum}</span>
+                </div>`;
+            }).join('') || '<div class="dr-opp-row" style="color:#555">-</div>';
+            return `<div class="dr-card">
+                <div class="dr-card-left">
+                    <div class="dr-card-top">
+                        <span class="dr-rank">#${e.rank}</span>
+                        <span class="dr-name">${e.name_zh}</span>
+                        <div class="dr-types">${typeIcons}</div>
+                    </div>
+                    <div class="dr-sprite-area">
+                        ${e.sprite ? `<img class="dr-sprite" src="/${e.sprite}" alt="${e.name_zh}">` : ''}
+                        ${evHtml}${itemHtml}
+                    </div>
+                    <div class="dr-my-dmg">${myDmg}</div>
+                </div>
+                <div class="dr-card-right">${oppDmg}</div>
+            </div>`;
+        }
+
+        document.getElementById('dr-filter-btn').addEventListener('click', applyTopNFilter);
+        document.getElementById('dr-top-n').addEventListener('keydown', e => {
+            if (e.key === 'Enter') applyTopNFilter();
+        });
+
+        document.querySelectorAll('.speed-dropdown-wrap').forEach(wrap => {
+            const menu = wrap.querySelector('.speed-dropdown-menu');
+            const btn = wrap.querySelector('.dr-toggle-btn');
+            if (!menu || !btn) return;
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isOpen = menu.classList.contains('show');
+                closeAllDropdowns();
+                if (!isOpen) {
+                    positionDropdown(btn, menu);
+                    menu.classList.add('show');
+                }
+            });
+        });
+        document.addEventListener('click', function() {
+            closeAllDropdowns();
+        });
+
+        loadDetail();
+    </script>
+</body>
+</html>

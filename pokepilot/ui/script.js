@@ -1,5 +1,7 @@
 let stream = null;
-const API_BASE = "http://localhost:8765";
+// const API_BASE = "http://localhost:8765";
+// const API_BASE = "http://192.168.1.35:8765";
+const API_BASE = "";
 
 // ==================== 菜单管理 ====================
 function toggleMenu(menuId) {

@@ -22,6 +22,8 @@ const TYPE_ID_MAP = {
 
 // 全局队伍数据
 let currentTeams = { 'my-team': [], 'opp-team': [] };
+let oppTeamVariants = null;
+let oppTeamVariantIndex = 0;
 // 虚化状态
 let fadedElements = { my: new Set(), opp: new Set() };
 // 对方速度图标拖拽位置（0~1，表示在范围内的相对位置）
@@ -75,7 +77,7 @@ function getNatureSpeedMultiplier(natureList) {
 
 
 function isChoiceScarf(pokemon) {
-    if (pokemon?.item && pokemon.item.toLowerCase().includes('choice-scarf')) return true;
+    if (pokemon?.item && pokemon.item.toLowerCase().replace(/[-\s]/g, '').includes('choicescarf')) return true;
     const first = Array.isArray(pokemon?.held_item) ? pokemon.held_item[0] : pokemon?.held_item;
     if (first && typeof first === 'object') {
         const name = (first.name || '').toLowerCase().replace(/[-\s]/g, '');
@@ -1227,13 +1229,39 @@ function openDraftEditor(draft) {
                 false,
                 'number'
             );
+            statGroup.querySelector('input').onblur = () => recalcDraftEvs(i);
             statsRow.appendChild(statGroup);
         }
         fields.appendChild(statsRow);
 
+        const evRow = document.createElement('div');
+        evRow.className = 'draft-stats-row';
+        for (let j = 0; j < 6; j++) {
+            const evGroup = createFieldGroup(
+                `${statLabels[j]}加点`,
+                `sc-ev-${i}-${statNames[j]}`,
+                statCard.evs?.[statNames[j]] === 0 ? '0' : (statCard.evs?.[statNames[j]] ?? '').toString(),
+                false,
+                'number'
+            );
+            evRow.appendChild(evGroup);
+        }
+        fields.appendChild(evRow);
+
         const natureGroup = createFieldGroup('性格', `sc-nature-${i}`, statCard.nature || '', false);
         natureGroup.style.gridColumn = '1 / -1';
+        natureGroup.querySelector('input').onblur = () => recalcDraftEvs(i);
         fields.appendChild(natureGroup);
+
+        if (statCard.warnings && statCard.warnings.length) {
+            const warnDiv = document.createElement('div');
+            warnDiv.className = 'draft-warnings';
+            warnDiv.style.gridColumn = '1 / -1';
+            warnDiv.style.color = '#ffb84d';
+            warnDiv.style.fontSize = '12px';
+            warnDiv.textContent = `⚠ ${statCard.warnings.join('；')}`;
+            fields.appendChild(warnDiv);
+        }
 
         slot.appendChild(sprite);
         slot.appendChild(fields);
@@ -1244,8 +1272,46 @@ function openDraftEditor(draft) {
     overlay.classList.add('open');
 }
 
-function createFieldGroup(label, inputId, value, readonly, type = 'text') {
-    const group = document.createElement('div');
+async function recalcDraftEvs(slotIdx) {
+    const slugInput = document.getElementById(`dc-slug-${slotIdx}`);
+    const natureInput = document.getElementById(`sc-nature-${slotIdx}`);
+    if (!slugInput || !natureInput) return;
+    const slug = slugInput.value.trim();
+    if (!slug) return;
+    const nature = natureInput.value.trim();
+
+    const statNames = ['hp', 'attack', 'defense', 'sp_atk', 'sp_def', 'speed'];
+    const stats = {};
+    for (const k of statNames) {
+        stats[k] = parseInt(document.getElementById(`sc-stat-${slotIdx}-${k}`).value) || 0;
+    }
+
+    try {
+        const res = await fetch(`/api/pokemon/calc-evs/${encodeURIComponent(slug)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stats, nature })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            logMsg(`加点重算失败: ${data.error}`);
+            return;
+        }
+        for (const k of statNames) {
+            const el = document.getElementById(`sc-ev-${slotIdx}-${k}`);
+            if (el && data.evs[k] !== undefined && data.evs[k] !== null) {
+                el.value = data.evs[k];
+            }
+        }
+        if (!nature && data.nature) {
+            natureInput.value = data.nature;
+        }
+    } catch (err) {
+        logMsg(`加点重算错误: ${err.message}`);
+    }
+}
+
+function createFieldGroup(label, inputId, value, readonly, type = 'text') {    const group = document.createElement('div');
     group.className = 'draft-field-group';
 
     const labelEl = document.createElement('label');
@@ -1397,8 +1463,11 @@ async function buildTeamFromDraft() {
         ];
 
         const statNames = ['hp', 'attack', 'defense', 'sp_atk', 'sp_def', 'speed'];
+        statCard.evs = statCard.evs || {};
         for (const statName of statNames) {
             statCard.stats[statName] = parseInt(document.getElementById(`sc-stat-${i}-${statName}`).value) || 0;
+            const evVal = parseInt(document.getElementById(`sc-ev-${i}-${statName}`).value);
+            statCard.evs[statName] = isNaN(evVal) ? null : evVal;
         }
         statCard.nature = document.getElementById(`sc-nature-${i}`).value;
     }
@@ -1482,16 +1551,221 @@ async function generateOpponentTeam() {
     const res = await fetch('/api/teams/generate-opponent', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-        currentTeams['opp-team'] = data.team.roster;
+        buildOppTeamVariants(data);
         // 新对手队伍加载后，清空旧拖拽偏移，避免同槽位继承历史位置。
         resetOppSpeedMarkerRatio();
         renderTeam(currentTeams['opp-team'], 'opp-team');
-        logMsg(`对方队伍已生成`);
+        logMsg(`对方队伍已生成${data.matched_teams && data.matched_teams.length ? `，已匹配 ${data.matched_teams.length} 个队伍` : ''}`);
         if (typeof showDamageInfo === 'function') showDamageInfo();
         if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
+        boostState = {
+            my: {},
+            opp: {}
+        };
         
     } else {
         logMsg(`生成失败：${data.error}`);
+    }
+}
+
+function buildOppTeamVariants(data, keepCurrent = false) {
+    const matched = data.matched_teams || [];
+    if (keepCurrent) {
+        // 手动修正后重新匹配：保留当前展示的队伍作为第 0 个，停留在当前
+        const current = currentTeams['opp-team'] || [];
+        oppTeamVariants = [{ label: '当前', date: '', roster: current }];
+        oppTeamVariantIndex = 0;
+    } else {
+        // 首次生成：第 0 个为对战数据组装的队伍，有匹配时默认选第一个匹配队伍
+        oppTeamVariants = [{ label: '对战数据', date: '', roster: data.team.roster || [] }];
+        oppTeamVariantIndex = oppTeamVariants.length > 1 ? 1 : 0;
+    }
+    matched.forEach((m) => {
+        oppTeamVariants.push({
+            label: m.title || m.team_id,
+            date: m.date_shared || '',
+            roster: (m.team && m.team.roster) || [],
+        });
+    });
+    currentTeams['opp-team'] = oppTeamVariants[oppTeamVariantIndex].roster;
+    renderOppTeamSwitcher();
+}
+
+function renderOppTeamSwitcher() {
+    const el = document.getElementById('opp-team-switcher');
+    if (!el) return;
+    if (!oppTeamVariants || oppTeamVariants.length <= 1) {
+        el.style.display = 'none';
+        return;
+    }
+    el.style.display = '';
+    const count = document.getElementById('opp-team-count');
+    if (count) count.textContent = `(${oppTeamVariantIndex + 1}/${oppTeamVariants.length})`;
+    const pickerCount = document.getElementById('opp-team-picker-count');
+    if (pickerCount) pickerCount.textContent = `(${oppTeamVariantIndex + 1}/${oppTeamVariants.length})`;
+}
+
+function switchOppTeamVariant(i) {
+    if (!oppTeamVariants || !oppTeamVariants[i]) return;
+    oppTeamVariantIndex = i;
+    currentTeams['opp-team'] = oppTeamVariants[i].roster;
+    resetOppSpeedMarkerRatio();
+    renderTeam(currentTeams['opp-team'], 'opp-team');
+    renderOppTeamSwitcher();
+    const overlay = document.getElementById('opp-team-picker-overlay');
+    if (overlay && overlay.classList.contains('open')) renderOppTeamPickerBody();
+    if (typeof showDamageInfo === 'function') showDamageInfo();
+    if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
+}
+
+function pickerTextOf(value) {
+    if (!value) return '';
+    if (Array.isArray(value)) return value.map(v => pickerTextOf(v)).filter(Boolean).join(', ');
+    if (typeof value === 'object') return value.name_zh || value.name || '';
+    return String(value);
+}
+
+const _NATURE_ARROW_ZH = {
+    'attack↑/defense↓': '寂寞',
+    'attack↑/speed↓': '勇敢',
+    'attack↑/sp_atk↓': '固执',
+    'attack↑/sp_def↓': '调皮',
+    'defense↑/attack↓': '大胆',
+    'defense↑/speed↓': '悠闲',
+    'defense↑/sp_atk↓': '淘气',
+    'defense↑/sp_def↓': '乐天',
+    'speed↑/attack↓': '胆小',
+    'speed↑/defense↓': '急躁',
+    'speed↑/sp_atk↓': '爽朗',
+    'speed↑/sp_def↓': '天真',
+    'sp_atk↑/attack↓': '内敛',
+    'sp_atk↑/defense↓': '慢吞吞',
+    'sp_atk↑/speed↓': '冷静',
+    'sp_atk↑/sp_def↓': '马虎',
+    'sp_def↑/attack↓': '温和',
+    'sp_def↑/defense↓': '温顺',
+    'sp_def↑/speed↓': '自大',
+    'sp_def↑/sp_atk↓': '慎重',
+};
+
+function natureArrowToZh(arrow) {
+    if (!arrow) return '';
+    return _NATURE_ARROW_ZH[arrow] || arrow;
+}
+
+function renderPickerEvs(evs) {
+    const labels = [
+        { key: 'hp', label: 'HP' },
+        { key: 'attack', label: 'A' },
+        { key: 'defense', label: 'D' },
+        { key: 'sp_atk', label: 'SA' },
+        { key: 'sp_def', label: 'SD' },
+        { key: 'speed', label: 'S' },
+    ];
+    if (!evs || !Object.keys(evs).length) return '<div class="opp-team-picker-meta">无</div>';
+    const rows = labels.filter(({ key }) => (evs[key] ?? 0) !== 0)
+        .map(({ key, label }) =>
+            `<div class="opp-team-picker-ev"><span>${label}</span><span>${evs[key]}</span></div>`);
+    return rows.length ? rows.join('') : '<div class="opp-team-picker-meta">无</div>';
+}
+
+function renderPickerPokemonCard(pokemon) {
+    if (!pokemon) return '<div class="opp-team-picker-card"></div>';
+    const spritePath = (pokemon.sprite || '').replace(/^sprites\//, '');
+    const spriteHtml = spritePath
+        ? `<img class="opp-team-picker-sprite" src="/sprites/${spritePath}" alt="">`
+        : '<div class="opp-team-picker-sprite"></div>';
+    const nameZh = pokemon.name_zh || pokemon.name || '';
+    const nature = natureArrowToZh(pokemon.nature) || '-';
+    const item = pickerTextOf(pokemon.held_item) || '无道具';
+    const ability = pickerTextOf(pokemon.ability) || '-';
+    const moves = (pokemon.moves || []).map(m => {
+        const typeKey = String(m.type || 'normal').toLowerCase();
+        const title = (m.short_effect_zh || m.short_effect || '').replace(/"/g, '&quot;');
+        const name = m.name_zh || m.name || '';
+        return `<div class="opp-team-picker-move type-${typeKey}" title="${title}">${renderTypeIcon(m.type, 'opp-team-picker-move-icon')}<span class="opp-team-picker-move-name">${name}</span></div>`;
+    }).join('') || '<div class="opp-team-picker-move type-normal"><span class="opp-team-picker-move-name">-</span></div>';
+    return `
+        <div class="opp-team-picker-card">
+            <div class="opp-team-picker-card-left">
+                ${spriteHtml}
+                <div class="opp-team-picker-name" title="${nameZh}">${nameZh}</div>
+                <div class="opp-team-picker-meta" title="${nature}">${nature}</div>
+                <div class="opp-team-picker-meta" title="${item}">${item}</div>
+                <div class="opp-team-picker-meta" title="${ability}">${ability}</div>
+            </div>
+            <div class="opp-team-picker-card-right">
+                ${moves}
+            </div>
+            <div class="opp-team-picker-evs">
+                ${renderPickerEvs(pokemon.evs)}
+            </div>
+        </div>`;
+}
+
+function sortPokemonByDex(roster) {
+    // 弹窗内统一按图鉴号升序排列，便于跨队伍对照（不修改原始队伍）
+    return [...(roster || [])].sort((a, b) =>
+        (Number(a.index) || 0) - (Number(b.index) || 0) || (a.slug || '').localeCompare(b.slug || ''));
+}
+
+function renderOppTeamPickerBody() {
+    const body = document.getElementById('opp-team-picker-body');
+    if (!body) return;
+    if (!oppTeamVariants || !oppTeamVariants.length) {
+        body.innerHTML = '<div class="opp-team-picker-empty">暂无匹配队伍</div>';
+        return;
+    }
+    body.innerHTML = oppTeamVariants.map((v, i) => `
+        <div class="opp-team-picker-row ${i === oppTeamVariantIndex ? 'active' : ''}" onclick="switchOppTeamVariant(${i})">
+            <div class="opp-team-picker-row-header">
+                <span class="opp-team-picker-row-name">${v.label}</span>
+                ${v.date ? `<span class="opp-team-picker-row-date">${v.date}</span>` : ''}
+            </div>
+            <div class="opp-team-picker-cards">
+                ${sortPokemonByDex(v.roster).map(pokemon => renderPickerPokemonCard(pokemon)).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function openOppTeamPicker() {
+    if (!oppTeamVariants || oppTeamVariants.length <= 1) return;
+    const overlay = document.getElementById('opp-team-picker-overlay');
+    if (!overlay) return;
+    renderOppTeamPickerBody();
+    renderOppTeamSwitcher();
+    overlay.classList.add('open');
+}
+
+function closeOppTeamPicker() {
+    const overlay = document.getElementById('opp-team-picker-overlay');
+    if (overlay) overlay.classList.remove('open');
+}
+
+async function reMatchOpponentTeam() {
+    const slugs = (currentTeams['opp-team'] || []).map(p => p.slug).filter(Boolean);
+    if (!slugs.length) return;
+    try {
+        const res = await fetch('/api/teams/match-opponent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slugs })
+        });
+        const data = await res.json();
+        if (data.success) {
+            buildOppTeamVariants(data, true);
+            resetOppSpeedMarkerRatio();
+            renderTeam(currentTeams['opp-team'], 'opp-team');
+            const matchedCount = (data.matched_teams || []).length;
+            logMsg(matchedCount ? `手动修正后已重新匹配：${matchedCount} 个队伍` : '手动修正后未匹配到已收录队伍');
+            if (typeof showDamageInfo === 'function') showDamageInfo();
+            if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
+        } else {
+            logMsg(`重新匹配失败：${data.error}`);
+        }
+    } catch (err) {
+        logMsg(`重新匹配错误: ${err.message}`);
     }
 }
 
@@ -1616,6 +1890,10 @@ async function rebuildPokemon(side, index, slug) {
             const overlay = document.getElementById('move-damage-overlay');
             if (overlay && overlay.classList.contains('open') && activeDamageQuery) {
                 showMoveDamageRange(activeDamageQuery.side, activeDamageQuery.pokemonIndex, activeDamageQuery.moveIndex);
+            }
+            // 手动修正对方宝可梦后，用最新 6 只重新匹配已收录队伍
+            if (side === 'opp-team') {
+                reMatchOpponentTeam();
             }
         } else {
             logMsg(`更新失败：${data.error}`);
