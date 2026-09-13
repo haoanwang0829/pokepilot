@@ -363,10 +363,15 @@ class PokeDB:
     # ------------------------------------------------------------------
 
     def _load_pokemon_mappings(self) -> dict:
-        """{中文名: 英文基础名}，基于 champions_roster 构建（与 detect 的 variants.name 匹配）"""
+        """{中文名: 英文基础名}，基于 champions_roster 构建（与 detect 的 variants.name 匹配）。
+
+        同一物种可能有多行（雌雄/形态/mega），它们共享同一 id/中文名，但 name
+        可能带后缀（如 female 用 'indeedee-female'）。这里统一映射到「基础形态」
+        （form_num 以 -000 结尾，即 base 形态）的 name，避免被带后缀行覆盖。
+        """
         conn = self._open()
         try:
-            roster = conn.execute(
+            rows = conn.execute(
                 "SELECT id, name, form_num FROM champions_roster").fetchall()
             lang_zh = dict(conn.execute(
                 "SELECT NUM, SCH FROM language_map "
@@ -376,14 +381,19 @@ class PokeDB:
         finally:
             conn.close()
 
+        # 每物种选基础形态（form_num 以 -000 结尾，找不到则取当前行的 name）
         mapping: dict[str, str] = {}
-        for r in roster:
+        for r in rows:
             try:
                 base_id = int(str(r["id"]))
             except (TypeError, ValueError):
                 base_id = None
             name_zh = lang_zh.get(base_id) or _strip_form_suffix(pokemon_names.get(r["form_num"], ""))
-            if name_zh:
+            if not name_zh:
+                continue
+            is_base = str(r["form_num"] or "").endswith("-000")
+            cur = mapping.get(name_zh)
+            if cur is None or is_base:
                 mapping[name_zh] = r["name"]
         return mapping
 

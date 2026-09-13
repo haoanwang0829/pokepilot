@@ -459,8 +459,24 @@ class PokemonDetector:
             }
 
     def get_variants_by_name(self, name: str) -> list[PokemonVariant]:
-        """按英文名字查找所有 variants（可能包含多个form）"""
-        return [v for v in self.variants.values() if v.name == name]
+        """按英文名字查找所有 variants（可能包含多个form / 性别 / mega）。
+
+        用「物种 id」分组匹配，而不是精确匹配 name：
+        因为雌雄/形态的 name 可能带后缀（如 'indeedee-female'），
+        而基础形态 name 不带（'indeedee'），两者共享同一物种 id。
+        """
+        target = (name or "").strip().lower()
+        if not target:
+            return []
+
+        # 精确匹配 name/slug 定位物种 id
+        matched_ids = {v.id for v in self.variants.values()
+                       if v.name.lower() == target or str(v.slug).lower() == target}
+        if not matched_ids:
+            return []
+
+        # 返回该物种全部变体（含所有 form/性别/mega）
+        return [v for v in self.variants.values() if v.id in matched_ids]
 
     def get_detect_card_by_name_and_form(self, name_zh: str, form: str = "") -> dict | None:
         """

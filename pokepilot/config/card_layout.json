@@ -15,8 +15,8 @@
     "horizontal_gap": 64,
     "rect_h": 186,
     "rect_w": 738,
-    "top_x": 188,
-    "top_y": 263,
+    "top_x": 190,
+    "top_y": 273,
     "vertical_gap": 31
   },
   "regions": {
@@ -57,6 +57,18 @@
       "rx1": 0.3,
       "ry0": 0.3,
       "ry1": 0.51
+    },
+    "ev_numbers": {
+      "box_h": 0.19,
+      "box_w": 0.06,
+      "label": "能力值加点",
+      "left_x": 0.418,
+      "right_x": 0.898,
+      "y_tops": [
+        0.2708,
+        0.52,
+        0.7692
+      ]
     },
     "held_item": {
       "label": "道具",
@@ -108,18 +120,6 @@
       "label": "属性数值",
       "left_x": 0.287,
       "right_x": 0.762,
-      "y_tops": [
-        0.2708,
-        0.52,
-        0.7692
-      ]
-    },
-    "ev_numbers": {
-      "label": "能力值加点",
-      "box_h": 0.19,
-      "box_w": 0.06,
-      "left_x": 0.418,
-      "right_x": 0.898,
       "y_tops": [
         0.2708,
         0.52,
