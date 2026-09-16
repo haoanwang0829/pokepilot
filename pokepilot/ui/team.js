@@ -1049,17 +1049,29 @@ async function loadTeamSlot(slotId) {
     }
 }
 
+function serializeTeamForSave() {
+    const roster = (currentTeams['my-team'] || []).map(mon => {
+        if (!mon) return null;
+        return Object.fromEntries(
+            Object.entries(mon).filter(([k]) => !k.startsWith('_'))
+        );
+    }).filter(Boolean);
+    return roster;
+}
+
 async function saveTeamToSlot(slotId) {
     closeAllMenus();
     const res = await fetch('/api/teams/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slot_id: slotId })
+        body: JSON.stringify({ slot_id: slotId, roster: serializeTeamForSave() })
     });
     const data = await res.json();
     if (data.success) {
         logMsg(`队伍已写入：${data.slot_name}`);
         loadTeamMenus();
+    } else {
+        logMsg(`保存失败：${data.error || '未知错误'}`);
     }
 }
 
@@ -1070,12 +1082,14 @@ async function saveTeamAsNew() {
     const res = await fetch('/api/teams/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slot_name: name || '新队伍' })
+        body: JSON.stringify({ slot_name: name || '新队伍', roster: serializeTeamForSave() })
     });
     const data = await res.json();
     if (data.success) {
         logMsg(`新队伍已保存：${data.slot_name}`);
         loadTeamMenus();
+    } else {
+        logMsg(`保存失败：${data.error || '未知错误'}`);
     }
 }
 
@@ -1388,7 +1402,7 @@ async function lookupNameZh(slotIdx) {
             variants.forEach(v => {
                 const opt = document.createElement('option');
                 opt.value = v.form || '';
-                opt.textContent = v.form || '(默认)';
+                opt.textContent = formLabelZh(v.form);
                 formSelect.appendChild(opt);
             });
             // 自动选择第一个form（通常是默认的）
@@ -1835,7 +1849,7 @@ function openPokemonSwitcher(side, index) {
                 data.variants.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v.slug;
-                    opt.textContent = v.form || '(默认)';
+                    opt.textContent = formLabelZh(v.form);
                     formSelect.appendChild(opt);
                 });
                 if (data.variants.length > 0) {
@@ -1873,6 +1887,14 @@ function closePokemonSwitcher() {
     if (overlay) overlay.classList.remove('open');
 }
 
+function formLabelZh(form) {
+    if (!form) return '(默认)';
+    const f = String(form).toLowerCase();
+    if (f === 'male') return '雄性';
+    if (f === 'female') return '雌性';
+    if (f.includes('mega')) return '超级进化';
+    return form;
+}
 async function rebuildPokemon(side, index, slug) {
     try {
         const res = await fetch('/api/pokemon/rebuild', {

@@ -526,8 +526,9 @@
 
     const MEGA_STONES = [
       "gengarite","gardevoirite","ampharosite","venusaurite","charizardite x","blastoisinite","mewtwonite x","mewtwonite y","blazikenite","medichamite","houndoominite","aggronite","banettite","tyranitarite","scizorite","pinsirite","aerodactylite","lucarionite","abomasite","kangaskhanite","gyaradosite","absolite","charizardite y","alakazite","heracronite","mawilite","manectite","garchompite","latiasite","latiosite","swampertite","sceptilite","sablenite","altarianite","galladite","audinite","metagrossite","sharpedonite","slowbronite","steelixite","pidgeotite","glalitite","diancite","cameruptite","lopunnite","salamencite","beedrillite","clefablite","victreebelite","starminite","dragoninite","meganiumite","feraligite","skarmorite","froslassite","heatranite","darkranite","emboarite","excadrite","scolipite","scraftinite","eelektrossite","chandelurite","chesnaughtite","delphoxite","greninjite","pyroarite","floettite","malamarite","barbaracite","dragalgite","hawluchanite","zygardite","drampanite","zeraorite","falinksite","raichunite x","raichunite y","chimechite","absolite z","staraptite","staraptornite","garchompite z","lucarionite z","golurkite","meowsticite","crabominite","golisopite","magearnite","scovillainite","baxcalibrite","tatsugirinite"
-      ,"drampite","starmiite","dragonitite","feraligatrite","hawluchite","greninjaite","skarmoryite"
-      ,"scraftite","barbaraclite","scolipedite"
+        ,"drampite","starmiite","dragonitite","feraligatrite","hawluchite","greninjaite","skarmoryite"
+        ,"scraftite","barbaraclite","scolipedite"// 在这里追加你所有用到的mega石小写名称
+        ,"baxcaliburite","golisopodite","meowsticite"
     ];
     const NATURE_STR_MAP = {
         "attack↑/defense↓":"Lonely","attack↑/sp_atk↓":"Adamant","attack↑/sp_def↓":"Naughty","attack↑/speed↓":"Brave",
@@ -552,7 +553,21 @@
         const nameMap = {
             'basculegion-male':'basculegion', 'basculegion-female':'basculegion-F',
             'floette-eternal-flower':'Floette-Eternal', 'aegislash':'Aegislash-Shield',
-            'aegislash-blade-forme':'Aegislash-Blade'
+            'aegislash-blade-forme':'Aegislash-Blade',
+            'indeedee-female':'Indeedee-F', 'pyroar-female':'Pyroar',
+            'meowstic-mega':'Meowstic-M-Mega',
+            'tauros-paldea-blaze-breed':'Tauros-Paldea-Blaze',
+            'tauros-paldea-aqua-breed':'Tauros-Paldea-Aqua',
+            'florges-yellow-flower':'Florges', 'furfrou-heart-trim':'Furfrou',
+            'gourgeist-small-variety':'Gourgeist-Small',
+            'gourgeist-large-variety':'Gourgeist-Large',
+            'gourgeist-jumbo-variety':'Gourgeist-Super',
+            'alcremie-ruby-cream':'Alcremie', 'morpeko-hangry-mode':'Morpeko-Hangry',
+            'maushold-family-of-three':'Maushold', 'toxtricity-amped':'Toxtricity',
+            'squawkabilly-green-plumage':'Squawkabilly',
+            'squawkabilly-blue-plumage':'Squawkabilly-Blue',
+            'squawkabilly-yellow-plumage':'Squawkabilly-Yellow',
+            'squawkabilly-white-plumage':'Squawkabilly-White'
         };
         return nameMap[String(slug).toLowerCase()] || slug;
     }
@@ -1178,6 +1193,21 @@
 
     // ===================== 表格 =====================
     let PAGE = 20;
+    // 当前批次中尚未完成异步计算的单元格数（=0 表示可以加载下一批）
+    let pendingComputes = 0;
+    // 每行异步计算结束后递减；若用户已滚到底部则自动加载下一批
+    function rowComputed() {
+        pendingComputes = Math.max(0, pendingComputes - 1);
+        checkAutoLoadMore();
+    }
+    // 滚动触底自动加载更多：仅在上批计算完毕且未全部加载时触发
+    function checkAutoLoadMore() {
+        if (pendingComputes > 0) return;
+        if (loadedRows.length >= enemiesAll.length) return;
+        const el = document.getElementById('bottom-section');
+        if (!el) return;
+        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) loadMoreRows();
+    }
     function rebuildTable() {
         const wrap = document.getElementById('bottom-section');
         const tableWrap = document.getElementById('table-wrap');
@@ -1244,6 +1274,7 @@
         const added = loadedRows.slice(startIdx);
         tbody.insertAdjacentHTML('beforeend', added.map(row=>`<tr id="tr-${row.rowId}">${emptyRowsHtml(13)}</tr>`).join(''));
         // 只计算新增的行（已加载行不再重算）
+        pendingComputes += added.length;
         added.forEach((row)=>{ computeRowAsync(row); });
         updateLoadBtn();
     }
@@ -1372,13 +1403,15 @@
         const html = loadedRows.map(row=>`<tr id="tr-${row.rowId}">${emptyRowsHtml(13)}</tr>`).join('');
         tbody.innerHTML = html;
         // 异步计算每行
+        pendingComputes += loadedRows.length;
         loadedRows.forEach((row)=>{ computeRowAsync(row); });
     }
     function emptyRowsHtml(n){ return '<td></td>'.repeat(n); }
 
     async function computeRowAsync(row) {
         const tr = document.getElementById('tr-' + row.rowId);
-        if (!tr) return;
+        if (!tr) { rowComputed(); return; }
+        try {
         const my = myTeam;
         const enemyMon = enemyToMon(row);
         row._mon = enemyMon;
@@ -1418,6 +1451,9 @@
             const info = computeCell(enemyMon, mon);
             if (td) td.innerHTML = damageCellHtml(info);
         }
+        } finally {
+            rowComputed();
+        }
     }
 
     function updateLoadBtn() {
@@ -1426,8 +1462,6 @@
         btn.textContent = `加载更多 (${loadedRows.length}/${enemiesAll.length})`;
         if (loadedRows.length >= enemiesAll.length) btn.disabled = true;
     }
-
-    // ===================== 全量重算 =====================
     function recomputeAllRows() {
         if (!enemiesFetched) return;
         // 清掉所有已渲染行的计算依赖缓存，然后就地重算（不清空 DOM，避免滚动位置丢失）
@@ -1587,6 +1621,9 @@
         await loadSeasonsFormats();
         await loadTeamSlots();
         await loadEnemies();
+        // 滚动到表格底部附近时自动加载下一批
+        const section = document.getElementById('bottom-section');
+        if (section) section.addEventListener('scroll', ()=>{ checkAutoLoadMore(); }, { passive: true });
     });
     </script>
     <script src="./team-analysis-picker.js"></script>

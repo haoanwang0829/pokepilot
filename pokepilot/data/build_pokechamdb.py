@@ -158,58 +158,157 @@ def read_latest_season() -> tuple[str, str]:
 
 
 # ── 名称映射（供 build_usage_db.py 复用）──────────────────────────────────────
+# 名称翻译直接查 db/db.db：
+#   - 宝可梦/招式/特性：language_map 表（TYPE=name/move/ability），JPN→USA/SCH
+#   - 招式/特性/道具：moves/abilities/items 表的 name_j→name_e/name 作兜底
+#   - 宝可梦形态名：从日文形态名拆「区域前缀/羅托姆前缀/括号形态」后查基础名
+#   - 性格：内置 25 个标准性格（language_map 无 nature 类型）
+# 不再依赖 data/pokecham_names.json。
 
-_NAMES_PATH = _ROOT / "data" / "pokecham_names.json"
-_NAMES_DB: dict | None = None
+import sqlite3  # noqa: E402
+
+_DB_PATH = _ROOT / "db" / "db.db"
 _UNKNOWN_NAMES: dict[str, set[str]] = {}
 
+# 25 个标准性格：日文 → (英文, 中文)
+_NATURE_MAP = {
+    "がんばりや": ("Hardy", "勤奋"), "さみしがり": ("Lonely", "怕寂寞"),
+    "ゆうかん": ("Brave", "勇敢"), "いじっぱり": ("Adamant", "固执"),
+    "やんちゃ": ("Naughty", "顽皮"), "ずぶとい": ("Bold", "大胆"),
+    "すなお": ("Docile", "坦率"), "のんき": ("Relaxed", "悠闲"),
+    "わんぱく": ("Impish", "淘气"), "のうてんき": ("Lax", "乐天"),
+    "おくびょう": ("Timid", "胆小"), "せっかち": ("Hasty", "急躁"),
+    "まじめ": ("Serious", "认真"), "ようき": ("Jolly", "爽朗"),
+    "むじゃき": ("Naive", "天真"), "ひかえめ": ("Modest", "内敛"),
+    "おっとり": ("Mild", "慢吞吞"), "れいせい": ("Quiet", "冷静"),
+    "てれや": ("Bashful", "害羞"), "うっかりや": ("Rash", "马虎"),
+    "おだやか": ("Calm", "温和"), "おとなしい": ("Gentle", "温顺"),
+    "なまいき": ("Sassy", "自大"), "しんちょう": ("Careful", "慎重"),
+    "きまぐれ": ("Quirky", "浮躁"),
+}
 
-def _load_names_db() -> dict:
-    global _NAMES_DB
-    if _NAMES_DB is None:
-        _NAMES_DB = json.loads(_NAMES_PATH.read_text(encoding="utf-8"))
-    return _NAMES_DB
+# 宝可梦形态：区域前缀 → (英文, 中文)
+_REGION_PREFIX = {
+    "アローラ": ("Alola", "阿罗拉"), "ガラル": ("Galar", "伽勒尔"),
+    "ヒスイ": ("Hisui", "洗翠"), "パルデア": ("Paldea", "帕底亚"),
+}
+# 寶可夢形態：羅托姆前缀 → 英文（中文同源，如 清洗/加热…）
+_ROTOM_PREFIX = {
+    "ウォッシュ": ("Wash", "清洗"), "カット": ("Mow", "切割"),
+    "ヒート": ("Heat", "加热"), "スピン": ("Fan", "旋转"),
+    "フロスト": ("Frost", "结冰"),
+}
+# 寶可夢形態：括号后缀 → (英文, 中文)
+_FORM_SUFFIX = {
+    "メス": ("Female", "雌性"), "ロー": ("Low-Key", "低调的样子"),
+    "えいえん": ("Eternal", "永恒之花"), "ヒスイ": ("Hisui", "洗翠"),
+}
+# 帕底亚肯泰罗：括号后缀 → (英文, 中文)
+_TAUROS_SUFFIX = {
+    "格闘": ("Combat", "斗战种"), "水": ("Aqua", "水澜种"), "炎": ("Blaze", "火炽种"),
+}
+# 南瓜怪人：括号后缀 → (英文, 中文)。ちゅうだま=标准形态，不加后缀。
+_PUMPKABOO_SUFFIX = {
+    "おおだま": ("Large", "大尺寸"), "こだま": ("Small", "小尺寸"),
+    "ギガだま": ("Super", "特大尺寸"),
+}
+# 鬃岩狼人：括号后缀 → (英文, 中文)
+_LYCANROC_SUFFIX = {
+    "たそがれ": ("Dusk", "黄昏的样子"), "まよなか": ("Midnight", "黑夜的样子"),
+}
+
+_NAMES_DB_CONN: sqlite3.Connection | None = None
 
 
-def _resolve_pokemon_slug(name: str, index: dict[str, str], alias: dict[str, str],
-                          suffix: dict[str, str]) -> str | None:
-    """日文宝可梦名 → slug，复刻站点模块 7851 的 H0() 归一化逻辑。"""
-    if name in index:
-        return index[name]
+def _load_names_db() -> sqlite3.Connection:
+    """打开 db/db.db 只读连接（进程级复用一个）。"""
+    global _NAMES_DB_CONN
+    if _NAMES_DB_CONN is None:
+        _NAMES_DB_CONN = sqlite3.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+        _NAMES_DB_CONN.row_factory = sqlite3.Row
+    return _NAMES_DB_CONN
 
-    s = name.strip().replace("（", "(").replace("）", ")")
-    s = alias.get(s, s)
-    for k, v in suffix.items():
-        s = s.replace(k, v)
-    s = alias.get(s, s)
-    if s in index:
-        return index[s]
 
-    for k, v in suffix.items():
-        if s.startswith(k):
-            candidate = s[len(k):] + "(" + v + ")"
-            if candidate in index:
-                return index[candidate]
+def _resolve_lang(kind: str, ja_name: str) -> tuple[str, str] | None:
+    """language_map 精确查：JPN → (USA, SCH)。kind 取值 name/move/ability。"""
+    conn = _load_names_db()
+    row = conn.execute(
+        "SELECT USA, SCH FROM language_map WHERE TYPE=? AND JPN=?",
+        (kind, ja_name),
+    ).fetchone()
+    return (row["USA"], row["SCH"]) if row else None
 
-    for key, val in index.items():
-        if key == s or key.startswith(s):
-            return val
-    return None
+
+def _resolve_table(table: str, ja_name: str) -> tuple[str, str] | None:
+    """moves/abilities/items 表按 name_j 查 → (name_e, name)。"""
+    conn = _load_names_db()
+    row = conn.execute(
+        f"SELECT name_e, name FROM {table} WHERE name_j=?",
+        (ja_name,),
+    ).fetchone()
+    return (row["name_e"], row["name"]) if row else None
+
+
+def _resolve_pokemon(ja_name: str) -> tuple[str, str] | None:
+    """日文宝可梦名 → (英文, 中文)。支持基础名与常见形态名。"""
+    base = _resolve_lang("name", ja_name)
+    if base:
+        return base
+
+    text = ja_name.strip().replace("（", "(").replace("）", ")")
+
+    region = None
+    for p, v in _REGION_PREFIX.items():
+        if text.startswith(p):
+            region = v
+            text = text[len(p):]
+            break
+
+    rotom = None
+    if not region:
+        for p, v in _ROTOM_PREFIX.items():
+            if text.startswith(p):
+                rotom = v
+                text = text[len(p):]
+                break
+
+    suffix = None
+    if text.endswith(")") and "(" in text:
+        text, tok = text.rstrip(")").rsplit("(", 1)
+        suffix = (_TAUROS_SUFFIX.get(tok) or _PUMPKABOO_SUFFIX.get(tok)
+                  or _LYCANROC_SUFFIX.get(tok) or _FORM_SUFFIX.get(tok))
+        if not suffix and region:
+            suffix = (tok, tok)
+
+    base = _resolve_lang("name", text)
+    if not base:
+        return None
+
+    en, zh = base
+    if rotom:
+        # 羅托姆形态：英文 base+Wash，中文 前缀式（清洗洛托姆）
+        return en + " " + rotom[0], rotom[1] + zh
+    if suffix:
+        en += " " + (region[0] + " " if region else "") + suffix[0]
+        zh += "（" + suffix[1] + "）"
+    elif region:
+        en += " " + region[0]
+        zh += "（" + region[1] + "）"
+    return en, zh
 
 
 def _resolve_name(kind: str, ja_name: str) -> tuple[str, str, str]:
     """把 API 返回的日文名翻译为 (英文, 日文, 中文)。未命中时回退保留日文。"""
-    db = _load_names_db()
-    index = db["ja_index"][kind]
-    if kind == "pokemon":
-        slug = _resolve_pokemon_slug(
-            ja_name, index, db["pokemon_alias"], db["pokemon_form_suffix"]
-        )
+    if kind == "natures":
+        entry = _NATURE_MAP.get(ja_name)
+    elif kind == "pokemon":
+        entry = _resolve_pokemon(ja_name)
     else:
-        slug = index.get(ja_name)
-    entry = db[kind].get(slug) if slug else None
+        lang_kind = {"moves": "move", "abilities": "ability"}.get(kind)
+        entry = (_resolve_lang(lang_kind, ja_name) if lang_kind else None) \
+            or (_resolve_table(kind, ja_name) if kind in ("moves", "abilities", "items") else None)
     if entry:
-        return entry["en"], entry["ja"], entry["zh"]
+        return entry[0], ja_name, entry[1]
     _UNKNOWN_NAMES.setdefault(kind, set()).add(ja_name)
     return ja_name, ja_name, ""
 

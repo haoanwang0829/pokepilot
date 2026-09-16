@@ -2,8 +2,9 @@
 从 data/raw/pokemon/*.json 构建 db/db.db 的使用率表（champions_usage + 6 张子表）。
 
 原始数据：pokechamdb.com 每只宝可梦的全赛季×单双打快照（raw 文件含全部 variant）。
-本脚本把全部 variant 平铺入库，名称在建表时用 pokecham_names.json 翻译成 en/zh
-（复用 build_pokechamdb._resolve_name；未命中保留日文原文、name_zh 置空）。
+本脚本把全部 variant 平铺入库，名称在建表时直接查 db/db.db 翻译成 en/zh
+（复用 build_pokechamdb._resolve_name：language_map + moves/abilities/items 表 + 内置性格/形态表；
+未命中保留日文原文、name_zh 置空）。
 
 表结构：
     champions_usage               每 (slug, season, format) 一行

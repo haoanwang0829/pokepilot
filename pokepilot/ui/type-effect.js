@@ -390,11 +390,30 @@ function calcTeamDamage(myTeam, oppTeam) {
 function mapName(slug) {
   // 你的 slug => smogon 英文名称 映射表
   const nameMap = {
-    'basculegion-male': 'basculegion',    
+    'basculegion-male': 'basculegion',
     'basculegion-female': 'basculegion-F',
     'floette-eternal-flower':'Floette-Eternal',
     "aegislash":"Aegislash-Shield",
     "aegislash-blade-forme":"Aegislash-Blade",
+    // 性别/花色/体型/装饰等形态：引擎用独有 slug，roster slug 需映射
+    'indeedee-female':'Indeedee-F',
+    'pyroar-female':'Pyroar',
+    'meowstic-mega':'Meowstic-M-Mega',
+    'tauros-paldea-blaze-breed':'Tauros-Paldea-Blaze',
+    'tauros-paldea-aqua-breed':'Tauros-Paldea-Aqua',
+    'florges-yellow-flower':'Florges',
+    'furfrou-heart-trim':'Furfrou',
+    'gourgeist-small-variety':'Gourgeist-Small',
+    'gourgeist-large-variety':'Gourgeist-Large',
+    'gourgeist-jumbo-variety':'Gourgeist-Super',
+    'alcremie-ruby-cream':'Alcremie',
+    'morpeko-hangry-mode':'Morpeko-Hangry',
+    'maushold-family-of-three':'Maushold',
+    'toxtricity-amped':'Toxtricity',
+    'squawkabilly-green-plumage':'Squawkabilly',
+    'squawkabilly-blue-plumage':'Squawkabilly-Blue',
+    'squawkabilly-yellow-plumage':'Squawkabilly-Yellow',
+    'squawkabilly-white-plumage':'Squawkabilly-White',
     // 在这里继续加你需要的映射...
   };
 
@@ -406,6 +425,7 @@ const MEGA_STONES = [
   "gengarite","gardevoirite","ampharosite","venusaurite","charizardite x","blastoisinite","mewtwonite x","mewtwonite y","blazikenite","medichamite","houndoominite","aggronite","banettite","tyranitarite","scizorite","pinsirite","aerodactylite","lucarionite","abomasite","kangaskhanite","gyaradosite","absolite","charizardite y","alakazite","heracronite","mawilite","manectite","garchompite","latiasite","latiosite","swampertite","sceptilite","sablenite","altarianite","galladite","audinite","metagrossite","sharpedonite","slowbronite","steelixite","pidgeotite","glalitite","diancite","cameruptite","lopunnite","salamencite","beedrillite","clefablite","victreebelite","starminite","dragoninite","meganiumite","feraligite","skarmorite","froslassite","heatranite","darkranite","emboarite","excadrite","scolipite","scraftinite","eelektrossite","chandelurite","chesnaughtite","delphoxite","greninjite","pyroarite","floettite","malamarite","barbaracite","dragalgite","hawluchanite","zygardite","drampanite","zeraorite","falinksite","raichunite x","raichunite y","chimechite","absolite z","staraptite","staraptornite","garchompite z","lucarionite z","golurkite","meowsticite","crabominite","golisopite","magearnite","scovillainite","baxcalibrite","tatsugirinite"
   ,"drampite","starmiite","dragonitite","feraligatrite","hawluchite","greninjaite","skarmoryite"
   ,"scraftite","barbaraclite","scolipedite"// 在这里追加你所有用到的mega石小写名称
+  ,"baxcaliburite","golisopodite","meowsticite"
 ];
 // 25种固定性格映射：[sp_atk↑/attack↓] => 英文名
 const NATURE_STR_MAP = {
@@ -462,7 +482,8 @@ function calcDamage(attacker, defender, move, sideContext = {}){
         const { calculate, Pokemon, Move,Field } = window.calc;
         // ====== 处理攻击者道具：是mega石则丢弃item字段 ======
         let atkItemOpt;
-        var aitem = canonicalName('items', attacker.item || attacker.held_item[0].name);
+        const atkItemRaw = attacker.item || (Array.isArray(attacker.held_item) ? attacker.held_item[0]?.name : attacker.held_item);
+        const aitem = canonicalName('items', atkItemRaw);
         if (aitem) {
             const itemLower = aitem.toLowerCase();
             if (!MEGA_STONES.includes(itemLower)&&!itemLower.includes("进化石")) {
@@ -489,14 +510,15 @@ function calcDamage(attacker, defender, move, sideContext = {}){
                 spe: attacker.evs?.speed > 0 ? attacker.evs.speed * 8 - 4 : 0,
             },
             nature: (attacker.nature_en && attacker.nature_en[0]?.name) || attacker.nature || 'Hardy',
-            ability: canonicalName('abilities', attacker.ability[0].name),
+            ability: canonicalName('abilities', Array.isArray(attacker.ability) ? attacker.ability[0]?.name : attacker.ability),
              // 只有非mega石才会存在，mega石该字段直接不写
             ...(atkItemOpt ? { item: atkItemOpt } : {}),
             boosts: atkBoosts,
         });
         // ====== 处理防御者道具，逻辑完全一致 ======
         let defItemOpt;
-        var item = canonicalName('items', defender.item || defender.held_item[0].name);
+        const defItemRaw = defender.item || (Array.isArray(defender.held_item) ? defender.held_item[0]?.name : defender.held_item);
+        const item = canonicalName('items', defItemRaw);
         if (item) {
             const itemLower = item.toLowerCase();
             if (!MEGA_STONES.includes(itemLower)&&!itemLower.includes("进化石")) {
@@ -517,7 +539,7 @@ function calcDamage(attacker, defender, move, sideContext = {}){
                 spe: defender.evs?.speed > 0 ? defender.evs.speed * 8 - 4 : 0,
             },
             nature: (defender.nature_en && defender.nature_en[0]?.name) || defender.nature || 'Hardy',
-            ability: canonicalName('abilities', defender.ability[0].name),
+            ability: canonicalName('abilities', Array.isArray(defender.ability) ? defender.ability[0]?.name : defender.ability),
             ...(defItemOpt ? { item: defItemOpt } : {}),
             ignoreItemErrors: true, // 核心：关闭道具匹配校验，消除megaStone报错
             boosts: defBoosts,

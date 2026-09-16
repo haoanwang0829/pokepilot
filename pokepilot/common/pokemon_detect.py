@@ -150,6 +150,35 @@ def _remove_bg_multi(img: np.ndarray, bg_colors: list, tolerance: int = 60) -> n
     return result
 
 
+def _crop_main_subject(img: np.ndarray, bg_color: np.ndarray, scale: float = 1.0, tolerance: int = 40) -> np.ndarray:
+    """
+    检测单色背景中的精灵主体并做方形裁剪放大（对手队伍用）。
+
+    bg_color : 背景色 (B,G,R)
+    scale    : 方形边长 = max(主体w, 主体h) * scale（默认 1.0 = 紧贴主体）
+    主体检测失败/过小时返回原图。
+    """
+    lo = np.clip(bg_color.astype(int) - tolerance, 0, 255).astype(np.uint8)
+    hi = np.clip(bg_color.astype(int) + tolerance, 0, 255).astype(np.uint8)
+    mask_bg = cv2.inRange(img, lo, hi)
+    nonbg = cv2.bitwise_not(mask_bg)
+    n, _, stats, _ = cv2.connectedComponentsWithStats(nonbg, 8)
+    if n <= 1:
+        return img
+
+    areas = [(stats[i, cv2.CC_STAT_AREA], i) for i in range(1, n)]
+    areas.sort(reverse=True)
+    x, y, w, h = (int(v) for v in stats[areas[0][1], :4])
+    if w < 10 or h < 10:
+        return img  # 主体太小，疑似误检
+
+    side = min(int(max(w, h) * scale), img.shape[0], img.shape[1])
+    cx, cy = x + w // 2, y + h // 2
+    x0 = max(0, cx - side // 2); y0 = max(0, cy - side // 2)
+    x0 = min(x0, img.shape[1] - side); y0 = min(y0, img.shape[0] - side)
+    return img[y0:y0 + side, x0:x0 + side]
+
+
 # ── 宝可梦检测器 ────────────────────────────────────────────────────────────────
 
 class PokemonDetector:
@@ -400,7 +429,7 @@ class PokemonDetector:
         bg_color = None
 
         if bg_removal == "auto":
-            # 计算背景色但不移除，供参考精灵使用
+            # 检测单色背景（对手队伍，通常为红色）后裁剪精灵主体放大，与白底参考构图对齐
             corners = [
                 sprite[:5, :5],
                 sprite[:5, -5:],
@@ -408,6 +437,7 @@ class PokemonDetector:
                 sprite[-5:, -5:],
             ]
             bg_color = np.median(np.concatenate([c.reshape(-1, 3) for c in corners], axis=0), axis=0)
+            sprite_clean = _crop_main_subject(sprite, bg_color)
         elif bg_removal == "multi" and bg_colors:
             # 移除目标精灵背景
             sprite_clean = _remove_bg_multi(sprite, bg_colors, tolerance=40)
@@ -459,8 +489,24 @@ class PokemonDetector:
             }
 
     def get_variants_by_name(self, name: str) -> list[PokemonVariant]:
-        """按英文名字查找所有 variants（可能包含多个form）"""
-        return [v for v in self.variants.values() if v.name == name]
+        """按英文名字查找所有 variants（可能包含多个form / 性别 / mega）。
+
+        用「物种 id」分组匹配，而不是精确匹配 name：
+        因为雌雄/形态的 name 可能带后缀（如 'indeedee-female'），
+        而基础形态 name 不带（'indeedee'），两者共享同一物种 id。
+        """
+        target = (name or "").strip().lower()
+        if not target:
+            return []
+
+        # 精确匹配 name/slug 定位物种 id
+        matched_ids = {v.id for v in self.variants.values()
+                       if v.name.lower() == target or str(v.slug).lower() == target}
+        if not matched_ids:
+            return []
+
+        # 返回该物种全部变体（含所有 form/性别/mega）
+        return [v for v in self.variants.values() if v.id in matched_ids]
 
     def get_detect_card_by_name_and_form(self, name_zh: str, form: str = "") -> dict | None:
         """
