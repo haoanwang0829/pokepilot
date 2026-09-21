@@ -264,6 +264,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                 pctLow: 0,
                 pctHigh: 0,
                 effectiveness: 1,
+                immune: false,
             };
             const pdamage = {...maxDamage}
             for (const move of (attacker.moves || [])) {
@@ -271,6 +272,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                     // attacker.damageResults.push(null);
                     continue;
                 }
+                const immune = isImmuneMatchup(move, attacker, defender);
                 const res = calcDamage(attacker, defender, move, { attackerSide: 'my', defenderSide: 'opp' });
                 
                 // console.log(attacker.name_zh, defender.name_zh, move.name_zh,res.range());
@@ -288,6 +290,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                         maxDamage.pctLow = +(min / hp * 100).toFixed(1);
                         maxDamage.pctHigh = +(max / hp * 100).toFixed(1);
                         maxDamage.effectiveness = res.effectiveness || 1;
+                        maxDamage.immune = immune;
                     }  
                     if(move.priority>0){
                         const pdamage = {
@@ -300,6 +303,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                             pctLow: +(min / hp * 100).toFixed(1),
                             pctHigh: +(max / hp * 100).toFixed(1),
                             effectiveness: res.effectiveness || 1,
+                            immune,
                         };
 
                         damages.push(pdamage);
@@ -334,12 +338,14 @@ function calcTeamDamage(myTeam, oppTeam) {
                 pctLow: 0,
                 pctHigh: 0,
                 effectiveness: 1,
+                immune: false,
             };
             const pdamage = {...maxDamage}
             for (const move of (attacker.moves || [])) {
                 if (!move || move.category=='status') {
                     continue;
                 }
+                const immune = isImmuneMatchup(move, attacker, defender);
                 const res = calcDamage(attacker, defender, move, { attackerSide: 'opp', defenderSide: 'my' });
                 // console.log(attacker.name_zh,defender.name_zh,move.name_zh,res);
                 if (res) {
@@ -355,6 +361,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                         maxDamage.pctLow = +(min / hp * 100).toFixed(1);
                         maxDamage.pctHigh = +(max / hp * 100).toFixed(1);
                         maxDamage.effectiveness = res.effectiveness || 1;
+                        maxDamage.immune = immune;
                     }
                     if(move.priority>0){
                         // 每次先制都新建全新对象，不再复用引用
@@ -368,6 +375,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                             pctLow: +(min / hp * 100).toFixed(1),
                             pctHigh: +(max / hp * 100).toFixed(1),
                             effectiveness: res.effectiveness || 1,
+                            immune,
                         };
                         damages.push(pdamage);
                         // console.log(pdamage,damages);
@@ -646,6 +654,18 @@ function getDamageLabel(pctLow, pctHigh) {
   if (pctHigh >= 50) return { label: '乱二', color: '#f0c000' };
   return { label: '', color: '' };
 }
+/**
+ * 属性免疫判定（如一般系先制技打幽灵系）。
+ * 不能用引擎的 Result.effectiveness —— 本 bundle 里该字段恒为 undefined，
+ * 所以改用队伍 JSON 里的 type_effectiveness 克制表（0 表示无效）。
+ * 只有克制表明确是 0 才算免疫；招式没被引擎识别等其它"算出 0"的情况不会被误标成无效。
+ */
+function isImmuneMatchup(move, attacker, defender) {
+  const moveType = (getEffectiveMoveType(move, attacker) || '').toLowerCase();
+  if (!moveType) return false;
+  const table = defender && defender.type_effectiveness;
+  return !!table && table[moveType] === 0;
+}
 
 const selectedMyIndices = {};
 const selectedOppIndices = {};
@@ -740,7 +760,11 @@ function showDamageInfoDetail() {
             const moveName = d.priority > 0 ? `+${d.priority} ${d.moveName}` : d.moveName;
             const { label, color } = getDamageLabel(d.pctLow, d.pctHigh);
             const labelHtml = label ? `<span style="color:${color};font-weight:bold;margin-right:4px">${label}</span>` : '';
-            const damageInfo = `${labelHtml}${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})`;
+            // 属性免疫（如一般系先制技打幽灵系）直接写「无效」，
+            // 否则显示成「0%~0% (0-0)」会让人以为伤害算错了
+            const damageInfo = d.immune
+                ? '<span style="color:#9aa0a6">无效</span>'
+                : `${labelHtml}${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})`;
 
             rows.push({ atkName, atkLabel, defName, moveName, damageInfo });
         }
