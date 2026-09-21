@@ -1038,28 +1038,58 @@ async function loadTeamMenus() {
         : '<div class="dropdown-item" style="color:#888">暂无队伍</div>';
 }
 
+// 序列化当前我方队伍用于落盘：剔除 `_` 开头的运行时字段（如 _originalData），避免写进槽位 JSON
+function serializeMyRoster() {
+    const roster = currentTeams['my-team'] || [];
+    return JSON.parse(JSON.stringify(roster, (key, value) => (key.startsWith('_') ? undefined : value)));
+}
+
 async function loadTeamSlot(slotId) {
     closeAllMenus();
-    const res = await fetch(`/api/teams/load/${slotId}`, { method: 'POST' });
-    const data = await res.json();
-    if (data.success) {
+    try {
+        const res = await fetch(`/api/teams/load/${slotId}`, { method: 'POST' });
+        const data = await res.json();
+        if (!data.success) {
+            logMsg(`读取失败：${data.error || '未知错误'}`);
+            return;
+        }
+        if (!data.team || !Array.isArray(data.team.roster) || !data.team.roster.length) {
+            logMsg('读取失败：该槽位没有队伍数据');
+            return;
+        }
         currentTeams['my-team'] = data.team.roster;
         renderTeam(currentTeams['my-team'], 'my-team');
         logMsg(`队伍已读取：${data.team.slot_name || slotId}`);
+    } catch (err) {
+        logMsg(`读取错误：${err.message}`);
     }
 }
 
 async function saveTeamToSlot(slotId) {
     closeAllMenus();
-    const res = await fetch('/api/teams/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slot_id: slotId })
-    });
-    const data = await res.json();
-    if (data.success) {
-        logMsg(`队伍已写入：${data.slot_name}`);
-        loadTeamMenus();
+    const roster = serializeMyRoster();
+    if (!roster.length) {
+        logMsg('写入失败：当前没有我方队伍可保存');
+        alert('当前没有我方队伍，请先「识别队伍」或「读取队伍」');
+        return;
+    }
+    try {
+        const res = await fetch('/api/teams/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slot_id: slotId, roster })
+        });
+        const data = await res.json();
+        if (data.success) {
+            logMsg(`队伍已写入：${data.slot_name}（${data.count} 只）`);
+            loadTeamMenus();
+        } else {
+            logMsg(`写入失败：${data.error || '未知错误'}`);
+            alert('写入失败：' + (data.error || '未知错误'));
+        }
+    } catch (err) {
+        logMsg(`写入错误：${err.message}`);
+        alert('写入失败：' + err.message);
     }
 }
 
@@ -1067,39 +1097,66 @@ async function saveTeamAsNew() {
     closeAllMenus();
     const name = window.prompt('请输入队伍名称：', '');
     if (name === null) return;
-    const res = await fetch('/api/teams/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slot_name: name || '新队伍' })
-    });
-    const data = await res.json();
-    if (data.success) {
-        logMsg(`新队伍已保存：${data.slot_name}`);
-        loadTeamMenus();
+    const roster = serializeMyRoster();
+    if (!roster.length) {
+        logMsg('写入失败：当前没有我方队伍可保存');
+        alert('当前没有我方队伍，请先「识别队伍」或「读取队伍」');
+        return;
+    }
+    try {
+        const res = await fetch('/api/teams/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slot_name: name.trim() || '新队伍', roster })
+        });
+        const data = await res.json();
+        if (data.success) {
+            logMsg(`新队伍已保存：${data.slot_name}（${data.count} 只）`);
+            loadTeamMenus();
+        } else {
+            logMsg(`写入失败：${data.error || '未知错误'}`);
+            alert('写入失败：' + (data.error || '未知错误'));
+        }
+    } catch (err) {
+        logMsg(`写入错误：${err.message}`);
+        alert('写入失败：' + err.message);
     }
 }
 
 async function deleteTeamSlot(slotId, slotName) {
     closeAllMenus();
     if (!confirm(`确定删除「${slotName}」吗？`)) return;
-    const res = await fetch(`/api/teams/${slotId}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (data.success) {
-        logMsg(`已删除：${slotName}`);
-        loadTeamMenus();
+    try {
+        const res = await fetch(`/api/teams/${slotId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            logMsg(`已删除：${slotName}`);
+            loadTeamMenus();
+        } else {
+            logMsg(`删除失败：${data.error || '未知错误'}`);
+            alert('删除失败：' + (data.error || '未知错误'));
+            loadTeamMenus();
+        }
+    } catch (err) {
+        logMsg(`删除错误：${err.message}`);
+        alert('删除失败：' + err.message);
     }
 }
 
 async function identifyTeam() {
     closeAllMenus();
     logMsg('正在识别队伍。请等待。');
-    const res = await fetch('/api/teams/generate', { method: 'POST' });
-    const data = await res.json();
-    if (data.success) {
-        openDraftEditor(data.draft);
-        logMsg('识别完成，请编辑并确认。');
-    } else {
-        logMsg(`识别失败：${data.error}`);
+    try {
+        const res = await fetch('/api/teams/generate', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            openDraftEditor(data.draft);
+            logMsg('识别完成，请编辑并确认。');
+        } else {
+            logMsg(`识别失败：${data.error}`);
+        }
+    } catch (err) {
+        logMsg(`识别错误：${err.message}`);
     }
 }
 
@@ -1440,9 +1497,30 @@ async function selectForm(slotIdx) {
 }
 
 function closeDraftEditor() {
+    // 仅关闭界面，不动磁盘：草稿的落盘清理统一走 deleteDraftFile()/buildTeamFromDraft()
     const overlay = document.getElementById('draft-editor-overlay');
     overlay.classList.remove('open');
     currentDraft = null;
+}
+
+// 物理删除磁盘上的 data/my_team/draft.json（幂等）
+async function deleteDraftFile() {
+    try {
+        const res = await fetch('/api/teams/draft', { method: 'DELETE' });
+        const data = await res.json();
+        return data && data.success ? { ok: true } : { ok: false, error: (data && data.error) || '未知错误' };
+    } catch (err) {
+        return { ok: false, error: err.message };
+    }
+}
+
+// 放弃草稿：持久化删除磁盘草稿后关闭编辑器（弹窗的「放弃草稿」与右上角 × 都走这里）
+async function discardDraft() {
+    if (!currentDraft) { closeDraftEditor(); return; }
+    if (!confirm('确定放弃当前草稿吗？放弃后磁盘上的草稿将被删除，需要重新识别队伍。')) return;
+    const result = await deleteDraftFile();
+    closeDraftEditor();
+    logMsg(result.ok ? '草稿已放弃' : `放弃草稿失败：${result.error}`);
 }
 
 async function buildTeamFromDraft() {
@@ -1484,12 +1562,15 @@ async function buildTeamFromDraft() {
             currentTeams['my-team'] = data.team.roster;
             renderTeam(currentTeams['my-team'], 'my-team');
             closeDraftEditor();
-            logMsg('队伍已生成！');
+            // 后端在构建成功后已清理磁盘草稿，这里无需再删
+            logMsg('队伍已生成（草稿已清理），可继续「写入队伍」保存到槽位。');
         } else {
             logMsg(`生成失败：${data.error}`);
+            alert('生成失败：' + (data.error || '未知错误'));
         }
     } catch (err) {
         logMsg(`生成错误: ${err.message}`);
+        alert('生成失败：' + err.message);
     }
 }
 

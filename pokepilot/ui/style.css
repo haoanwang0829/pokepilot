@@ -1643,6 +1643,18 @@ video {
     border-color: #0a5a5d;
 }
 
+/* 「放弃草稿」：靠左的次要危险操作，与右侧主操作「生成队伍」拉开距离 */
+.draft-editor-footer button.draft-discard-btn {
+    margin-right: auto;
+    color: #ff8a80;
+    border-color: #5a2a2a;
+}
+
+.draft-editor-footer button.draft-discard-btn:hover {
+    background: #3a2626;
+    border-color: #8a3a3a;
+}
+
 
 .move-damage-overlay {
     position: fixed;
