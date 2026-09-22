@@ -592,10 +592,29 @@ function renderEffectiveness(effectiveness) {
     return `<div class="effectiveness-grid">${parts.join('')}</div>`;
 }
 
+// 未识别槽位：detect 匹配不到任何变体时后端返回 slug='unknown'、sprite_key=None，
+// build_pokemon 产出的 dict 里**没有 sprite 键**（None 被 to_dict 省略）。
+// 前端必须能安全渲染这种卡片（历史上这里抛过 undefined.replace，让整列渲染中断、
+// 日志永远停在「正在生成对方队伍」，看起来像卡死），并给出显眼的「未识别」标记，
+// 提示用户点 ✏️ 手动指定，而不是伪造一只宝可梦（伪造会把错误的属性/克制/伤害当成真数据）。
+function isUnknownPokemon(pokemon) {
+    if (!pokemon) return false;
+    return pokemon.slug === 'unknown' || pokemon.name === 'unknown';
+}
+
 function renderCard(pokemon, side, index) {
     const inner = document.createElement('div');
     inner.className = 'card-inner';
-    const spritePath = pokemon.sprite.replace(/^sprites\//, '');
+    const isUnknown = isUnknownPokemon(pokemon);
+    if (isUnknown) inner.classList.add('card-unknown');
+    // sprite 可能整个键都不存在（未识别槽位），不能直接 .replace
+    const spritePath = (pokemon.sprite || '').replace(/^sprites\//, '');
+    const displayName = isUnknown ? '未识别' : (pokemon.name_zh || pokemon.name || '');
+    // 未识别时 base_stats 为空，stats 是由「种族值 0」算出的假范围（如 HP 75-107），
+    // 直接显示会被误读成真实数值，所以不给数字。
+    const statsHtml = isUnknown
+        ? '<div class="card-unknown-nostat">—</div>'
+        : renderStats(pokemon.base_stats, pokemon.stats, pokemon.nature, boostState[side === 'my-team' ? 'my' : 'opp']?.[pokemon.index]);
 
     const typeIcons = pokemon.types.map(t => renderTypeIcon(t)).join('');
     const evoButtonsHtml = renderEvoButtons(pokemon.evoforms, pokemon._currentEvoIndex, side, index);
@@ -605,7 +624,7 @@ function renderCard(pokemon, side, index) {
         : '';
 
     inner.innerHTML = `
-        <div class="card-bg-sprite" style="background-image: url('/sprites/${spritePath}')"></div>
+        <div class="card-bg-sprite"${spritePath ? ` style="background-image: url('/sprites/${spritePath}')"` : ''}></div>
         <div class="card-info">
             <div class="card-info-left">
                 <div class="card-meta">
@@ -623,7 +642,8 @@ function renderCard(pokemon, side, index) {
                     <div class="card-header-section">
                         <div class="card-header">
                             <div class="card-types">${typeIcons}</div>
-                            <span class="card-name">${pokemon.name_zh || pokemon.name || ''}</span>${editBtnHtml}
+                            <span class="card-name${isUnknown ? ' card-name-unknown' : ''}">${displayName}</span>${editBtnHtml}
+                            ${isUnknown ? '<span class="card-unknown-hint" title="识别失败，无法确定是哪只宝可梦。请点击 ✏️ 手动指定">点 ✏️ 修正</span>' : ''}
                             ${evoButtonsHtml ? `<div class="evo-buttons">${evoButtonsHtml}</div>` : ''}
                         </div>
                     </div>
@@ -635,7 +655,7 @@ function renderCard(pokemon, side, index) {
                         </div>
                     </div>
                     <div class="card-stats-section">
-                        <div class="card-stats">${renderStats(pokemon.base_stats, pokemon.stats, pokemon.nature, boostState[side === 'my-team' ? 'my' : 'opp']?.[pokemon.index])}</div>
+                        <div class="card-stats">${statsHtml}</div>
                         <div class="card-evs" style="display:none">
                             <div class="ev-header">
                                 <span class="stat-label">EVs</span>
@@ -688,9 +708,23 @@ function renderTeam(team, side) {
     const cards = document.querySelectorAll(`.team-col.${side} .pokemon-card`);
     cards.forEach((card, i) => {
         card.innerHTML = '';
-        if (team[i]) card.appendChild(renderCard(team[i], side, i));
+        if (!team[i]) return;
+        // 逐卡容错：单张卡片数据异常只影响这一张，不能拖垮整列渲染。
+        // （历史上 sprite 键缺失抛异常 → 循环中断 → 后面的卡片留着旧内容、日志也不再更新，
+        //   看起来就像"卡死"。这里兜住，最坏情况也只坏一张卡。）
+        try {
+            card.appendChild(renderCard(team[i], side, i));
+        } catch (err) {
+            console.error(`renderCard 失败 (side=${side}, index=${i}):`, err, team[i]);
+            const badName = team[i].name_zh || team[i].name || team[i].slug || '?';
+            card.innerHTML = `<div class="card-render-error">渲染失败：${badName}<br>${String((err && err.message) || err)}</div>`;
+        }
     });
-    renderSpeedAxis();
+    try {
+        renderSpeedAxis();
+    } catch (err) {
+        console.error('renderSpeedAxis 失败:', err);
+    }
 }
 
 
@@ -1629,23 +1663,34 @@ function switchEvoform(side, index, evoIndex) {
 async function generateOpponentTeam() {
     document.querySelectorAll('.menu-item.active').forEach(m => m.classList.remove('active'));
     logMsg('正在生成对方队伍。请等待。');
-    const res = await fetch('/api/teams/generate-opponent', { method: 'POST' });
-    const data = await res.json();
-    if (data.success) {
+    try {
+        const res = await fetch('/api/teams/generate-opponent', { method: 'POST' });
+        const data = await res.json();
+        if (!data.success) {
+            logMsg(`生成失败：${data.error || '未知错误'}`);
+            return;
+        }
         buildOppTeamVariants(data);
         // 新对手队伍加载后，清空旧拖拽偏移，避免同槽位继承历史位置。
         resetOppSpeedMarkerRatio();
         renderTeam(currentTeams['opp-team'], 'opp-team');
-        logMsg(`对方队伍已生成${data.matched_teams && data.matched_teams.length ? `，已匹配 ${data.matched_teams.length} 个队伍` : ''}`);
         if (typeof showDamageInfo === 'function') showDamageInfo();
         if (typeof showDamageInfoDetail === 'function') showDamageInfoDetail();
         boostState = {
             my: {},
             opp: {}
         };
-        
-    } else {
-        logMsg(`生成失败：${data.error}`);
+        // 未识别槽位不再中断流程：照常渲染成「未识别」占位卡，这里明确提示去手动修正
+        const unknownCount = (currentTeams['opp-team'] || []).filter(isUnknownPokemon).length;
+        const matchedText = (data.matched_teams && data.matched_teams.length)
+            ? `，已匹配 ${data.matched_teams.length} 个队伍` : '';
+        const unknownText = unknownCount
+            ? `；有 ${unknownCount} 只未识别（已用占位卡代替），请点卡片上的 ✏️ 手动指定` : '';
+        logMsg(`对方队伍已生成${matchedText}${unknownText}`);
+    } catch (err) {
+        // 无论哪一步出错都必须落日志：否则界面永远停在「正在生成对方队伍。请等待。」
+        console.error('生成对方队伍失败:', err);
+        logMsg(`生成对方队伍出错：${(err && err.message) || err}`);
     }
 }
 
@@ -1756,7 +1801,7 @@ function renderPickerPokemonCard(pokemon) {
     const spriteHtml = spritePath
         ? `<img class="opp-team-picker-sprite" src="/sprites/${spritePath}" alt="">`
         : '<div class="opp-team-picker-sprite"></div>';
-    const nameZh = pokemon.name_zh || pokemon.name || '';
+    const nameZh = isUnknownPokemon(pokemon) ? '未识别' : (pokemon.name_zh || pokemon.name || '');
     const nature = natureArrowToZh(pokemon.nature) || '-';
     const item = pickerTextOf(pokemon.held_item) || '无道具';
     const ability = pickerTextOf(pokemon.ability) || '-';
@@ -1825,7 +1870,15 @@ function closeOppTeamPicker() {
 }
 
 async function reMatchOpponentTeam() {
-    const slugs = (currentTeams['opp-team'] || []).map(p => p.slug).filter(Boolean);
+    const all = currentTeams['opp-team'] || [];
+    // 队伍匹配要求 6 只**全部**能在 champions_roster 里解析（form_ids_from_slugs 任一未命中
+    // 就整体返回 None）⇒ 还有未识别时直接跳过，不发这个注定失败的请求。
+    const unknownCount = all.filter(isUnknownPokemon).length;
+    if (unknownCount) {
+        logMsg(`还有 ${unknownCount} 只未识别，队伍匹配需要 6 只全部确定，本次跳过`);
+        return;
+    }
+    const slugs = all.map(p => p.slug).filter(Boolean);
     if (!slugs.length) return;
     try {
         const res = await fetch('/api/teams/match-opponent', {
@@ -2027,7 +2080,7 @@ function renderSpeedAxis() {
             const spdBoost = (boostState.my[p.index] || {}).spe || 0;
             const effectiveSpeed = getEffectiveSpeed(speed, speedFieldState.my_tailwind, scarf, spdBoost);
             const pct = speedToPercent(effectiveSpeed, maxSpeed);
-            const label = p.name_zh || p.name || '?';
+            const label = isUnknownPokemon(p) ? '未识别' : (p.name_zh || p.name || '?');
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
             const speedLabel = scarf ? `围巾${effectiveSpeed}` : `速${effectiveSpeed}`;
 
@@ -2081,7 +2134,7 @@ function renderSpeedAxis() {
             const sMax = getEffectiveSpeed(baseMax, speedFieldState.opp_tailwind, scarf, spdBoost);
             const pctMin = speedToPercent(sMin, maxSpeed);
             const pctMax = speedToPercent(sMax, maxSpeed);
-            const label = p.name_zh || p.name || '?';
+            const label = isUnknownPokemon(p) ? '未识别' : (p.name_zh || p.name || '?');
             const spritePath = p.sprite ? p.sprite.replace(/^sprites\//, '') : '';
             const rangeLabel = scarf ? `围巾${sMin}–${sMax}` : `速${sMin}–${sMax}`;
 
