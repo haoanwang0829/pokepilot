@@ -217,12 +217,12 @@
         <div class="draft-editor-box">
             <div class="draft-editor-header">
                 <span>确认并编辑 OCR 结果</span>
-                <button class="draft-editor-close-btn" onclick="closeDraftEditor()">×</button>
+                <button class="draft-editor-close-btn" onclick="discardDraft()" title="放弃草稿">×</button>
             </div>
             <div class="draft-tab-bar" id="draft-tab-bar"></div>
             <div id="draft-tab-panels"></div>
             <div class="draft-editor-footer">
-                <button onclick="closeDraftEditor()">取消</button>
+                <button class="draft-discard-btn" onclick="discardDraft()" title="删除磁盘上的草稿并关闭">放弃草稿</button>
                 <button onclick="buildTeamFromDraft()">生成队伍</button>
             </div>
         </div>

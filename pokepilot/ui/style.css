@@ -432,6 +432,49 @@ video {
     color: #e0e0e0;
 }
 
+/* ── 未识别占位卡 ──────────────────────────────────────────────────────────
+   识别不到宝可梦时不伪造物种数据（伪造会把错误的属性/克制/伤害当成真数据），
+   而是显式标成「未识别」，提示用户点卡片上的 ✏️ 手动指定。 */
+.card-inner.card-unknown {
+    outline: 1px dashed #ffb74d;
+    outline-offset: -3px;
+    background: rgba(255, 183, 77, 0.06);
+}
+
+.card-name.card-name-unknown {
+    color: #ffb74d;
+}
+
+.card-unknown-hint {
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffb74d;
+    border: 1px solid rgba(255, 183, 77, 0.55);
+    border-radius: 3px;
+    padding: 0 4px;
+    white-space: nowrap;
+}
+
+.card-unknown-nostat {
+    font-size: 12px;
+    color: #8a8a8a;
+    text-align: center;
+    padding: 2px 0;
+}
+
+/* 单卡渲染异常兜底：只坏这一张，不再让整列渲染中断 */
+.card-render-error {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    padding: 6px 8px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #ff8a80;
+    word-break: break-word;
+}
+
 .card-types {
     display: flex;
     gap: 2px;
@@ -1641,6 +1684,18 @@ video {
 .draft-editor-footer button:last-child:hover {
     background: #0a5a5d;
     border-color: #0a5a5d;
+}
+
+/* 「放弃草稿」：靠左的次要危险操作，与右侧主操作「生成队伍」拉开距离 */
+.draft-editor-footer button.draft-discard-btn {
+    margin-right: auto;
+    color: #ff8a80;
+    border-color: #5a2a2a;
+}
+
+.draft-editor-footer button.draft-discard-btn:hover {
+    background: #3a2626;
+    border-color: #8a3a3a;
 }
 
 

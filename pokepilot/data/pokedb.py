@@ -265,18 +265,27 @@ class PokeDB:
         return result
 
     def _load_items(self) -> dict:
-        """items 表 → {slug: dict}（只含宝可梦冠军过签道具 in_champions='Y'，供校验/构建用）"""
+        """items 表 → {slug: dict}（只含宝可梦冠军过签道具 in_champions='Y'，供校验/构建用）
+
+        name_e 为空的行直接跳过并告警：这类行建不出 slug 键、也进不了中文映射表，
+        以前会静默占掉空键 "" 并把后续同类行全部丢掉，最终 item_zh_to_en() 只能把
+        中文名原样返回、落进队伍 JSON（前端伤害引擎认不出，且完全无声）。
+        """
         conn = self._open()
         try:
             rows = conn.execute(
-                "SELECT name, name_e, desc AS description FROM items "
+                "SELECT id, name, name_e, desc AS description FROM items "
                 "WHERE in_champions='Y'").fetchall()
         finally:
             conn.close()
 
         result: dict[str, dict] = {}
+        missing: list[str] = []
         for r in rows:
             key = _slugify(r["name_e"])
+            if not key:
+                missing.append(f"{r['name']}(id={r['id']})")
+                continue
             if key in result:
                 continue
             result[key] = {
@@ -288,6 +297,9 @@ class PokeDB:
                 "name_zh": r["name"],
                 "short_effect_zh": r["description"] or "",
             }
+        if missing:
+            print(f"  [PokeDB] 警告：{len(missing)} 个冠军道具缺 name_e，已跳过"
+                  f"（请补 items.name_e）：{'、'.join(missing)}")
         return result
 
     def _load_all_item_zh_names(self) -> set:
@@ -384,23 +396,34 @@ class PokeDB:
                 base_id = None
             name_zh = lang_zh.get(base_id) or _strip_form_suffix(pokemon_names.get(r["form_num"], ""))
             if name_zh:
-                mapping[name_zh] = r["name"]
+                mapping[self._normalize_text(name_zh)] = r["name"]
         return mapping
 
+    # 中文映射表的键一律做 NFKC 规范化：查询侧 _translate_with_preloaded 会把输入
+    # 规范化后再查表，两侧不一致时含全角字符的中文名（『纹理２』『Ｖ热焰』
+    # 『喷火龙进化石Ｘ』『ＡＲ系统』）会永远查不到，只能原样返回中文。
     def _load_move_mappings(self) -> dict:
-        mapping = {v["name_zh"]: k for k, v in self.get_all_moves().items() if v.get("name_zh")}
-        mapping.update(self._load_manual_mappings("moves"))
+        mapping = {self._normalize_text(v["name_zh"]): k
+                   for k, v in self.get_all_moves().items() if v.get("name_zh")}
+        mapping.update(self._normalize_keys(self._load_manual_mappings("moves")))
         return mapping
 
     def _load_item_mappings(self) -> dict:
-        mapping = {v["name_zh"]: k for k, v in self.get_all_items().items() if v.get("name_zh")}
-        mapping.update(self._load_manual_mappings("items"))
+        mapping = {self._normalize_text(v["name_zh"]): k
+                   for k, v in self.get_all_items().items() if v.get("name_zh")}
+        mapping.update(self._normalize_keys(self._load_manual_mappings("items")))
         return mapping
 
     def _load_ability_mappings(self) -> dict:
-        mapping = {v["name_zh"]: k for k, v in self.get_all_abilities().items() if v.get("name_zh")}
-        mapping.update(self._load_manual_mappings("abilities"))
+        mapping = {self._normalize_text(v["name_zh"]): k
+                   for k, v in self.get_all_abilities().items() if v.get("name_zh")}
+        mapping.update(self._normalize_keys(self._load_manual_mappings("abilities")))
         return mapping
+
+    @staticmethod
+    def _normalize_keys(mapping: dict) -> dict:
+        """手动映射（manual.json）的键同样规范化，保持与查询侧一致"""
+        return {unicodedata.normalize("NFKC", k).strip(): v for k, v in mapping.items()}
 
     def get_pokemon_mappings(self) -> dict:
         return self._cached("map_pokemon", self._load_pokemon_mappings)
@@ -451,7 +474,8 @@ class PokeDB:
             return mapping[zh_norm]
 
         if known_exact and zh_norm in known_exact:
-            print(f"  [PokeDB] '{zh_norm}' 为已知名称但不在冠军范围内（保留原文）")
+            print(f"  [PokeDB] '{zh_norm}' 为已知名称但没有中英映射（保留原文，"
+                  f"若为冠军道具请补 items.name_e）")
             return fallback
 
         matched_key = _fuzzy_match(zh_norm, mapping)

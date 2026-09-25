@@ -264,6 +264,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                 pctLow: 0,
                 pctHigh: 0,
                 effectiveness: 1,
+                immune: false,
             };
             const pdamage = {...maxDamage}
             for (const move of (attacker.moves || [])) {
@@ -271,6 +272,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                     // attacker.damageResults.push(null);
                     continue;
                 }
+                const immune = isImmuneMatchup(move, attacker, defender);
                 const res = calcDamage(attacker, defender, move, { attackerSide: 'my', defenderSide: 'opp' });
                 
                 // console.log(attacker.name_zh, defender.name_zh, move.name_zh,res.range());
@@ -288,6 +290,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                         maxDamage.pctLow = +(min / hp * 100).toFixed(1);
                         maxDamage.pctHigh = +(max / hp * 100).toFixed(1);
                         maxDamage.effectiveness = res.effectiveness || 1;
+                        maxDamage.immune = immune;
                     }  
                     if(move.priority>0){
                         const pdamage = {
@@ -300,6 +303,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                             pctLow: +(min / hp * 100).toFixed(1),
                             pctHigh: +(max / hp * 100).toFixed(1),
                             effectiveness: res.effectiveness || 1,
+                            immune,
                         };
 
                         damages.push(pdamage);
@@ -334,12 +338,14 @@ function calcTeamDamage(myTeam, oppTeam) {
                 pctLow: 0,
                 pctHigh: 0,
                 effectiveness: 1,
+                immune: false,
             };
             const pdamage = {...maxDamage}
             for (const move of (attacker.moves || [])) {
                 if (!move || move.category=='status') {
                     continue;
                 }
+                const immune = isImmuneMatchup(move, attacker, defender);
                 const res = calcDamage(attacker, defender, move, { attackerSide: 'opp', defenderSide: 'my' });
                 // console.log(attacker.name_zh,defender.name_zh,move.name_zh,res);
                 if (res) {
@@ -355,6 +361,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                         maxDamage.pctLow = +(min / hp * 100).toFixed(1);
                         maxDamage.pctHigh = +(max / hp * 100).toFixed(1);
                         maxDamage.effectiveness = res.effectiveness || 1;
+                        maxDamage.immune = immune;
                     }
                     if(move.priority>0){
                         // 每次先制都新建全新对象，不再复用引用
@@ -368,6 +375,7 @@ function calcTeamDamage(myTeam, oppTeam) {
                             pctLow: +(min / hp * 100).toFixed(1),
                             pctHigh: +(max / hp * 100).toFixed(1),
                             effectiveness: res.effectiveness || 1,
+                            immune,
                         };
                         damages.push(pdamage);
                         // console.log(pdamage,damages);
@@ -389,17 +397,73 @@ function calcTeamDamage(myTeam, oppTeam) {
 // ======================
 function mapName(slug) {
   // 你的 slug => smogon 英文名称 映射表
+  // 说明：Champions roster 的 slug 用的是自己的一套命名（-female/-male/-breed/-plumage/-variety...），
+  // 而伤害引擎只认游戏真实形态名，所以这里必须逐条对齐。
+  // 下列条目已按 champions_roster 全量核对（372 条 slug 全部可被引擎解析）；
+  // 新增 roster 形态时记得同步补这里 —— 漏了会在控制台和状态栏给出可见提示，不再静默漏算。
   const nameMap = {
     'basculegion-male': 'basculegion',    
     'basculegion-female': 'basculegion-F',
     'floette-eternal-flower':'Floette-Eternal',
     "aegislash":"Aegislash-Shield",
     "aegislash-blade-forme":"Aegislash-Blade",
+    // ---- 性别形态（引擎基础种 = 雄性，故 -male 落到基础种）----
+    'indeedee-male': 'Indeedee',
+    'indeedee-female': 'Indeedee-F',
+    'meowstic-mega': 'Meowstic-M-Mega',   // M/F 的 Mega 数值相同，取雄性
+    'pyroar-female': 'Pyroar',            // 雌雄基础数值完全相同
+    // ---- 换装/花色形态（纯外观，数值同基础种）----
+    'alcremie-ruby-cream': 'Alcremie',
+    'florges-yellow-flower': 'Florges',
+    'furfrou-heart-trim': 'Furfrou',
+    // ---- 尺寸 / 羽色 / 亚种形态（数值不同，必须落到对应形态）----
+    'gourgeist-small-variety': 'Gourgeist-Small',
+    'gourgeist-large-variety': 'Gourgeist-Large',
+    'gourgeist-jumbo-variety': 'Gourgeist-Super',
+    'squawkabilly-green-plumage': 'Squawkabilly',   // 基础种 = 绿羽
+    'squawkabilly-blue-plumage': 'Squawkabilly-Blue',
+    'squawkabilly-yellow-plumage': 'Squawkabilly-Yellow',
+    'squawkabilly-white-plumage': 'Squawkabilly-White',
+    'tauros-paldea-aqua-breed': 'Tauros-Paldea-Aqua',
+    'tauros-paldea-blaze-breed': 'Tauros-Paldea-Blaze',
+    'maushold-family-of-three': 'Maushold',         // 基础种 = 一家三口
+    'toxtricity-amped': 'Toxtricity',               // 基础种 = 高调
+    'morpeko-hangry-mode': 'Morpeko-Hangry',
     // 在这里继续加你需要的映射...
   };
 
   // 有映射返回映射，没有返回原 slug（自动小写兼容）
   return nameMap[slug?.toLowerCase()] || slug;
+}
+// 记录已提示过的「引擎无此物种」，同一次会话里同一只只提示一次，避免每次重算都刷屏
+const unresolvedSpeciesWarned = {};
+/**
+ * 把团队 JSON 里的 slug 解析成伤害引擎能查到的物种名。
+ * 引擎查不到时返回 null（而不是把 slug 硬塞给 new Pokemon 导致读 baseStats 崩）。
+ * @returns {string|null} 引擎认可的物种名 / null
+ */
+function resolveSpeciesName(gen, slug) {
+  if (!slug) return null;
+  const mapped = mapName(slug);
+  try {
+    return gen.species.get(window.calc.toID(mapped)) ? mapped : null;
+  } catch (e) {
+    return null;
+  }
+}
+/**
+ * 物种解析失败时的可见兜底提示。
+ * 以前这种情况是完全静默的（只在控制台刷一堆 "reading 'hp'" 异常），用户看不出少了谁。
+ */
+function warnUnresolvedSpecies(pokemon) {
+  const key = pokemon.slug || pokemon.name_zh || pokemon.name || '?';
+  if (unresolvedSpeciesWarned[key]) return;
+  unresolvedSpeciesWarned[key] = true;
+  const label = pokemon.name_zh || pokemon.name || key;
+  console.warn(`[伤害计算] 跳过「${label}」：伤害引擎里没有物种「${key}」，需在 mapName() 里补映射`);
+  if (typeof logMsg === 'function') {
+    logMsg(`伤害计算：已跳过「${label}」——伤害引擎无此形态（${key}）`);
+  }
 }
 // 1. 全局 Mega 石列表（全部小写，匹配时统一转小写对比）
 const MEGA_STONES = [
@@ -477,7 +541,9 @@ function calcDamage(attacker, defender, move, sideContext = {}){
         const defBoosts = defSide ? getBoosts(defSide, defender.index) : { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
         
         parseAndRewriteNature(attacker);
-        const atkPokemon = new Pokemon(gen, mapName(attacker.slug), {
+        const atkSpecies = resolveSpeciesName(gen, attacker.slug);
+        if (!atkSpecies) { warnUnresolvedSpecies(attacker); return null; }
+        const atkPokemon = new Pokemon(gen, atkSpecies, {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
             evs: {
@@ -504,8 +570,9 @@ function calcDamage(attacker, defender, move, sideContext = {}){
             }
         }
         parseAndRewriteNature(defender);
-        
-        const defPokemon = new Pokemon(gen, mapName(defender.slug), {
+        const defSpecies = resolveSpeciesName(gen, defender.slug);
+        if (!defSpecies) { warnUnresolvedSpecies(defender); return null; }
+        const defPokemon = new Pokemon(gen, defSpecies, {
             level: 50,
             ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
             evs: {
@@ -586,6 +653,18 @@ function getDamageLabel(pctLow, pctHigh) {
   if (pctLow >= 50 && pctHigh >= 50) return { label: '确二', color: '#f0c000' };
   if (pctHigh >= 50) return { label: '乱二', color: '#f0c000' };
   return { label: '', color: '' };
+}
+/**
+ * 属性免疫判定（如一般系先制技打幽灵系）。
+ * 不能用引擎的 Result.effectiveness —— 本 bundle 里该字段恒为 undefined，
+ * 所以改用队伍 JSON 里的 type_effectiveness 克制表（0 表示无效）。
+ * 只有克制表明确是 0 才算免疫；招式没被引擎识别等其它"算出 0"的情况不会被误标成无效。
+ */
+function isImmuneMatchup(move, attacker, defender) {
+  const moveType = (getEffectiveMoveType(move, attacker) || '').toLowerCase();
+  if (!moveType) return false;
+  const table = defender && defender.type_effectiveness;
+  return !!table && table[moveType] === 0;
 }
 
 const selectedMyIndices = {};
@@ -681,7 +760,11 @@ function showDamageInfoDetail() {
             const moveName = d.priority > 0 ? `+${d.priority} ${d.moveName}` : d.moveName;
             const { label, color } = getDamageLabel(d.pctLow, d.pctHigh);
             const labelHtml = label ? `<span style="color:${color};font-weight:bold;margin-right:4px">${label}</span>` : '';
-            const damageInfo = `${labelHtml}${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})`;
+            // 属性免疫（如一般系先制技打幽灵系）直接写「无效」，
+            // 否则显示成「0%~0% (0-0)」会让人以为伤害算错了
+            const damageInfo = d.immune
+                ? '<span style="color:#9aa0a6">无效</span>'
+                : `${labelHtml}${d.pctLow}%~${d.pctHigh}% (${d.min}-${d.max})`;
 
             rows.push({ atkName, atkLabel, defName, moveName, damageInfo });
         }

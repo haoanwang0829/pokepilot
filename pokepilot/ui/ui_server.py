@@ -43,6 +43,10 @@ TEAM_DIR = PROJECT_ROOT / "data" / "my_team"
 OPP_TEAM_DIR = PROJECT_ROOT / "data" / "opp_team"
 DB_PATH = PROJECT_ROOT / "db" / "db.db"
 
+# data/my_team 下的非槽位文件：temp.json=当前工作缓冲，draft.json=OCR 草稿
+# 它们不是队伍槽位，既不能在「读取/写入/删除队伍」菜单里出现，也不能被当作槽位读写。
+NON_SLOT_FILES = ("temp", "draft")
+
 _NATURE_ZH = {
     "Hardy": "勤奋", "Lonely": "寂寞", "Brave": "勇敢", "Adamant": "固执",
     "Naughty": "调皮", "Bold": "大胆", "Docile": "坦率", "Relaxed": "悠闲",
@@ -363,6 +367,24 @@ def _write_teaminfo(block: str) -> None:
     path = PROJECT_ROOT / "teaminfo.txt"
     with open(path, "a", encoding="utf-8") as f:
         f.write(block + "\n\n")
+
+
+def _read_working_roster():
+    """读取工作缓冲 temp.json 里的 roster；无文件/结构不对/为空都返回 None。"""
+    try:
+        with open(TEAM_DIR / "temp.json", encoding="utf-8") as f:
+            data = json.load(f)
+        roster = data.get("roster")
+        return roster if isinstance(roster, list) and roster else None
+    except Exception:
+        return None
+
+
+def _write_team_json(path, data: dict) -> None:
+    """把队伍数据写成扁平格式 JSON（自动建目录），保证各入口落盘格式一致。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def _upsert_team_row(conn, team_id: str, col_vals: dict) -> bool:
@@ -1239,13 +1261,16 @@ def create_app():
 
     @app.route("/api/teams", methods=["GET"])
     def list_teams():
+        """队伍槽位列表：排除工作缓冲/草稿，且只认带 roster 的 JSON。"""
         teams = []
         for path in sorted(TEAM_DIR.glob("*.json")):
-            if path.name == "temp.json":
+            if path.stem in NON_SLOT_FILES:
                 continue
             try:
                 with open(path, encoding="utf-8") as f:
                     data = json.load(f)
+                if not isinstance(data.get("roster"), list) or not data["roster"]:
+                    continue
                 teams.append({
                     "id": path.stem,
                     "slot_name": data.get("slot_name", path.stem)
@@ -1403,62 +1428,119 @@ def create_app():
 
     @app.route("/api/teams/load/<slot_id>", methods=["POST"])
     def load_team_slot(slot_id):
+        # temp=工作缓冲、draft=OCR 草稿，都不是队伍槽位，禁止作为槽位读取
+        # （draft.json 是识别卡片结构、不是 {trainer_name, roster}，读了会把 undefined 写回前端）
+        if slot_id in NON_SLOT_FILES:
+            return jsonify({"success": False, "error": f"「{slot_id}」不是队伍槽位，无法读取"}), 400
         src = TEAM_DIR / f"{slot_id}.json"
         dst = TEAM_DIR / "temp.json"
         try:
-            shutil.copy2(src, dst)
-            with open(dst, encoding="utf-8") as f:
+            if not src.exists():
+                return jsonify({"success": False, "error": f"队伍不存在：{slot_id}"}), 404
+            with open(src, encoding="utf-8") as f:
                 data = json.load(f)
+            if not isinstance(data.get("roster"), list) or not data["roster"]:
+                return jsonify({"success": False, "error": "该槽位缺少队伍数据（roster），无法读取"}), 400
+            shutil.copy2(src, dst)
             return jsonify({"success": True, "team": data})
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route("/api/teams/save", methods=["POST"])
     def save_team_slot():
-        body = request.json or {}
-        slot_id = body.get("slot_id")
-        slot_name = body.get("slot_name", "")
-        # 兼容两种 roster 传法：顶层 roster（当前前端）与 team.roster（旧前端缓存）
-        roster = body.get("roster")
-        if roster is None:
-            team = body.get("team") or {}
-            roster = team.get("roster")
+        """保存当前队伍到槽位（含新建 / 覆盖）。
+
+        roster 取值优先级：body.roster → body.team.roster → 工作缓冲 temp.json。
+        三者都没有有效队伍时返回 400 友好提示，不再抛 500。
+        保存成功后把同一份内容同步回 temp.json，保证工作缓冲与槽位一致。
+        """
         try:
-            if roster is not None:
-                # 与 /api/teams/build 写入 temp.json 的扁平格式保持一致：
-                # {trainer_name, roster[, slot_name]}，这样 /load 返回 {team: {...}} 后前端读 data.team.roster 才对。
-                data = {"trainer_name": "", "roster": roster}
-            else:
-                # 前端未携带 roster（旧请求）时不回退 temp.json——那会把加载的槽位整份复制成新槽位。
-                raise ValueError("请求未携带 roster 数据")
+            body = request.get_json(silent=True) or {}
+            slot_id = str(body.get("slot_id") or "").strip()
+            slot_name = str(body.get("slot_name") or "").strip()
+
+            roster = body.get("roster")
+            if roster is None:
+                # 兼容旧前端：roster 嵌套在 team 里
+                roster = (body.get("team") or {}).get("roster")
+            fallback_used = False
+            if not isinstance(roster, list) or not roster:
+                roster = _read_working_roster()
+                fallback_used = roster is not None
+            if not isinstance(roster, list) or not roster:
+                return jsonify({
+                    "success": False,
+                    "error": "当前没有可保存的队伍，请先生成或读取队伍",
+                }), 400
+
+            if slot_id in NON_SLOT_FILES:
+                return jsonify({
+                    "success": False,
+                    "error": f"「{slot_id}」是系统文件，不能作为队伍槽位保存",
+                }), 400
+
             if slot_id:
                 dst = TEAM_DIR / f"{slot_id}.json"
                 if dst.exists():
-                    with open(dst, encoding="utf-8") as f:
-                        existing = json.load(f)
-                    data["slot_name"] = existing.get("slot_name", slot_id)
+                    # 覆盖已有槽位：传了新名字才改名，否则沿用原名
+                    try:
+                        with open(dst, encoding="utf-8") as f:
+                            existing = json.load(f)
+                    except Exception:
+                        existing = {}
+                    saved_name = slot_name or existing.get("slot_name") or slot_id
                 else:
-                    data["slot_name"] = slot_name or slot_id
+                    saved_name = slot_name or slot_id
             else:
                 nums = [int(p.stem) for p in TEAM_DIR.glob("*.json") if p.stem.isdigit()]
-                new_id = max(nums, default=0) + 1
-                slot_id = str(new_id)
+                slot_id = str(max(nums, default=0) + 1)
                 dst = TEAM_DIR / f"{slot_id}.json"
-                data["slot_name"] = slot_name
-            with open(dst, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            return jsonify({"success": True, "slot_id": slot_id, "slot_name": data["slot_name"]})
+                saved_name = slot_name or f"队伍 {slot_id}"
+
+            # 与 /api/teams/build 写入 temp.json 的扁平格式保持一致：
+            # {trainer_name, roster, slot_name}，这样 /load 返回 {team: {...}} 后前端读 data.team.roster 才对。
+            data = {"trainer_name": "", "roster": roster, "slot_name": saved_name}
+            _write_team_json(dst, data)
+            # 同步工作缓冲，避免 temp.json 与屏幕上的队伍分叉
+            try:
+                _write_team_json(TEAM_DIR / "temp.json", data)
+            except Exception:
+                pass
+            return jsonify({
+                "success": True,
+                "slot_id": slot_id,
+                "slot_name": saved_name,
+                "count": len(roster),
+                "from_temp": fallback_used,
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @app.route("/api/teams/draft", methods=["DELETE"])
+    def delete_draft():
+        """显式丢弃 OCR 草稿：物理删除 data/my_team/draft.json（幂等）。"""
+        try:
+            path = TEAM_DIR / "draft.json"
+            existed = path.exists()
+            if existed:
+                path.unlink()
+            return jsonify({"success": True, "deleted": existed})
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route("/api/teams/<slot_id>", methods=["DELETE"])
     def delete_team_slot(slot_id):
+        if slot_id in NON_SLOT_FILES:
+            return jsonify({
+                "success": False,
+                "error": f"「{slot_id}」是系统文件，不能通过队伍槽位删除；草稿请用「放弃草稿」",
+            }), 400
         try:
             path = TEAM_DIR / f"{slot_id}.json"
             if not path.exists():
-                return jsonify({"success": False, "error": "不存在"}), 404
+                return jsonify({"success": False, "error": "队伍不存在"}), 404
             path.unlink()
-            return jsonify({"success": True})
+            return jsonify({"success": True, "slot_id": slot_id})
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
@@ -1524,10 +1606,15 @@ def create_app():
                 "roster": [p.to_dict() if hasattr(p, 'to_dict') else p for p in roster]
             }
 
-            output_path = TEAM_DIR / "temp.json"
-            TEAM_DIR.mkdir(parents=True, exist_ok=True)
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(team_data, f, ensure_ascii=False, indent=2)
+            _write_team_json(TEAM_DIR / "temp.json", team_data)
+
+            # 草稿转正：构建成功后清理磁盘上的 OCR 草稿，避免 draft.json 残留成孤儿
+            try:
+                draft_path = TEAM_DIR / "draft.json"
+                if draft_path.exists():
+                    draft_path.unlink()
+            except Exception:
+                pass
 
             return jsonify({
                 "success": True,
